@@ -52,9 +52,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Plus size={18} strokeWidth={2.8} />
               <span>New Transaction</span>
             </div>
-            <span className="font-mono text-[10px] bg-black/10 group-hover:bg-black/15 text-zinc-700 px-1.5 py-0.5 rounded-md uppercase font-semibold">
-              [{keybind}]
-            </span>
+            <kbd className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-zinc-100 border border-zinc-300/80 text-[10px] font-mono font-semibold text-zinc-600 shadow-[0_1px_1px_rgba(0,0,0,0.06)] group-hover:border-zinc-400/80 transition-colors uppercase">
+              {keybind}
+            </kbd>
           </button>
         </div>
 
