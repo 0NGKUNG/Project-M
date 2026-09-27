@@ -38,12 +38,12 @@ const Row: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`w-full flex items-center gap-3 py-3 px-4 text-left transition-colors cursor-pointer first:rounded-t-2xl last:rounded-b-2xl ${
+    className={`w-full flex items-center gap-3 py-3.5 px-4 min-h-[58px] text-left transition-colors cursor-pointer first:rounded-t-2xl last:rounded-b-2xl ${
       onClick ? 'active:bg-zinc-900/60 hover:bg-zinc-900/40' : 'cursor-default'
     }`}
   >
     <div
-      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
         danger ? 'bg-rose-900/40 text-rose-400' : 'bg-zinc-900 text-zinc-300'
       }`}
     >
@@ -1073,9 +1073,9 @@ export const SettingsView: React.FC = () => {
       <SectionLabel>Preferences</SectionLabel>
       <Card>
         {/* Currency Symbol + Code inline */}
-        <div className="flex items-center gap-3 py-3 px-4">
-          <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
-            <DollarSign size={15} />
+        <div className="flex items-center gap-3 py-3.5 px-4 min-h-[58px]">
+          <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
+            <DollarSign size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-medium text-white">Currency</div>
@@ -1083,7 +1083,7 @@ export const SettingsView: React.FC = () => {
               Active: {state.settings.currencySymbol} ({state.settings.currencyCode})
             </div>
           </div>
-          <div className="w-36 shrink-0">
+          <div className="w-40 shrink-0">
             <CustomSelect
               value={`${state.settings.currencySymbol}|${state.settings.currencyCode}`}
               onChange={(val) => {
@@ -1105,10 +1105,9 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-
-        <div className="flex items-center gap-3 py-3 px-4">
-          <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
-            <CalendarDays size={15} />
+        <div className="flex items-center gap-3 py-3.5 px-4 min-h-[58px]">
+          <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
+            <CalendarDays size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-medium text-white">Start Day of Week</div>
@@ -1116,7 +1115,7 @@ export const SettingsView: React.FC = () => {
               Calendar &amp; weekly calculations
             </div>
           </div>
-          <div className="w-36 shrink-0">
+          <div className="w-40 shrink-0">
             <CustomSelect
               value={String(state.settings.weekStartDay ?? 1)}
               onChange={(val) => {
@@ -1132,9 +1131,9 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 py-3 px-4">
-          <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
-            <Keyboard size={15} />
+        <div className="flex items-center gap-3 py-3.5 px-4 min-h-[58px]">
+          <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
+            <Keyboard size={16} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-medium text-white">Quick Add Shortcut</div>
@@ -1148,7 +1147,7 @@ export const SettingsView: React.FC = () => {
               const val = e.target.value.trim().toLowerCase();
               if (val) updateSettings({ quickAddKeybind: val });
             }}
-            className="w-9 h-8 text-center bg-[#16161d] rounded-xl text-xs font-mono font-bold text-white uppercase border border-zinc-800 focus:outline-none focus:border-white transition-colors shrink-0"
+            className="w-10 h-9 text-center bg-[#16161d] rounded-xl text-xs font-mono font-bold text-white uppercase border border-zinc-800 focus:outline-none focus:border-white transition-colors shrink-0"
           />
         </div>
       </Card>

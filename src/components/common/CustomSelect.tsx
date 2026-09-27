@@ -48,7 +48,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#16161d] hover:bg-[#1a1a23] border border-zinc-800/80 hover:border-zinc-700 text-xs text-white transition-all cursor-pointer ${
+        className={`w-full flex items-center justify-between gap-2.5 px-3.5 py-3 rounded-xl bg-[#16161d] hover:bg-[#1a1a23] border border-zinc-800/80 hover:border-zinc-700 text-[13px] text-white transition-all cursor-pointer ${
           isOpen ? 'border-zinc-500 ring-1 ring-zinc-500/30' : ''
         }`}
       >
@@ -59,7 +59,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
         {/* Custom styled arrow */}
         <ChevronDown
-          size={14}
+          size={15}
           className={`text-zinc-400 shrink-0 transition-transform duration-200 ${
             isOpen ? 'rotate-180 text-white' : ''
           }`}
@@ -68,7 +68,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-[#121216] border border-zinc-800 rounded-2xl p-1.5 shadow-2xl max-h-56 overflow-y-auto space-y-0.5 animate-fade-in">
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-[#121216] border border-zinc-800 rounded-2xl p-1.5 shadow-2xl max-h-64 overflow-y-auto space-y-1 animate-fade-in">
           {options.map((opt) => {
             const isSelected = opt.value === value;
             return (
@@ -79,7 +79,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] transition-colors cursor-pointer text-left ${
                   isSelected
                     ? 'bg-zinc-800/90 text-white font-bold'
                     : 'text-zinc-300 hover:bg-zinc-800/40 hover:text-white'
@@ -89,7 +89,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   {opt.icon && <span className="shrink-0">{opt.icon}</span>}
                   <span className="truncate">{opt.label}</span>
                 </div>
-                {isSelected && <Check size={13} className="text-white shrink-0 ml-2" />}
+                {isSelected && <Check size={14} className="text-white shrink-0 ml-2" />}
               </button>
             );
           })}
