@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="128" fill="#060608"/>
+  <rect x="24" y="24" width="464" height="464" rx="104" fill="none" stroke="#1f1f24" stroke-width="4"/>
+  <!-- Null set symbol ∅ -->
+  <text x="256" y="340" font-family="-apple-system, BlinkMacSystemFont, 'Courier New', monospace" font-size="280" font-weight="700" fill="#ffffff" text-anchor="middle">∅</text>
+  <circle cx="370" cy="140" r="14" fill="#ffffff" />
+</svg>
