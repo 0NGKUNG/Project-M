@@ -91,11 +91,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!isSupabaseConfigured || !supabase) return;
     try {
       setIsSyncing(true);
-      const [txRes, catRes, accRes, bgRes, stRes] = await Promise.all([
+      const [txRes, catRes, accRes, bgRes, recRes, debtRes, stRes] = await Promise.all([
         supabase.from('transactions').select('*').order('created_at', { ascending: false }),
         supabase.from('categories').select('*'),
         supabase.from('accounts').select('*'),
         supabase.from('budgets').select('*'),
+        supabase.from('recurring').select('*'),
+        supabase.from('debts').select('*'),
         supabase.from('settings').select('*').maybeSingle(),
       ]);
 
@@ -109,9 +111,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           type: t.type,
           amount: Number(t.amount),
           categoryId: t.category_id,
+          subcategoryId: t.subcategory_id || undefined,
           accountId: t.account_id,
           toAccountId: t.to_account_id,
           date: t.date,
+          time: t.time,
           note: t.note,
           createdAt: Number(t.created_at),
         })) : prev.transactions,
@@ -122,19 +126,53 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           initialBalance: Number(a.initial_balance),
           icon: a.icon,
         })) : prev.accounts,
-        categories: catRes.data && catRes.data.length > 0 ? catRes.data : prev.categories,
+        categories: catRes.data && catRes.data.length > 0 ? catRes.data.map((c) => ({
+          id: c.id,
+          name: c.name,
+          type: c.type,
+          icon: c.icon,
+          parentId: c.parent_id || c.parentId || undefined,
+        })) : prev.categories,
         budgets: bgRes.data && bgRes.data.length > 0 ? bgRes.data.map((b) => ({
           id: b.id,
-          categoryId: b.category_id,
+          name: b.name || undefined,
+          categoryId: b.category_id || undefined,
           amount: Number(b.amount),
-          period: b.period,
+          period: b.period || 'monthly',
+          startDate: b.start_date || b.startDate || undefined,
+          endDate: b.end_date || b.endDate || undefined,
+          categories: b.categories || undefined,
         })) : prev.budgets,
+        recurring: recRes.data && recRes.data.length > 0 ? recRes.data.map((r) => ({
+          id: r.id,
+          name: r.name,
+          type: r.type,
+          amount: Number(r.amount),
+          categoryId: r.category_id || r.categoryId,
+          accountId: r.account_id || r.accountId,
+          frequency: r.frequency,
+          nextDueDate: r.next_due_date || r.nextDueDate,
+          isActive: r.is_active ?? r.isActive ?? true,
+        })) : prev.recurring,
+        debts: debtRes.data && debtRes.data.length > 0 ? debtRes.data.map((d) => ({
+          id: d.id,
+          type: d.type,
+          personName: d.person_name || d.personName,
+          totalAmount: Number(d.total_amount || d.totalAmount),
+          remainingAmount: Number(d.remaining_amount || d.remainingAmount),
+          dueDate: d.due_date || d.dueDate || undefined,
+          note: d.note || undefined,
+          status: d.status || 'active',
+          createdAt: Number(d.created_at || d.createdAt || Date.now()),
+        })) : prev.debts,
         settings: stRes.data ? {
           currencySymbol: stRes.data.currency_symbol || '$',
           currencyCode: stRes.data.currency_code || 'USD',
           monochromeOnly: false,
           vibrateOnTap: stRes.data.vibrate_on_tap ?? true,
           quickAddKeybind: stRes.data.quick_add_keybind || prev.settings.quickAddKeybind || 'n',
+          weekStartDay: stRes.data.week_start_day ?? prev.settings.weekStartDay ?? 1,
+          goals: stRes.data.goals || prev.settings.goals,
         } : prev.settings,
       }));
     } catch (e) {
@@ -168,7 +206,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       createdAt: Date.now(),
     };
 
-    // Update local state immediately for 0ms lag
+    // Update local state immediately for instant feedback
     setState((prev) => ({
       ...prev,
       transactions: [newTx, ...prev.transactions],
@@ -322,7 +360,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const addBudget = (budgetData: Omit<Budget, 'id'>) => {
+  const addBudget = async (budgetData: Omit<Budget, 'id'>) => {
     triggerHaptic();
     const newBudget: Budget = {
       ...budgetData,
@@ -334,34 +372,72 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('budgets').insert({
-        id: newBudget.id,
-        category_id: newBudget.categoryId,
-        amount: newBudget.amount,
-        period: newBudget.period,
-      }).then();
+      try {
+        const { error } = await supabase.from('budgets').insert({
+          id: newBudget.id,
+          name: newBudget.name || null,
+          category_id: newBudget.categoryId || null,
+          amount: newBudget.amount,
+          period: newBudget.period,
+          start_date: newBudget.startDate || null,
+          end_date: newBudget.endDate || null,
+          categories: newBudget.categories || null,
+        });
+        if (error) {
+          // If columns don't exist yet, fallback to minimal insert
+          await supabase.from('budgets').insert({
+            id: newBudget.id,
+            category_id: newBudget.categoryId || null,
+            amount: newBudget.amount,
+            period: newBudget.period,
+          });
+        }
+      } catch (err) {
+        console.error('Supabase budget insert error:', err);
+      }
     }
   };
 
-  const updateBudget = (updatedBudget: Budget) => {
+  const updateBudget = async (updatedBudget: Budget) => {
     setState((prev) => ({
       ...prev,
       budgets: prev.budgets.map((b) => (b.id === updatedBudget.id ? updatedBudget : b)),
     }));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('budgets').update({
+          name: updatedBudget.name || null,
+          category_id: updatedBudget.categoryId || null,
+          amount: updatedBudget.amount,
+          period: updatedBudget.period,
+          start_date: updatedBudget.startDate || null,
+          end_date: updatedBudget.endDate || null,
+          categories: updatedBudget.categories || null,
+        }).eq('id', updatedBudget.id);
+      } catch (err) {
+        console.error('Supabase budget update error:', err);
+      }
+    }
   };
 
-  const deleteBudget = (id: string) => {
+  const deleteBudget = async (id: string) => {
     setState((prev) => ({
       ...prev,
       budgets: prev.budgets.filter((b) => b.id !== id),
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('budgets').delete().eq('id', id).then();
+      try {
+        const { error } = await supabase.from('budgets').delete().eq('id', id);
+        if (error) console.error('Supabase budget delete error:', error);
+      } catch (err) {
+        console.error('Supabase budget delete catch:', err);
+      }
     }
   };
 
-  const addCategory = (catData: Omit<Category, 'id'>) => {
+  const addCategory = async (catData: Omit<Category, 'id'>) => {
     triggerHaptic();
     const newCategory: Category = {
       ...catData,
@@ -373,16 +449,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('categories').insert({
-        id: newCategory.id,
-        name: newCategory.name,
-        type: newCategory.type,
-        icon: newCategory.icon,
-      }).then();
+      try {
+        const { error } = await supabase.from('categories').insert({
+          id: newCategory.id,
+          name: newCategory.name,
+          type: newCategory.type,
+          icon: newCategory.icon,
+          parent_id: newCategory.parentId || null,
+        });
+        if (error) {
+          // Fallback if parent_id column isn't created yet in remote table
+          await supabase.from('categories').insert({
+            id: newCategory.id,
+            name: newCategory.name,
+            type: newCategory.type,
+            icon: newCategory.icon,
+          });
+        }
+      } catch (err) {
+        console.error('Supabase category insert error:', err);
+      }
     }
   };
 
-  const updateCategory = (updatedCat: Category) => {
+  const updateCategory = async (updatedCat: Category) => {
     triggerHaptic();
     setState((prev) => ({
       ...prev,
@@ -390,15 +480,21 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('categories').update({
-        name: updatedCat.name,
-        type: updatedCat.type,
-        icon: updatedCat.icon,
-      }).eq('id', updatedCat.id).then();
+      try {
+        const { error } = await supabase.from('categories').update({
+          name: updatedCat.name,
+          type: updatedCat.type,
+          icon: updatedCat.icon,
+          parent_id: updatedCat.parentId || null,
+        }).eq('id', updatedCat.id);
+        if (error) console.error('Supabase category update error:', error);
+      } catch (err) {
+        console.error('Supabase category update catch:', err);
+      }
     }
   };
 
-  const deleteCategory = (id: string) => {
+  const deleteCategory = async (id: string) => {
     triggerHaptic();
     setState((prev) => ({
       ...prev,
@@ -406,11 +502,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('categories').delete().eq('id', id).then();
+      try {
+        // Also remove any subcategories referencing this id
+        await supabase.from('categories').delete().eq('parent_id', id);
+        const { error } = await supabase.from('categories').delete().eq('id', id);
+        if (error) console.error('Supabase category delete error:', error);
+      } catch (err) {
+        console.error('Supabase category delete catch:', err);
+      }
     }
   };
 
-  const addRecurring = (itemData: Omit<RecurringItem, 'id'>) => {
+  const addRecurring = async (itemData: Omit<RecurringItem, 'id'>) => {
     triggerHaptic();
     const newItem: RecurringItem = {
       ...itemData,
@@ -420,23 +523,69 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       ...prev,
       recurring: [...(prev.recurring || []), newItem],
     }));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('recurring').insert({
+          id: newItem.id,
+          name: newItem.name,
+          type: newItem.type,
+          amount: newItem.amount,
+          category_id: newItem.categoryId,
+          account_id: newItem.accountId,
+          frequency: newItem.frequency,
+          next_due_date: newItem.nextDueDate,
+          is_active: newItem.isActive,
+        });
+        if (error) console.warn('Supabase recurring insert notice:', error);
+      } catch (err) {
+        console.warn('Supabase recurring insert catch:', err);
+      }
+    }
   };
 
-  const updateRecurring = (updatedItem: RecurringItem) => {
+  const updateRecurring = async (updatedItem: RecurringItem) => {
     setState((prev) => ({
       ...prev,
       recurring: (prev.recurring || []).map((r) => (r.id === updatedItem.id ? updatedItem : r)),
     }));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('recurring').update({
+          name: updatedItem.name,
+          type: updatedItem.type,
+          amount: updatedItem.amount,
+          category_id: updatedItem.categoryId,
+          account_id: updatedItem.accountId,
+          frequency: updatedItem.frequency,
+          next_due_date: updatedItem.nextDueDate,
+          is_active: updatedItem.isActive,
+        }).eq('id', updatedItem.id);
+        if (error) console.warn('Supabase recurring update notice:', error);
+      } catch (err) {
+        console.warn('Supabase recurring update catch:', err);
+      }
+    }
   };
 
-  const deleteRecurring = (id: string) => {
+  const deleteRecurring = async (id: string) => {
     setState((prev) => ({
       ...prev,
       recurring: (prev.recurring || []).filter((r) => r.id !== id),
     }));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('recurring').delete().eq('id', id);
+        if (error) console.warn('Supabase recurring delete notice:', error);
+      } catch (err) {
+        console.warn('Supabase recurring delete catch:', err);
+      }
+    }
   };
 
-  const addDebt = (itemData: Omit<DebtItem, 'id' | 'createdAt'>) => {
+  const addDebt = async (itemData: Omit<DebtItem, 'id' | 'createdAt'>) => {
     triggerHaptic();
     const newDebt: DebtItem = {
       ...itemData,
@@ -447,23 +596,68 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       ...prev,
       debts: [...(prev.debts || []), newDebt],
     }));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('debts').insert({
+          id: newDebt.id,
+          type: newDebt.type,
+          person_name: newDebt.personName,
+          total_amount: newDebt.totalAmount,
+          remaining_amount: newDebt.remainingAmount,
+          due_date: newDebt.dueDate,
+          note: newDebt.note,
+          status: newDebt.status,
+          created_at: newDebt.createdAt,
+        });
+        if (error) console.warn('Supabase debt insert notice:', error);
+      } catch (err) {
+        console.warn('Supabase debt insert catch:', err);
+      }
+    }
   };
 
-  const updateDebt = (updatedDebt: DebtItem) => {
+  const updateDebt = async (updatedDebt: DebtItem) => {
     setState((prev) => ({
       ...prev,
       debts: (prev.debts || []).map((d) => (d.id === updatedDebt.id ? updatedDebt : d)),
     }));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('debts').update({
+          type: updatedDebt.type,
+          person_name: updatedDebt.personName,
+          total_amount: updatedDebt.totalAmount,
+          remaining_amount: updatedDebt.remainingAmount,
+          due_date: updatedDebt.dueDate,
+          note: updatedDebt.note,
+          status: updatedDebt.status,
+        }).eq('id', updatedDebt.id);
+        if (error) console.warn('Supabase debt update notice:', error);
+      } catch (err) {
+        console.warn('Supabase debt update catch:', err);
+      }
+    }
   };
 
-  const deleteDebt = (id: string) => {
+  const deleteDebt = async (id: string) => {
     setState((prev) => ({
       ...prev,
       debts: (prev.debts || []).filter((d) => d.id !== id),
     }));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('debts').delete().eq('id', id);
+        if (error) console.warn('Supabase debt delete notice:', error);
+      } catch (err) {
+        console.warn('Supabase debt delete catch:', err);
+      }
+    }
   };
 
-  const updateSettings = (newSettings: Partial<FinanceSettings>) => {
+  const updateSettings = async (newSettings: Partial<FinanceSettings>) => {
     const updated = { ...state.settings, ...newSettings };
     setState((prev) => ({
       ...prev,
@@ -471,12 +665,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('settings').upsert({
-        id: 'app_settings',
-        currency_symbol: updated.currencySymbol,
-        currency_code: updated.currencyCode,
-        vibrate_on_tap: updated.vibrateOnTap,
-      }).then();
+      try {
+        await supabase.from('settings').upsert({
+          id: 'app_settings',
+          currency_symbol: updated.currencySymbol,
+          currency_code: updated.currencyCode,
+          vibrate_on_tap: updated.vibrateOnTap,
+          quick_add_keybind: updated.quickAddKeybind,
+          week_start_day: updated.weekStartDay,
+          goals: updated.goals,
+        });
+      } catch (err) {
+        console.warn('Supabase settings upsert error:', err);
+      }
     }
   };
 
@@ -512,8 +713,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
     localStorage.removeItem('monodark_finance_state_v1');
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await Promise.allSettled([
+          supabase.from('transactions').delete().neq('id', 'keep_none'),
+          supabase.from('budgets').delete().neq('id', 'keep_none'),
+          supabase.from('recurring').delete().neq('id', 'keep_none'),
+          supabase.from('debts').delete().neq('id', 'keep_none'),
+        ]);
+      } catch (err) {
+        console.warn('Supabase remote clear error:', err);
+      }
+    }
     window.location.reload();
   };
 
