@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, CreditCard, TrendingUp, TrendingDown, Edit2, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import type { Account, Transaction } from '../../types/finance';
@@ -16,12 +16,50 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   onClose,
   onOpenQuickAddWithAccount,
 }) => {
-  const { state, accountBalances } = useFinance();
+  const { state, accountBalances, updateAccount, deleteAccount } = useFinance();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  
+  // Account Editing State
+  const [isEditingAccount, setIsEditingAccount] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editType, setEditType] = useState<Account['type']>('bank');
+  const [editBalance, setEditBalance] = useState('0');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!account) return null;
 
   const currentBalance = accountBalances[account.id] ?? account.initialBalance;
+
+  const handleStartEdit = () => {
+    setEditName(account.name);
+    setEditType(account.type);
+    setEditBalance(account.initialBalance.toString());
+    setIsEditingAccount(true);
+  };
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim()) return;
+
+    await updateAccount({
+      ...account,
+      name: editName.trim(),
+      type: editType,
+      initialBalance: parseFloat(editBalance) || 0,
+      icon: editType === 'cash' ? 'Wallet' : 'CreditCard',
+    });
+
+    setIsEditingAccount(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (window.confirm(`Are you sure you want to permanently delete account "${account.name}" and all its transactions? This will also remove them from Supabase.`)) {
+      setIsDeleting(true);
+      await deleteAccount(account.id);
+      setIsDeleting(false);
+      onClose();
+    }
+  };
 
   // Transactions belonging to this account
   const accountTransactions = state.transactions.filter(
@@ -64,12 +102,29 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleStartEdit}
+              title="Edit Account"
+              className="p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <Edit2 size={16} />
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              title="Delete Account"
+              className="p-2 rounded-full bg-zinc-800/80 hover:bg-rose-950/60 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
+            >
+              <Trash2 size={16} />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer ml-1"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Balance & Stats Card */}
@@ -180,6 +235,93 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
           transaction={editingTransaction}
           onClose={() => setEditingTransaction(null)}
         />
+
+        {/* Edit Account Modal */}
+        {isEditingAccount && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs animate-fade-in">
+            <div 
+              className="w-full max-w-sm bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-white font-mono">Edit Account</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingAccount(false)}
+                  className="p-1 rounded-full text-zinc-400 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveAccount} className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                    Account Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full bg-[#16161c] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                    Account Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['bank', 'cash', 'credit', 'investment'] as Account['type'][]).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setEditType(t)}
+                        className={`py-2 px-3 rounded-xl text-xs font-mono capitalize transition-all cursor-pointer ${
+                          editType === t
+                            ? 'bg-white text-black font-bold'
+                            : 'bg-[#16161c] text-zinc-400 hover:text-white border border-zinc-800/80'
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                    Initial Balance
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editBalance}
+                    onChange={(e) => setEditBalance(e.target.value)}
+                    className="w-full bg-[#16161c] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingAccount(false)}
+                    className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-bold font-mono hover:bg-zinc-700 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 rounded-xl bg-white text-black text-xs font-bold font-mono hover:bg-zinc-200 cursor-pointer shadow-md"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -208,7 +208,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const updateTransaction = (updatedTx: Transaction) => {
+  const updateTransaction = async (updatedTx: Transaction) => {
     triggerHaptic();
     setState((prev) => ({
       ...prev,
@@ -216,19 +216,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('transactions').update({
-        type: updatedTx.type,
-        amount: updatedTx.amount,
-        category_id: updatedTx.categoryId,
-        account_id: updatedTx.accountId,
-        to_account_id: updatedTx.toAccountId,
-        date: updatedTx.date,
-        note: updatedTx.note,
-      }).eq('id', updatedTx.id).then();
+      try {
+        const { error } = await supabase.from('transactions').update({
+          type: updatedTx.type,
+          amount: updatedTx.amount,
+          category_id: updatedTx.categoryId,
+          account_id: updatedTx.accountId,
+          to_account_id: updatedTx.toAccountId,
+          date: updatedTx.date,
+          note: updatedTx.note,
+        }).eq('id', updatedTx.id);
+        if (error) console.error('Supabase transaction update error:', error);
+      } catch (err) {
+        console.error('Supabase transaction update catch:', err);
+      }
     }
   };
 
-  const deleteTransaction = (id: string) => {
+  const deleteTransaction = async (id: string) => {
     triggerHaptic();
     setState((prev) => ({
       ...prev,
@@ -236,7 +241,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('transactions').delete().eq('id', id).then();
+      try {
+        const { error } = await supabase.from('transactions').delete().eq('id', id);
+        if (error) console.error('Supabase transaction delete error:', error);
+      } catch (err) {
+        console.error('Supabase transaction delete catch:', err);
+      }
     }
   };
 
@@ -267,30 +277,47 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const updateAccount = (updatedAcc: Account) => {
+  const updateAccount = async (updatedAcc: Account) => {
+    triggerHaptic();
     setState((prev) => ({
       ...prev,
       accounts: prev.accounts.map((a) => (a.id === updatedAcc.id ? updatedAcc : a)),
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('accounts').update({
-        name: updatedAcc.name,
-        type: updatedAcc.type,
-        initial_balance: updatedAcc.initialBalance,
-        icon: updatedAcc.icon,
-      }).eq('id', updatedAcc.id).then();
+      try {
+        const { error } = await supabase.from('accounts').update({
+          name: updatedAcc.name,
+          type: updatedAcc.type,
+          initial_balance: updatedAcc.initialBalance,
+          icon: updatedAcc.icon,
+        }).eq('id', updatedAcc.id);
+        if (error) console.error('Supabase account update error:', error);
+      } catch (err) {
+        console.error('Supabase account update catch:', err);
+      }
     }
   };
 
-  const deleteAccount = (id: string) => {
+  const deleteAccount = async (id: string) => {
+    triggerHaptic();
+    // Also remove any transactions tied to this deleted account locally
     setState((prev) => ({
       ...prev,
       accounts: prev.accounts.filter((a) => a.id !== id),
+      transactions: prev.transactions.filter((t) => t.accountId !== id && t.toAccountId !== id),
     }));
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('accounts').delete().eq('id', id).then();
+      try {
+        // First delete any transactions tied to this account to prevent foreign key constraints
+        await supabase.from('transactions').delete().eq('account_id', id);
+        await supabase.from('transactions').delete().eq('to_account_id', id);
+        const { error } = await supabase.from('accounts').delete().eq('id', id);
+        if (error) console.error('Supabase account delete error:', error);
+      } catch (err) {
+        console.error('Supabase account delete catch:', err);
+      }
     }
   };
 
