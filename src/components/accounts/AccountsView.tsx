@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
+import { CustomSelect } from '../common/CustomSelect';
 import type { Account } from '../../types/finance';
 import { RecurringManager } from '../recurring/RecurringManager';
 import { DebtManager } from '../debts/DebtManager';
@@ -267,17 +268,17 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                     Account Type
                   </label>
-                  <select
+                  <CustomSelect
                     value={newAccType}
-                    onChange={(e) => setNewAccType(e.target.value as Account['type'])}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="bank">Bank</option>
-                    <option value="cash">Cash</option>
-                    <option value="credit">Credit Card</option>
-                    <option value="savings">Savings</option>
-                    <option value="investment">Investment</option>
-                  </select>
+                    onChange={(val) => setNewAccType(val as Account['type'])}
+                    options={[
+                      { value: 'bank', label: 'Bank' },
+                      { value: 'cash', label: 'Cash' },
+                      { value: 'credit', label: 'Credit Card' },
+                      { value: 'savings', label: 'Savings' },
+                      { value: 'investment', label: 'Investment' },
+                    ]}
+                  />
                 </div>
 
                 <div>

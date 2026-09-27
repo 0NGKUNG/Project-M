@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
+import { CustomSelect } from '../common/CustomSelect';
 import type { RecurringItem } from '../../types/finance';
 
 export const RecurringManager: React.FC = () => {
@@ -187,14 +188,14 @@ export const RecurringManager: React.FC = () => {
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
                     Type
                   </label>
-                  <select
+                  <CustomSelect
                     value={type}
-                    onChange={(e) => setType(e.target.value as 'expense' | 'income')}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="expense">Expense</option>
-                    <option value="income">Income</option>
-                  </select>
+                    onChange={(val) => setType(val as 'expense' | 'income')}
+                    options={[
+                      { value: 'expense', label: 'Expense' },
+                      { value: 'income', label: 'Income' },
+                    ]}
+                  />
                 </div>
 
                 <div>
@@ -217,16 +218,16 @@ export const RecurringManager: React.FC = () => {
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
                     Frequency
                   </label>
-                  <select
+                  <CustomSelect
                     value={frequency}
-                    onChange={(e) => setFrequency(e.target.value as RecurringItem['frequency'])}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
+                    onChange={(val) => setFrequency(val as RecurringItem['frequency'])}
+                    options={[
+                      { value: 'daily', label: 'Daily' },
+                      { value: 'weekly', label: 'Weekly' },
+                      { value: 'monthly', label: 'Monthly' },
+                      { value: 'yearly', label: 'Yearly' },
+                    ]}
+                  />
                 </div>
 
                 <div>
@@ -247,36 +248,30 @@ export const RecurringManager: React.FC = () => {
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
                     Wallet / Account
                   </label>
-                  <select
-                    value={accountId || state.accounts[0]?.id}
-                    onChange={(e) => setAccountId(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
-                  >
-                    {state.accounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    value={accountId || state.accounts[0]?.id || ''}
+                    onChange={(val) => setAccountId(val)}
+                    options={state.accounts.map((a) => ({
+                      value: a.id,
+                      label: a.name,
+                    }))}
+                  />
                 </div>
 
                 <div>
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
                     Category
                   </label>
-                  <select
-                    value={categoryId || state.categories.filter((c) => c.type === type)[0]?.id}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
-                  >
-                    {state.categories
+                  <CustomSelect
+                    value={categoryId || state.categories.filter((c) => c.type === type)[0]?.id || ''}
+                    onChange={(val) => setCategoryId(val)}
+                    options={state.categories
                       .filter((c) => c.type === type)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                  </select>
+                      .map((c) => ({
+                        value: c.id,
+                        label: c.name,
+                      }))}
+                  />
                 </div>
               </div>
 

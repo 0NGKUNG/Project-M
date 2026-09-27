@@ -3,6 +3,7 @@ import { X, Trash2, Check, ArrowRightLeft, ArrowDownRight, ArrowUpRight, Calenda
 import { useFinance } from '../../context/FinanceContext';
 import type { Transaction, TransactionType } from '../../types/finance';
 import { CategoryIcon } from '../common/Icons';
+import { CustomSelect } from '../common/CustomSelect';
 
 interface EditTransactionModalProps {
   transaction: Transaction | null;
@@ -195,17 +196,14 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
                 {type === 'transfer' ? 'Source Account' : 'Account'}
               </label>
-              <select
+              <CustomSelect
                 value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
-              >
-                {state.accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setAccountId(val)}
+                options={state.accounts.map((a) => ({
+                  value: a.id,
+                  label: a.name,
+                }))}
+              />
             </div>
 
             {type === 'transfer' && (
@@ -213,19 +211,16 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
                   Destination Account
                 </label>
-                <select
-                  value={toAccountId || state.accounts.find((a) => a.id !== accountId)?.id}
-                  onChange={(e) => setToAccountId(e.target.value)}
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
-                >
-                  {state.accounts
+                <CustomSelect
+                  value={toAccountId || state.accounts.find((a) => a.id !== accountId)?.id || ''}
+                  onChange={(val) => setToAccountId(val)}
+                  options={state.accounts
                     .filter((a) => a.id !== accountId)
-                    .map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                </select>
+                    .map((a) => ({
+                      value: a.id,
+                      label: a.name,
+                    }))}
+                />
               </div>
             )}
           </div>

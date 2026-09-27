@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Target, Plus, AlertCircle, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
+import { CustomSelect } from '../common/CustomSelect';
 
 export const BudgetsView: React.FC = () => {
   const { state, addBudget, deleteBudget } = useFinance();
@@ -63,17 +64,14 @@ export const BudgetsView: React.FC = () => {
               <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1.5">
                 Category
               </label>
-              <select
+              <CustomSelect
                 value={selectedCatId}
-                onChange={(e) => setSelectedCatId(e.target.value)}
-                className="w-full bg-[#16161d] rounded-2xl px-4 py-3 text-xs text-white focus:outline-none cursor-pointer"
-              >
-                {expenseCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedCatId(val)}
+                options={expenseCategories.map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                }))}
+              />
             </div>
 
             <div>

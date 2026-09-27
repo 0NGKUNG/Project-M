@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
+import { CustomSelect } from '../common/CustomSelect';
 import type { TransactionType } from '../../types/finance';
 
 export const TransactionListView: React.FC = () => {
@@ -85,18 +86,18 @@ export const TransactionListView: React.FC = () => {
             ))}
           </div>
 
-          <select
+          <CustomSelect
             value={selectedAccountId}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="px-4 py-2 rounded-2xl text-xs bg-[#101014] text-zinc-300 focus:outline-none cursor-pointer"
-          >
-            <option value="all">All Accounts</option>
-            {state.accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedAccountId(val)}
+            options={[
+              { value: 'all', label: 'All Accounts' },
+              ...state.accounts.map((acc) => ({
+                value: acc.id,
+                label: acc.name,
+              })),
+            ]}
+            className="min-w-[130px]"
+          />
         </div>
       </div>
 

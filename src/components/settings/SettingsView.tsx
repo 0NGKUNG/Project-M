@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { supabase } from '../../db/supabaseClient';
+import { CustomSelect } from '../common/CustomSelect';
 import type { Account } from '../../types/finance';
 
 export const SettingsView: React.FC = () => {
@@ -234,17 +235,17 @@ export const SettingsView: React.FC = () => {
                 className="w-full bg-[#101014] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
               />
               <div className="grid grid-cols-2 gap-2">
-                <select
+                <CustomSelect
                   value={newAccType}
-                  onChange={(e) => setNewAccType(e.target.value as Account['type'])}
-                  className="bg-[#101014] rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
-                >
-                  <option value="bank">Bank</option>
-                  <option value="cash">Cash</option>
-                  <option value="credit">Credit Card</option>
-                  <option value="savings">Savings</option>
-                  <option value="investment">Investment</option>
-                </select>
+                  onChange={(val) => setNewAccType(val as Account['type'])}
+                  options={[
+                    { value: 'bank', label: 'Bank' },
+                    { value: 'cash', label: 'Cash' },
+                    { value: 'credit', label: 'Credit Card' },
+                    { value: 'savings', label: 'Savings' },
+                    { value: 'investment', label: 'Investment' },
+                  ]}
+                />
                 <input
                   type="number"
                   placeholder="Initial balance"
