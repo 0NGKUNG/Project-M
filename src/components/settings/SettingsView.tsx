@@ -1063,23 +1063,28 @@ export const SettingsView: React.FC = () => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-medium text-white">Currency</div>
+            <div className="text-[10px] text-zinc-500 font-mono">
+              Active: {state.settings.currencySymbol} ({state.settings.currencyCode})
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <input
-              type="text"
-              value={state.settings.currencySymbol}
-              onChange={(e) => updateSettings({ currencySymbol: e.target.value })}
-              className="w-10 h-7 text-center bg-[#16161d] rounded-lg text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
-              maxLength={3}
-              title="Symbol"
-            />
-            <input
-              type="text"
-              value={state.settings.currencyCode}
-              onChange={(e) => updateSettings({ currencyCode: e.target.value.toUpperCase() })}
-              className="w-14 h-7 text-center bg-[#16161d] rounded-lg text-[11px] text-white font-mono focus:outline-none border border-zinc-800/60 uppercase"
-              maxLength={4}
-              title="Currency Code"
+          <div className="w-36 shrink-0">
+            <CustomSelect
+              value={`${state.settings.currencySymbol}|${state.settings.currencyCode}`}
+              onChange={(val) => {
+                const [sym, code] = val.split('|');
+                updateSettings({ currencySymbol: sym, currencyCode: code });
+              }}
+              options={[
+                { value: '฿|THB', label: '฿ THB (Baht)' },
+                { value: '$|USD', label: '$ USD (Dollar)' },
+                { value: '€|EUR', label: '€ EUR (Euro)' },
+                { value: '¥|JPY', label: '¥ JPY (Yen)' },
+                { value: '£|GBP', label: '£ GBP (Pound)' },
+                { value: 'S$|SGD', label: 'S$ SGD (Singapore)' },
+                { value: 'A$|AUD', label: 'A$ AUD (Australia)' },
+                { value: '₩|KRW', label: '₩ KRW (Won)' },
+                { value: '¥|CNY', label: '¥ CNY (Yuan)' },
+              ]}
             />
           </div>
         </div>
