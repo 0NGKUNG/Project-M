@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import {
   Download,
   Upload,
@@ -15,11 +15,13 @@ import {
   Keyboard,
   DollarSign,
   Wallet,
+  X,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { supabase } from '../../db/supabaseClient';
 import { CustomSelect } from '../common/CustomSelect';
-import type { Account } from '../../types/finance';
+import { CategoryIcon, formatCurrency } from '../common/Icons';
+import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
 
 type SettingsSubPage = null | 'goals' | 'categories';
 
@@ -36,9 +38,15 @@ const Row: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`w-full flex items-center gap-3 py-3 px-4 text-left transition-colors cursor-pointer ${onClick ? 'active:bg-zinc-900/60' : 'cursor-default'}`}
+    className={`w-full flex items-center gap-3 py-3 px-4 text-left transition-colors cursor-pointer ${
+      onClick ? 'active:bg-zinc-900/60 hover:bg-zinc-900/40' : 'cursor-default'
+    }`}
   >
-    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-rose-900/40 text-rose-400' : 'bg-zinc-900 text-zinc-300'}`}>
+    <div
+      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+        danger ? 'bg-rose-900/40 text-rose-400' : 'bg-zinc-900 text-zinc-300'
+      }`}
+    >
       {icon}
     </div>
     <div className="flex-1 min-w-0">
@@ -57,7 +65,9 @@ const Toggle: React.FC<{ on: boolean; onChange: () => void }> = ({ on, onChange 
   <button
     type="button"
     onClick={onChange}
-    className={`w-11 h-6 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${on ? 'bg-white' : 'bg-zinc-800'}`}
+    className={`w-11 h-6 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+      on ? 'bg-white' : 'bg-zinc-800'
+    }`}
   >
     <div className={`w-5 h-5 rounded-full transition-transform ${on ? 'translate-x-5 bg-black' : 'translate-x-0 bg-white/70'}`} />
   </button>
@@ -73,85 +83,646 @@ const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </div>
 );
 
-// ─── Sub-pages ────────────────────────────────────────────────────
+// ─── Sub-page 1: Spending Goals (Range + Category breakdown) ──────────
 
 const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { state, updateSettings } = useFinance();
-  return (
-    <div className="space-y-5 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <button onClick={onBack} className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors">
-          <ArrowLeft size={16} />
-        </button>
-        <h2 className="text-base font-bold text-white font-mono">Spending Goals</h2>
-      </div>
-      <p className="text-[11px] text-zinc-500">Cap your outflows per day, week, and month. Leave blank to disable a limit.</p>
-      <div className="space-y-3">
-        {[
-          { label: 'Daily Limit', key: 'daily' as const, placeholder: 'e.g. 500' },
-          { label: 'Weekly Limit', key: 'weekly' as const, placeholder: 'e.g. 3,000' },
-          { label: 'Monthly Limit', key: 'monthly' as const, placeholder: 'e.g. 15,000' },
-        ].map(({ label, key, placeholder }) => (
-          <div key={key}>
-            <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">{label}</label>
-            <input
-              type="number"
-              placeholder={placeholder}
-              value={state.settings.goals?.[key] || ''}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value) || undefined;
-                updateSettings({ goals: { ...state.settings.goals, [key]: val } });
-              }}
-              className="w-full bg-[#16161d] rounded-xl px-4 py-2.5 text-sm text-white font-mono focus:outline-none border border-zinc-800/60 focus:border-zinc-600 transition-colors"
-            />
-          </div>
-        ))}
-      </div>
-    </div>
+  const { state, addBudget, deleteBudget } = useFinance();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<Budget | null>(null);
+
+  // Form state
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [period, setPeriod] = useState<Budget['period']>('monthly');
+  const [startDate, setStartDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  });
+  const [categoryAllocations, setCategoryAllocations] = useState<BudgetCategoryAllocation[]>([]);
+  const [tempCatId, setTempCatId] = useState('');
+  const [tempCatAmount, setTempCatAmount] = useState('');
+
+  const expenseCategories = useMemo(
+    () => state.categories.filter((c) => c.type === 'expense' && !c.parentId),
+    [state.categories]
   );
-};
 
-const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { state, addCategory, deleteCategory } = useFinance();
-  const [tab, setTab] = useState<'expense' | 'income'>('expense');
-  const [newName, setNewName] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
+  const openCreateModal = () => {
+    const now = new Date();
+    setName('Monthly Budget');
+    setPeriod('monthly');
+    setAmount('');
+    setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]);
+    setEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]);
+    setCategoryAllocations([]);
+    setTempCatId(expenseCategories[0]?.id || '');
+    setTempCatAmount('');
+    setShowCreateModal(true);
+  };
 
-  const categories = state.categories.filter((c) => c.type === tab);
+  const handlePeriodChange = (newPeriod: Budget['period']) => {
+    setPeriod(newPeriod);
+    const now = new Date();
+    if (newPeriod === 'daily') {
+      const todayStr = now.toISOString().split('T')[0];
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (newPeriod === 'weekly') {
+      const day = now.getDay();
+      const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(now.setDate(diffToMonday));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      setStartDate(monday.toISOString().split('T')[0]);
+      setEndDate(sunday.toISOString().split('T')[0]);
+    } else if (newPeriod === 'monthly') {
+      setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]);
+      setEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]);
+    }
+  };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAddCategoryAllocation = () => {
+    const amt = parseFloat(tempCatAmount);
+    if (!tempCatId || !amt || amt <= 0) return;
+    setCategoryAllocations((prev) => {
+      const existing = prev.filter((a) => a.categoryId !== tempCatId);
+      return [...existing, { categoryId: tempCatId, amount: amt }];
+    });
+    setTempCatAmount('');
+  };
+
+  const handleRemoveCategoryAllocation = (catId: string) => {
+    setCategoryAllocations((prev) => prev.filter((a) => a.categoryId !== catId));
+  };
+
+  const handleSaveGoal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim()) return;
-    addCategory({ name: newName.trim(), type: tab, icon: 'Tag' });
-    setNewName('');
-    setShowAdd(false);
+    const totalAmount = parseFloat(amount);
+    if (!totalAmount || totalAmount <= 0) return;
+
+    addBudget({
+      name: name.trim() || 'Spending Goal',
+      amount: totalAmount,
+      period,
+      startDate,
+      endDate,
+      categories: categoryAllocations,
+    });
+
+    setShowCreateModal(false);
+  };
+
+  // Helper to compute spendings in range for a budget
+  const getBudgetSpending = (budget: Budget) => {
+    const start = budget.startDate ? new Date(budget.startDate) : null;
+    const end = budget.endDate ? new Date(budget.endDate) : null;
+    if (end) end.setHours(23, 59, 59, 999);
+
+    const relevantTxs = state.transactions.filter((tx) => {
+      if (tx.type !== 'expense') return false;
+      const txDate = new Date(tx.date);
+      if (start && txDate < start) return false;
+      if (end && txDate > end) return false;
+      return true;
+    });
+
+    const totalSpent = relevantTxs.reduce((sum, tx) => sum + tx.amount, 0);
+
+    const categorySpent: Record<string, number> = {};
+    relevantTxs.forEach((tx) => {
+      categorySpent[tx.categoryId] = (categorySpent[tx.categoryId] || 0) + tx.amount;
+    });
+
+    return { totalSpent, categorySpent };
   };
 
   return (
     <div className="space-y-4 animate-fade-in">
+      {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors">
+          <button
+            onClick={onBack}
+            className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors"
+          >
             <ArrowLeft size={16} />
           </button>
-          <h2 className="text-base font-bold text-white font-mono">Categories</h2>
+          <div>
+            <h2 className="text-base font-bold text-white font-mono">SPENDING GOALS</h2>
+            <div className="text-[10px] text-zinc-500 font-mono">Range &amp; Category Budgets</div>
+          </div>
         </div>
+
         <button
-          onClick={() => setShowAdd(!showAdd)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer"
+          onClick={openCreateModal}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-sm"
         >
           <Plus size={13} strokeWidth={2.8} />
-          Add
+          New Goal
         </button>
       </div>
 
-      {/* Tabs */}
+      {/* List of Goals */}
+      {state.budgets.length === 0 ? (
+        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/60 text-center space-y-2">
+          <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
+            <Target size={18} />
+          </div>
+          <div className="text-xs text-zinc-400 font-medium">No spending goals active</div>
+          <p className="text-[10px] text-zinc-600 max-w-xs mx-auto">
+            Create a custom date range goal and break it down across categories like Essentials, Food, and General.
+          </p>
+          <button
+            onClick={openCreateModal}
+            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-black text-xs font-bold cursor-pointer"
+          >
+            <Plus size={13} /> Create Budget
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {state.budgets.map((b) => {
+            const { totalSpent, categorySpent } = getBudgetSpending(b);
+            const percent = Math.min(100, Math.round((totalSpent / b.amount) * 100));
+            const remaining = Math.max(0, b.amount - totalSpent);
+
+            return (
+              <div
+                key={b.id}
+                onClick={() => setSelectedGoal(b)}
+                className="p-4 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer space-y-3 active:scale-99 shadow-sm"
+              >
+                {/* Header info */}
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase text-zinc-400 px-1.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800">
+                      {b.period}
+                    </span>
+                    <span className="text-zinc-200 font-bold truncate">{b.name || 'Goal'}</span>
+                  </div>
+                  <span className="text-[10px] text-zinc-500 font-mono">
+                    {b.startDate} — {b.endDate}
+                  </span>
+                </div>
+
+                {/* Overall banner card */}
+                <div className="p-3 rounded-xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] text-zinc-400 uppercase font-mono">Overalls</div>
+                    <div className="text-base font-extrabold text-white font-mono">
+                      {formatCurrency(b.amount, state.settings.currencySymbol)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-bold text-zinc-300 font-mono">{percent}% used</div>
+                    <div className="text-[10px] text-zinc-500 font-mono">
+                      {formatCurrency(remaining, state.settings.currencySymbol)} left
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full h-1.5 rounded-full bg-zinc-900 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      percent > 90 ? 'bg-rose-500' : percent > 75 ? 'bg-amber-400' : 'bg-white'
+                    }`}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+
+                {/* Category chips if any */}
+                {b.categories && b.categories.length > 0 && (
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
+                    {b.categories.map((catAlloc) => {
+                      const cat = state.categories.find((c) => c.id === catAlloc.categoryId);
+                      const catUsed = categorySpent[catAlloc.categoryId] || 0;
+                      const catPercent = Math.min(100, Math.round((catUsed / catAlloc.amount) * 100));
+
+                      return (
+                        <div
+                          key={catAlloc.categoryId}
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800/80 shrink-0 text-xs"
+                        >
+                          <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300">
+                            <CategoryIcon name={cat?.icon || 'Tag'} size={12} />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold text-white truncate max-w-[80px]">
+                              {cat?.name || 'Category'}
+                            </div>
+                            <div className="text-[9px] text-zinc-400 font-mono">
+                              {catPercent}% • {formatCurrency(catAlloc.amount, state.settings.currencySymbol)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Goal Detail & Action Sheet Modal */}
+      {selectedGoal && (() => {
+        const { totalSpent, categorySpent } = getBudgetSpending(selectedGoal);
+        const percent = Math.min(100, Math.round((totalSpent / selectedGoal.amount) * 100));
+        const remaining = Math.max(0, selectedGoal.amount - totalSpent);
+
+        // Days left calculation
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const end = selectedGoal.endDate ? new Date(selectedGoal.endDate) : today;
+        end.setHours(0, 0, 0, 0);
+        const daysLeft = Math.max(1, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        const dailyAllowance = (remaining / daysLeft).toFixed(2);
+
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+            onClick={() => setSelectedGoal(null)}
+          >
+            <div
+              className="w-full sm:max-w-md bg-[#101014] rounded-t-3xl sm:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-900">
+                <span className="text-xs font-mono font-bold text-zinc-400 uppercase">
+                  {selectedGoal.period} Budget Details
+                </span>
+                <span className="text-xs font-mono text-zinc-500">
+                  {selectedGoal.startDate} — {selectedGoal.endDate}
+                </span>
+              </div>
+
+              {/* Overalls Highlight Card */}
+              <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-zinc-400 font-mono uppercase font-bold">Overalls</div>
+                  <div className="text-2xl font-extrabold text-white font-mono mt-0.5">
+                    {formatCurrency(selectedGoal.amount, state.settings.currencySymbol)}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-white font-mono">{percent}%</div>
+                  <div className="text-xs text-zinc-400 font-mono">
+                    {formatCurrency(totalSpent, state.settings.currencySymbol)} spent
+                  </div>
+                </div>
+              </div>
+
+              {/* Category Breakdown list */}
+              {selectedGoal.categories && selectedGoal.categories.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] uppercase font-mono font-bold text-zinc-500">Category Allocations</div>
+                  {selectedGoal.categories.map((c) => {
+                    const cat = state.categories.find((item) => item.id === c.categoryId);
+                    const spent = categorySpent[c.categoryId] || 0;
+                    const catPct = Math.min(100, Math.round((spent / c.amount) * 100));
+
+                    return (
+                      <div
+                        key={c.categoryId}
+                        className="p-3 rounded-xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between text-xs"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-300">
+                            <CategoryIcon name={cat?.icon || 'Tag'} size={14} />
+                          </div>
+                          <div>
+                            <div className="font-bold text-white">{cat?.name || 'Category'}</div>
+                            <div className="text-[10px] text-zinc-500 font-mono">
+                              Limit: {formatCurrency(c.amount, state.settings.currencySymbol)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="font-mono font-bold text-zinc-300">{catPct}%</div>
+                          <div className="text-[10px] text-zinc-500 font-mono">
+                            {formatCurrency(spent, state.settings.currencySymbol)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Stats Footer */}
+              <div className="p-3 rounded-xl bg-black/40 border border-zinc-900 space-y-1.5 text-xs font-mono">
+                <div className="flex justify-between text-zinc-400">
+                  <span>Days Remaining:</span>
+                  <span className="text-white font-bold">{daysLeft} days</span>
+                </div>
+                <div className="flex justify-between text-zinc-400">
+                  <span>Daily Allowance Remaining:</span>
+                  <span className="text-emerald-400 font-bold">
+                    {state.settings.currencySymbol}
+                    {dailyAllowance} / day
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    deleteBudget(selectedGoal.id);
+                    setSelectedGoal(null);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer text-center"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setSelectedGoal(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold transition-all cursor-pointer text-center"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Create Spending Goal Modal */}
+      {showCreateModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            className="w-full sm:max-w-md bg-[#101014] rounded-t-3xl sm:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-white font-mono">Create Spending Goal</h3>
+
+            <form onSubmit={handleSaveGoal} className="space-y-3">
+              {/* Name */}
+              <div>
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Goal Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. October Budget, Holiday Trip"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
+                  required
+                />
+              </div>
+
+              {/* Period selection */}
+              <div>
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Range Period</label>
+                <div className="flex bg-[#16161d] p-1 rounded-xl border border-zinc-800/60 gap-1">
+                  {(['daily', 'weekly', 'monthly', 'custom'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => handlePeriodChange(p)}
+                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono capitalize transition-all cursor-pointer ${
+                        period === p ? 'bg-white text-black font-bold shadow-sm' : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date Pickers */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Total Overall Amount */}
+              <div>
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+                  Total Overall Limit ({state.settings.currencySymbol})
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 8000"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-sm text-white font-mono font-bold focus:outline-none border border-zinc-800/60"
+                  required
+                />
+              </div>
+
+              {/* Category Breakdown Allocation Builder */}
+              <div className="pt-2 border-t border-zinc-900 space-y-2">
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block">
+                  Category Limits (Optional)
+                </label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <CustomSelect
+                      value={tempCatId}
+                      onChange={(val) => setTempCatId(val)}
+                      options={expenseCategories.map((c) => ({ value: c.id, label: c.name }))}
+                    />
+                  </div>
+                  <input
+                    type="number"
+                    placeholder="Limit"
+                    value={tempCatAmount}
+                    onChange={(e) => setTempCatAmount(e.target.value)}
+                    className="w-24 bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCategoryAllocation}
+                    className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {categoryAllocations.length > 0 && (
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                    {categoryAllocations.map((alloc) => {
+                      const cat = state.categories.find((c) => c.id === alloc.categoryId);
+                      return (
+                        <div
+                          key={alloc.categoryId}
+                          className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#16161d] border border-zinc-800/60 text-xs"
+                        >
+                          <span className="text-zinc-200 font-medium truncate">{cat?.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-white">
+                              {formatCurrency(alloc.amount, state.settings.currencySymbol)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCategoryAllocation(alloc.categoryId)}
+                              className="text-zinc-600 hover:text-rose-400 p-0.5 cursor-pointer"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer active:scale-95 transition-all"
+                >
+                  Save Goal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Sub-page 2: Categories (Parent + Subcategory Management) ──────
+
+const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { state, addCategory, deleteCategory } = useFinance();
+  const [tab, setTab] = useState<'expense' | 'income'>('expense');
+
+  // Modals
+  const [selectedParentCat, setSelectedParentCat] = useState<Category | null>(null);
+  const [showAddParentModal, setShowAddParentModal] = useState(false);
+  const [showAddSubModal, setShowAddSubModal] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('Tag');
+
+  // Filter top-level parents and their subcategories
+  const parentCategories = useMemo(
+    () => state.categories.filter((c) => c.type === tab && !c.parentId),
+    [state.categories, tab]
+  );
+
+  const getSubcategories = (parentId: string) => {
+    return state.categories.filter((c) => c.parentId === parentId);
+  };
+
+  const handleCreateParent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    addCategory({
+      name: newCatName.trim(),
+      type: tab,
+      icon: newCatIcon || 'Tag',
+    });
+    setNewCatName('');
+    setShowAddParentModal(false);
+  };
+
+  const handleCreateSubcategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim() || !selectedParentCat) return;
+    addCategory({
+      name: newCatName.trim(),
+      type: tab,
+      icon: 'Tag',
+      parentId: selectedParentCat.id,
+    });
+    setNewCatName('');
+    setShowAddSubModal(false);
+  };
+
+  const availableIcons = [
+    'Utensils',
+    'Coffee',
+    'ShoppingCart',
+    'Car',
+    'Home',
+    'Film',
+    'ShoppingBag',
+    'HeartPulse',
+    'Laptop',
+    'Briefcase',
+    'Zap',
+    'TrendingUp',
+    'Wallet',
+    'Target',
+    'Tag',
+  ];
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div>
+            <h2 className="text-base font-bold text-white font-mono">CATEGORIES</h2>
+            <div className="text-[10px] text-zinc-500 font-mono">Parent &amp; Subcategories</div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            setNewCatName('');
+            setNewCatIcon('Tag');
+            setShowAddParentModal(true);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-sm"
+        >
+          <Plus size={13} strokeWidth={2.8} />
+          Add Category
+        </button>
+      </div>
+
+      {/* Expense / Income Pill Switcher */}
       <div className="flex bg-[#101014] p-1 rounded-xl border border-zinc-900 gap-1">
         {(['expense', 'income'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer ${
+            className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer capitalize ${
               tab === t ? 'bg-white text-black font-bold shadow-sm' : 'text-zinc-400 hover:text-white'
             }`}
           >
@@ -160,38 +731,256 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ))}
       </div>
 
-      {/* Add form */}
-      {showAdd && (
-        <form onSubmit={handleAdd} className="flex gap-2 animate-fade-in">
-          <input
-            type="text"
-            placeholder={`New ${tab} category`}
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            autoFocus
-            className="flex-1 bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60 focus:border-zinc-600 transition-colors"
-          />
-          <button type="submit" className="px-4 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer active:scale-95 transition-all">Save</button>
-        </form>
+      {/* Grid of Categories (Matching 2-column Reference Style) */}
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        {parentCategories.map((cat) => {
+          const subs = getSubcategories(cat.id);
+
+          return (
+            <div
+              key={cat.id}
+              onClick={() => setSelectedParentCat(cat)}
+              className="p-3.5 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between group active:scale-98 shadow-sm min-h-[92px]"
+            >
+              <div className="flex items-start justify-between">
+                <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
+                  <CategoryIcon name={cat.icon || 'Tag'} size={15} />
+                </div>
+                <div className="text-[10px] text-zinc-600 font-mono group-hover:text-zinc-400 transition-colors">
+                  ☰
+                </div>
+              </div>
+
+              <div className="mt-2">
+                <div className="text-xs font-bold text-white truncate">{cat.name}</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                  {subs.length > 0 ? `${subs.length} subcategories` : 'No subcategories'}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {parentCategories.length === 0 && (
+        <div className="text-center text-xs text-zinc-600 py-12">No {tab} categories yet</div>
       )}
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 gap-2">
-        {categories.map((cat) => (
-          <div key={cat.id} className="flex items-center justify-between bg-[#101014] border border-zinc-900/60 rounded-xl px-3 py-2.5 group">
-            <span className="text-xs font-medium text-white truncate flex-1">{cat.name}</span>
-            <button
-              onClick={() => deleteCategory(cat.id)}
-              className="text-zinc-700 hover:text-rose-400 transition-colors cursor-pointer ml-2 shrink-0 opacity-0 group-hover:opacity-100"
-            >
-              <Trash2 size={12} />
-            </button>
-          </div>
-        ))}
-        {categories.length === 0 && (
-          <div className="col-span-2 text-center text-[11px] text-zinc-600 py-6">No {tab} categories yet</div>
-        )}
+      {/* Floating Action Button (matching bottom right in reference) */}
+      <div className="fixed bottom-6 right-6 lg:hidden">
+        <button
+          onClick={() => {
+            setNewCatName('');
+            setNewCatIcon('Tag');
+            setShowAddParentModal(true);
+          }}
+          className="w-13 h-13 rounded-full bg-white text-black flex items-center justify-center shadow-2xl active:scale-95 transition-all cursor-pointer"
+          aria-label="Add Category"
+        >
+          <Plus size={26} strokeWidth={2.8} />
+        </button>
       </div>
+
+      {/* Parent Category Action Modal (Matching 3rd reference screenshot) */}
+      {selectedParentCat && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          onClick={() => setSelectedParentCat(null)}
+        >
+          <div
+            className="w-full max-w-xs bg-[#101014] rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 cursor-default animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Category Banner Card */}
+            <div className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
+                <CategoryIcon name={selectedParentCat.icon || 'Tag'} size={18} />
+              </div>
+              <div className="truncate">
+                <div className="text-xs font-bold text-white truncate">{selectedParentCat.name}</div>
+                <div className="text-[10px] text-zinc-500 font-mono uppercase">
+                  {selectedParentCat.type} Category
+                </div>
+              </div>
+            </div>
+
+            {/* Subcategories list inside */}
+            {(() => {
+              const subs = getSubcategories(selectedParentCat.id);
+              return (
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-mono uppercase text-zinc-500 font-bold px-1">
+                    Subcategories ({subs.length})
+                  </div>
+                  <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                    {subs.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#16161d] border border-zinc-800/60 text-xs"
+                      >
+                        <span className="text-zinc-200 truncate">{sub.name}</span>
+                        <button
+                          onClick={() => deleteCategory(sub.id)}
+                          className="text-zinc-600 hover:text-rose-400 p-1 cursor-pointer transition-colors"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    {subs.length === 0 && (
+                      <div className="text-[11px] text-zinc-600 italic py-2 px-1">No subcategories added yet</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Add Subcategory Trigger Button */}
+            <button
+              onClick={() => {
+                setNewCatName('');
+                setShowAddSubModal(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#16161d] hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-white transition-all cursor-pointer"
+            >
+              <Plus size={14} /> Add Subcategory
+            </button>
+
+            {/* Modal Bottom Actions (Delete vs Done) */}
+            <div className="flex items-center gap-2 pt-1 border-t border-zinc-900">
+              <button
+                onClick={() => {
+                  deleteCategory(selectedParentCat.id);
+                  setSelectedParentCat(null);
+                }}
+                className="flex-1 py-2 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setSelectedParentCat(null)}
+                className="flex-1 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold transition-all cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Subcategory Inline Modal */}
+      {showAddSubModal && selectedParentCat && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          onClick={() => setShowAddSubModal(false)}
+        >
+          <div
+            className="w-full max-w-xs bg-[#101014] rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-3 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xs font-bold text-white font-mono">
+              Add to {selectedParentCat.name}
+            </h3>
+            <form onSubmit={handleCreateSubcategory} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Subcategory name (e.g. Coffee, Taxi)"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                autoFocus
+                className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
+                required
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSubModal(false)}
+                  className="px-3 py-1.5 text-xs text-zinc-400 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Add
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Top-Level Category Modal */}
+      {showAddParentModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          onClick={() => setShowAddParentModal(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-[#101014] rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-white font-mono capitalize">
+              New {tab} Category
+            </h3>
+            <form onSubmit={handleCreateParent} className="space-y-3">
+              <div>
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+                  Category Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Essentials, Savings, Entertainment"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  autoFocus
+                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                  Icon
+                </label>
+                <div className="grid grid-cols-5 gap-1.5 max-h-32 overflow-y-auto p-1 bg-[#16161d] rounded-xl border border-zinc-800/60">
+                  {availableIcons.map((ic) => (
+                    <button
+                      key={ic}
+                      type="button"
+                      onClick={() => setNewCatIcon(ic)}
+                      className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                        newCatIcon === ic
+                          ? 'bg-white text-black font-bold shadow-xs'
+                          : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                      }`}
+                    >
+                      <CategoryIcon name={ic} size={15} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddParentModal(false)}
+                  className="px-3 py-1.5 text-xs text-zinc-400 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -237,24 +1026,31 @@ export const SettingsView: React.FC = () => {
   const handleCreateAccount = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAccName.trim()) return;
-    addAccount({ name: newAccName.trim(), type: newAccType, initialBalance: parseFloat(newAccBalance) || 0, icon: newAccType === 'cash' ? 'Wallet' : 'CreditCard' });
+    addAccount({
+      name: newAccName.trim(),
+      type: newAccType,
+      initialBalance: parseFloat(newAccBalance) || 0,
+      icon: newAccType === 'cash' ? 'Wallet' : 'CreditCard',
+    });
     setNewAccName('');
     setNewAccBalance('0');
     setShowAddAcc(false);
   };
 
   // ── Sub-pages ──
-  if (subPage === 'goals') return (
-    <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
-      <GoalsSubPage onBack={() => setSubPage(null)} />
-    </div>
-  );
+  if (subPage === 'goals')
+    return (
+      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+        <GoalsSubPage onBack={() => setSubPage(null)} />
+      </div>
+    );
 
-  if (subPage === 'categories') return (
-    <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
-      <CategoriesSubPage onBack={() => setSubPage(null)} />
-    </div>
-  );
+  if (subPage === 'categories')
+    return (
+      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+        <CategoriesSubPage onBack={() => setSubPage(null)} />
+      </div>
+    );
 
   // ── Main Settings ──
   return (
@@ -308,7 +1104,10 @@ export const SettingsView: React.FC = () => {
             <div className="text-[13px] font-medium text-white">Haptic Vibration</div>
             <div className="text-[10px] text-zinc-500">Feedback when logging on phone</div>
           </div>
-          <Toggle on={!!state.settings.vibrateOnTap} onChange={() => updateSettings({ vibrateOnTap: !state.settings.vibrateOnTap })} />
+          <Toggle
+            on={!!state.settings.vibrateOnTap}
+            onChange={() => updateSettings({ vibrateOnTap: !state.settings.vibrateOnTap })}
+          />
         </div>
 
         <div className="flex items-center gap-3 py-3 px-4">
@@ -338,13 +1137,13 @@ export const SettingsView: React.FC = () => {
         <Row
           icon={<Target size={15} />}
           title="Spending Goals"
-          subtitle="Set daily, weekly and monthly limits"
+          subtitle="Set range goals & category allocations"
           onClick={() => setSubPage('goals')}
         />
         <Row
           icon={<Tag size={15} />}
           title="Categories"
-          subtitle="Manage expense & income categories"
+          subtitle="Manage parent & subcategories"
           onClick={() => setSubPage('categories')}
         />
         <Row
@@ -352,13 +1151,21 @@ export const SettingsView: React.FC = () => {
           title={`Wallets & Accounts (${state.accounts.length})`}
           subtitle="Add or remove linked wallets"
           onClick={() => setShowWallets(!showWallets)}
-          right={<ChevronRight size={15} className={`text-zinc-600 transition-transform ${showWallets ? 'rotate-90' : ''}`} />}
+          right={
+            <ChevronRight
+              size={15}
+              className={`text-zinc-600 transition-transform ${showWallets ? 'rotate-90' : ''}`}
+            />
+          }
         />
         {showWallets && (
           <div className="px-4 pb-3 space-y-2 animate-fade-in">
             {/* Add wallet form */}
             {showAddAcc && (
-              <form onSubmit={handleCreateAccount} className="space-y-2 bg-[#16161d] rounded-xl p-3 border border-zinc-800/60">
+              <form
+                onSubmit={handleCreateAccount}
+                className="space-y-2 bg-[#16161d] rounded-xl p-3 border border-zinc-800/60"
+              >
                 <input
                   type="text"
                   placeholder="Wallet name (e.g. PayPal)"
@@ -388,8 +1195,19 @@ export const SettingsView: React.FC = () => {
                   />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowAddAcc(false)} className="px-3 py-1 text-xs text-zinc-400 cursor-pointer">Cancel</button>
-                  <button type="submit" className="px-4 py-1.5 bg-white text-black text-xs font-bold rounded-xl cursor-pointer">Save</button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAcc(false)}
+                    className="px-3 py-1 text-xs text-zinc-400 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
+                  >
+                    Save
+                  </button>
                 </div>
               </form>
             )}
@@ -402,7 +1220,10 @@ export const SettingsView: React.FC = () => {
                     <span className="text-[9px] text-zinc-600 uppercase font-mono">({acc.type})</span>
                   </div>
                   {state.accounts.length > 1 && (
-                    <button onClick={() => deleteAccount(acc.id)} className="text-zinc-700 hover:text-rose-400 p-1 cursor-pointer transition-colors">
+                    <button
+                      onClick={() => deleteAccount(acc.id)}
+                      className="text-zinc-700 hover:text-rose-400 p-1 cursor-pointer transition-colors"
+                    >
                       <Trash2 size={12} />
                     </button>
                   )}

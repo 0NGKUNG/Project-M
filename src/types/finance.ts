@@ -64,11 +64,20 @@ export interface DebtItem {
   createdAt: number;
 }
 
+export interface BudgetCategoryAllocation {
+  categoryId: string;
+  amount: number;
+}
+
 export interface Budget {
   id: string;
-  categoryId: string;
-  amount: number; // Monthly limit
-  period: 'monthly';
+  name?: string;
+  categoryId?: string; // For single category legacy compatibility
+  amount: number; // Overall limit
+  period: 'daily' | 'weekly' | 'monthly' | 'custom';
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string;   // YYYY-MM-DD
+  categories?: BudgetCategoryAllocation[];
 }
 
 export interface FinanceSettings {

@@ -17,6 +17,7 @@ interface FinanceContextType {
   updateBudget: (budget: Budget) => void;
   deleteBudget: (id: string) => void;
   addCategory: (category: Omit<Category, 'id'>) => void;
+  updateCategory: (category: Category) => void;
   deleteCategory: (id: string) => void;
   addRecurring: (item: Omit<RecurringItem, 'id'>) => void;
   updateRecurring: (item: RecurringItem) => void;
@@ -381,6 +382,22 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const updateCategory = (updatedCat: Category) => {
+    triggerHaptic();
+    setState((prev) => ({
+      ...prev,
+      categories: prev.categories.map((c) => (c.id === updatedCat.id ? updatedCat : c)),
+    }));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('categories').update({
+        name: updatedCat.name,
+        type: updatedCat.type,
+        icon: updatedCat.icon,
+      }).eq('id', updatedCat.id).then();
+    }
+  };
+
   const deleteCategory = (id: string) => {
     triggerHaptic();
     setState((prev) => ({
@@ -600,6 +617,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateBudget,
         deleteBudget,
         addCategory,
+        updateCategory,
         deleteCategory,
         addRecurring,
         updateRecurring,

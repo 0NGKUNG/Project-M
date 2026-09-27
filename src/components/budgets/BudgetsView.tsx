@@ -116,8 +116,9 @@ export const BudgetsView: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {state.budgets.map((budget) => {
-            const cat = state.categories.find((c) => c.id === budget.categoryId);
-            const spent = categorySpending[budget.categoryId] || 0;
+            const catId = budget.categoryId || '';
+            const cat = state.categories.find((c) => c.id === catId);
+            const spent = categorySpending[catId] || 0;
             const percent = Math.min(Math.round((spent / budget.amount) * 100), 100);
             const isExceeded = spent > budget.amount;
             const remaining = budget.amount - spent;
