@@ -248,8 +248,15 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
                       <CategoryIcon name={category?.icon || 'Tag'} size={18} />
                     </div>
                     <div>
-                      <div className="text-xs font-semibold text-white">
-                        {category?.name || 'Uncategorized'}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-white">
+                          {category?.name || 'Uncategorized'}
+                        </span>
+                        {tx.subcategoryId && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-mono">
+                            {state.categories.find(c => c.id === tx.subcategoryId)?.name}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono mt-0.5">
                         <span>{account?.name || 'Wallet'}</span>

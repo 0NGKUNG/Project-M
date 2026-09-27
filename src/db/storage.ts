@@ -8,16 +8,21 @@ export const DEFAULT_ACCOUNTS: Account[] = [
 ];
 
 export const DEFAULT_CATEGORIES: Category[] = [
-  // Expenses
+  // Expenses - Core Parents
   { id: 'cat_food', name: 'Food & Dining', type: 'expense', icon: 'Utensils' },
-  { id: 'cat_coffee', name: 'Coffee & Drinks', type: 'expense', icon: 'Coffee' },
-  { id: 'cat_groceries', name: 'Groceries', type: 'expense', icon: 'ShoppingCart' },
-  { id: 'cat_transport', name: 'Transit & Fuel', type: 'expense', icon: 'Car' },
+  { id: 'sub_coffee', name: 'Coffee & Drinks', type: 'expense', icon: 'Coffee', parentId: 'cat_food' },
+  { id: 'sub_groceries', name: 'Groceries', type: 'expense', icon: 'ShoppingCart', parentId: 'cat_food' },
+  { id: 'sub_restaurant', name: 'Restaurants', type: 'expense', icon: 'Utensils', parentId: 'cat_food' },
+
+  { id: 'cat_transport', name: 'Transit & Auto', type: 'expense', icon: 'Car' },
+  { id: 'sub_fuel', name: 'Fuel / Gas', type: 'expense', icon: 'Car', parentId: 'cat_transport' },
+  { id: 'sub_rideshare', name: 'Taxi & Train', type: 'expense', icon: 'Car', parentId: 'cat_transport' },
+
   { id: 'cat_housing', name: 'Rent & Utilities', type: 'expense', icon: 'Home' },
   { id: 'cat_entertainment', name: 'Entertainment', type: 'expense', icon: 'Film' },
   { id: 'cat_shopping', name: 'Shopping', type: 'expense', icon: 'ShoppingBag' },
   { id: 'cat_health', name: 'Health & Fitness', type: 'expense', icon: 'HeartPulse' },
-  { id: 'cat_tech', name: 'Electronics & Subscriptions', type: 'expense', icon: 'Laptop' },
+  { id: 'cat_tech', name: 'Tech & Subscriptions', type: 'expense', icon: 'Laptop' },
   { id: 'cat_other_exp', name: 'General & Misc', type: 'expense', icon: 'MoreHorizontal' },
 
   // Income

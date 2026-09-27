@@ -15,6 +15,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
   const [type, setType] = useState<TransactionType>('expense');
   const [amountStr, setAmountStr] = useState<string>('0');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | undefined>(undefined);
   const [selectedAccountId, setSelectedAccountId] = useState<string>(
     defaultAccountId || state.accounts[0]?.id || ''
   );
@@ -22,6 +23,16 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Parent categories (no parentId)
+  const parentCategories = state.categories.filter(
+    (c) => !c.parentId && c.type === (type === 'income' ? 'income' : 'expense')
+  );
+
+  // Subcategories for the selected parent category
+  const availableSubcategories = state.categories.filter(
+    (c) => c.parentId === selectedCategoryId
+  );
 
   // Update selected account whenever defaultAccountId or state.accounts changes
   useEffect(() => {
@@ -41,15 +52,14 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
     }
   }, [isOpen]);
 
-  // Filter categories by type
-  const availableCategories = state.categories.filter((c) => c.type === (type === 'income' ? 'income' : 'expense'));
 
-  // Ensure an active category is selected
+  // Ensure an active parent category is selected
   useEffect(() => {
-    if (availableCategories.length > 0 && (!selectedCategoryId || !availableCategories.find(c => c.id === selectedCategoryId))) {
-      setSelectedCategoryId(availableCategories[0].id);
+    if (parentCategories.length > 0 && (!selectedCategoryId || !parentCategories.find(c => c.id === selectedCategoryId))) {
+      setSelectedCategoryId(parentCategories[0].id);
+      setSelectedSubcategoryId(undefined);
     }
-  }, [type, availableCategories, selectedCategoryId]);
+  }, [type, parentCategories, selectedCategoryId]);
 
   // Global Keyboard listener for Laptop/PC keyboard input
   useEffect(() => {
@@ -128,6 +138,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       type,
       amount: parsedAmount,
       categoryId: type === 'transfer' ? 'transfer' : selectedCategoryId,
+      subcategoryId: type === 'transfer' ? undefined : selectedSubcategoryId,
       accountId: selectedAccountId,
       toAccountId: type === 'transfer' ? toAccountId : undefined,
       date,
@@ -136,6 +147,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
     setAmountStr('0');
     setNote('');
+    setSelectedSubcategoryId(undefined);
     onClose();
   };
 
@@ -296,18 +308,22 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
           {/* Categories Grid (for income/expense) */}
           {type !== 'transfer' && (
-            <div className="pt-1">
-              <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block mb-1.5 px-1">
+            <div className="pt-1 space-y-2">
+              <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block px-1">
                 Category
               </span>
               <div className="grid grid-cols-4 gap-2">
-                {availableCategories.map((cat) => {
+                {parentCategories.map((cat) => {
                   const isSelected = selectedCategoryId === cat.id;
                   return (
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => { triggerHaptic(); setSelectedCategoryId(cat.id); }}
+                      onClick={() => {
+                        triggerHaptic();
+                        setSelectedCategoryId(cat.id);
+                        setSelectedSubcategoryId(undefined);
+                      }}
                       className={`flex flex-col items-center justify-center p-2 rounded-2xl text-center transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-zinc-200 text-black shadow-sm font-semibold'
@@ -322,6 +338,51 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                   );
                 })}
               </div>
+
+              {/* Subcategories Selector (if any exist for selected parent) */}
+              {availableSubcategories.length > 0 && (
+                <div className="pt-1.5 space-y-1">
+                  <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider block px-1">
+                    Subcategory (optional)
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        setSelectedSubcategoryId(undefined);
+                      }}
+                      className={`px-2.5 py-1 rounded-xl text-[10px] font-mono transition-all cursor-pointer ${
+                        selectedSubcategoryId === undefined
+                          ? 'bg-white text-black font-bold'
+                          : 'bg-[#141418] text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      General
+                    </button>
+                    {availableSubcategories.map((sub) => {
+                      const isSubSelected = selectedSubcategoryId === sub.id;
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => {
+                            triggerHaptic();
+                            setSelectedSubcategoryId(sub.id);
+                          }}
+                          className={`px-2.5 py-1 rounded-xl text-[10px] font-mono transition-all cursor-pointer ${
+                            isSubSelected
+                              ? 'bg-white text-black font-bold'
+                              : 'bg-[#141418] text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {sub.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

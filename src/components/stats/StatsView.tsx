@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Flame
+  Flame,
+  Target,
+  AlertCircle
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -140,6 +142,49 @@ export const StatsView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Target Spending Goal Progress for Selected Period */}
+      {(() => {
+        const goalLimit = timeRange === 'week' ? state.settings.goals?.weekly : timeRange === 'month' ? state.settings.goals?.monthly : undefined;
+        if (!goalLimit || goalLimit <= 0) return null;
+        const progress = Math.min(100, Math.round((totalExpense / goalLimit) * 100));
+        const isOver = totalExpense > goalLimit;
+
+        return (
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-white">
+                <Target size={15} className="text-zinc-400" />
+                <span className="capitalize">{timeRange} Spending Limit</span>
+              </div>
+              <span className="text-[10px] font-mono text-zinc-400">
+                {progress}% used
+              </span>
+            </div>
+
+            <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isOver ? 'bg-rose-500' : progress > 85 ? 'bg-amber-400' : 'bg-white'
+                }`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+
+            <div className="flex justify-between items-center text-[11px] font-mono text-zinc-400">
+              <span>{formatCurrency(totalExpense, state.settings.currencySymbol)} spent</span>
+              <span>Target: {formatCurrency(goalLimit, state.settings.currencySymbol)}</span>
+            </div>
+
+            {isOver && (
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-rose-400 pt-0.5">
+                <AlertCircle size={12} />
+                <span>Over budget by {formatCurrency(totalExpense - goalLimit, state.settings.currencySymbol)}</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Cashflow Graph */}
       <SpendingChart />

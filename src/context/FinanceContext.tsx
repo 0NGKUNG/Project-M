@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import type { Account, Budget, DebtItem, FinanceSettings, FinanceState, RecurringItem, Transaction } from '../types/finance';
+import type { Account, Budget, Category, DebtItem, FinanceSettings, FinanceState, RecurringItem, Transaction } from '../types/finance';
 import { loadFinanceData, saveFinanceData, DEFAULT_ACCOUNTS, DEFAULT_CATEGORIES } from '../db/storage';
 import { supabase, isSupabaseConfigured } from '../db/supabaseClient';
 
@@ -16,6 +16,8 @@ interface FinanceContextType {
   addBudget: (budget: Omit<Budget, 'id'>) => void;
   updateBudget: (budget: Budget) => void;
   deleteBudget: (id: string) => void;
+  addCategory: (category: Omit<Category, 'id'>) => void;
+  deleteCategory: (id: string) => void;
   addRecurring: (item: Omit<RecurringItem, 'id'>) => void;
   updateRecurring: (item: RecurringItem) => void;
   deleteRecurring: (id: string) => void;
@@ -331,6 +333,39 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const addCategory = (catData: Omit<Category, 'id'>) => {
+    triggerHaptic();
+    const newCategory: Category = {
+      ...catData,
+      id: 'cat_' + Date.now(),
+    };
+    setState((prev) => ({
+      ...prev,
+      categories: [...prev.categories, newCategory],
+    }));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('categories').insert({
+        id: newCategory.id,
+        name: newCategory.name,
+        type: newCategory.type,
+        icon: newCategory.icon,
+      }).then();
+    }
+  };
+
+  const deleteCategory = (id: string) => {
+    triggerHaptic();
+    setState((prev) => ({
+      ...prev,
+      categories: prev.categories.filter((c) => c.id !== id && c.parentId !== id),
+    }));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('categories').delete().eq('id', id).then();
+    }
+  };
+
   const addRecurring = (itemData: Omit<RecurringItem, 'id'>) => {
     triggerHaptic();
     const newItem: RecurringItem = {
@@ -537,6 +572,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addBudget,
         updateBudget,
         deleteBudget,
+        addCategory,
+        deleteCategory,
         addRecurring,
         updateRecurring,
         deleteRecurring,
