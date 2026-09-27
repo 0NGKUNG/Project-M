@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Wallet, 
-  CreditCard, 
   Plus, 
   PieChart, 
-  ChevronRight,
   RefreshCw,
   Users
 } from 'lucide-react';
@@ -68,7 +66,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between pt-1">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white font-mono">PORTFOLIO & ACCOUNTS</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white font-mono">ACCOUNTS</h2>
         </div>
 
         <button
@@ -226,44 +224,11 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   <div
                     key={acc.id}
                     onClick={() => onSelectAccount(acc)}
-                    className="p-3.5 sm:p-5 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between group active:scale-98 shadow-sm"
+                    className="p-3.5 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer flex flex-col gap-1.5 active:scale-98 shadow-sm"
                   >
-                    <div>
-                      <div className="flex items-center justify-between mb-2 sm:mb-3">
-                        <div className="flex items-center gap-2 truncate">
-                          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
-                            {acc.type === 'cash' ? <Wallet size={14} /> : <CreditCard size={14} />}
-                          </div>
-                          <div className="truncate">
-                            <div className="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors truncate">
-                              {acc.name}
-                            </div>
-                            <span className="text-[9px] sm:text-[10px] text-zinc-500 uppercase font-mono block">
-                              {acc.type}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Percentage Pill */}
-                        <div className="px-1.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] sm:text-[11px] font-mono text-zinc-300 font-semibold shrink-0">
-                          {acc.percentage}%
-                        </div>
-                      </div>
-
-                      <div className="mt-2">
-                        <div className="text-[9px] sm:text-[10px] text-zinc-500 font-mono uppercase">Balance</div>
-                        <div className={`text-base sm:text-xl font-extrabold font-mono mt-0.5 truncate ${
-                          isNegative ? 'text-rose-400' : 'text-white'
-                        }`}>
-                          {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2.5 sm:pt-4 mt-2 sm:mt-3 border-t border-zinc-900/80 flex items-center justify-between text-[10px] sm:text-[11px] text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                      <span className="hidden sm:inline">View ledger</span>
-                      <span className="sm:hidden">Ledger</span>
-                      <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                    <div className="text-xs font-bold text-white truncate">{acc.name}</div>
+                    <div className={`text-sm font-extrabold font-mono truncate ${isNegative ? 'text-rose-400' : 'text-zinc-300'}`}>
+                      {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
                     </div>
                   </div>
                 );

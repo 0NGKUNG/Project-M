@@ -79,11 +79,8 @@ export const SettingsView: React.FC = () => {
       <div className="flex items-center justify-between pt-1">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white font-mono uppercase">
-            SETTINGS & VAULT
+            SETTINGS
           </h2>
-          <p className="text-xs text-zinc-500 font-mono">
-            Preferences, Wallets & Offline Backups
-          </p>
         </div>
       </div>
 
