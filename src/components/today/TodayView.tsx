@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
+import { EditTransactionModal } from '../transactions/EditTransactionModal';
+import type { Transaction } from '../../types/finance';
 
 interface TodayViewProps {
   onOpenQuickAdd: (preselectedAccId?: string) => void;
@@ -22,6 +24,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(() => String(state.settings.goals?.daily || ''));
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
@@ -241,10 +244,11 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
               return (
                 <div
                   key={tx.id}
-                  className="p-3.5 rounded-2xl bg-[#101014] border border-zinc-900/50 flex items-center justify-between hover:border-zinc-800 transition-colors"
+                  onClick={() => setEditingTransaction(tx)}
+                  className="p-3.5 rounded-2xl bg-[#101014] border border-zinc-900/50 flex items-center justify-between hover:border-zinc-700 transition-all cursor-pointer group active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors">
                       <CategoryIcon name={category?.icon || 'Tag'} size={18} />
                     </div>
                     <div>
@@ -287,6 +291,12 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
           </div>
         )}
       </div>
+
+      {/* Edit / Delete Transaction Modal */}
+      <EditTransactionModal
+        transaction={editingTransaction}
+        onClose={() => setEditingTransaction(null)}
+      />
     </div>
   );
 };

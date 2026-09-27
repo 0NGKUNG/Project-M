@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
-import type { Account } from '../../types/finance';
+import type { Account, Transaction } from '../../types/finance';
+import { EditTransactionModal } from '../transactions/EditTransactionModal';
 
 interface AccountDetailModalProps {
   account: Account | null;
@@ -16,6 +17,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   onOpenQuickAddWithAccount,
 }) => {
   const { state, accountBalances } = useFinance();
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   if (!account) return null;
 
@@ -140,7 +142,11 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                 const cat = getCategory(tx.categoryId);
 
                 return (
-                  <div key={tx.id} className="p-3.5 flex items-center justify-between hover:bg-white/[0.02]">
+                  <div
+                    key={tx.id}
+                    onClick={() => setEditingTransaction(tx)}
+                    className="p-3.5 flex items-center justify-between hover:bg-white/[0.04] transition-colors cursor-pointer group"
+                  >
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                         isIncoming ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
@@ -148,7 +154,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                         <CategoryIcon name={cat?.icon || 'Receipt'} size={17} />
                       </div>
                       <div>
-                        <div className="text-xs font-semibold text-white">
+                        <div className="text-xs font-semibold text-white group-hover:text-zinc-200">
                           {tx.type === 'transfer' ? 'Transfer' : (cat?.name || 'Other')}
                         </div>
                         <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
@@ -168,6 +174,12 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Edit / Delete Transaction Modal */}
+        <EditTransactionModal
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+        />
       </div>
     </div>
   );
