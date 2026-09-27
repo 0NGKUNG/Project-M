@@ -57,7 +57,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
+    if (!supabase) {
+      setErrorMsg('Supabase is not configured. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in Vercel environment variables.');
+      return;
+    }
     setErrorMsg(null);
     setInfoMsg(null);
 
