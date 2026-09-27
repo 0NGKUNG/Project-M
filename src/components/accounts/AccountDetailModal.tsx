@@ -238,9 +238,12 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
         {/* Edit Account Modal */}
         {isEditingAccount && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs animate-fade-in">
+          <div 
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs animate-fade-in cursor-pointer"
+            onClick={() => setIsEditingAccount(false)}
+          >
             <div 
-              className="w-full max-w-sm bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4"
+              className="w-full max-w-sm bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">

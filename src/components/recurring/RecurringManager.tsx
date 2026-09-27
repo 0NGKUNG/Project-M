@@ -156,8 +156,14 @@ export const RecurringManager: React.FC = () => {
 
       {/* Add Recurring Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
-          <div className="w-full max-w-sm bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          onClick={() => setShowAddModal(false)}
+        >
+          <div 
+            className="w-full max-w-sm bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-base font-bold text-white font-mono">Add Recurring Transaction</h3>
 
             <form onSubmit={handleCreate} className="space-y-3">

@@ -71,8 +71,14 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-md bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+      onClick={onClose}
+    >
+      <div 
+        className="w-full max-w-md bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto cursor-default"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between pb-2 border-b border-zinc-900">
           <div className="flex items-center gap-2">
             <h3 className="text-base font-bold text-white font-mono">Edit Transaction</h3>
