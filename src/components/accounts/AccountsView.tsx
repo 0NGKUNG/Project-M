@@ -132,22 +132,30 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               {formatCurrency(totalNetWorth, state.settings.currencySymbol)}
             </div>
 
-            {/* Portfolio Distribution Segmented Bar */}
-            <div className="space-y-2">
+            {/* Portfolio Distribution Segmented Bar & Individual Account Progress Bars */}
+            <div className="space-y-4">
               <div className="flex justify-between items-center text-xs font-mono text-zinc-400">
                 <span className="flex items-center gap-1.5">
-                  <PieChart size={13} className="text-zinc-500" />
-                  <span>Asset Distribution (%)</span>
+                  <PieChart size={13} className="text-zinc-400" />
+                  <span>Asset Distribution</span>
                 </span>
-                <span className="text-[10px] text-zinc-500">100% Total</span>
+                <span className="text-[10px] text-zinc-500 font-mono">100% Total</span>
               </div>
 
-              {/* Segmented Visual Bar */}
-              <div className="w-full h-3 rounded-full bg-zinc-900 flex overflow-hidden gap-0.5 p-0.5 border border-zinc-800/80">
+              {/* Combined Segmented Visual Bar with distinct monochrome shades */}
+              <div className="w-full h-3 rounded-full bg-zinc-900 flex overflow-hidden gap-1 p-0.5 border border-zinc-800/80">
                 {accountStats.map((acc, idx) => {
                   if (acc.percentage <= 0) return null;
-                  const hues = ['bg-white', 'bg-zinc-400', 'bg-zinc-600', 'bg-zinc-700', 'bg-emerald-500'];
-                  const bg = hues[idx % hues.length];
+                  // Distinct, clearly discernible monochrome tones: White, Silver/Light Grey, Mid Grey, Dark Slate, Deep Charcoal
+                  const shades = [
+                    'bg-white',
+                    'bg-zinc-300',
+                    'bg-zinc-500',
+                    'bg-zinc-600',
+                    'bg-zinc-700',
+                    'bg-zinc-800',
+                  ];
+                  const bg = shades[idx % shades.length];
                   return (
                     <div
                       key={acc.id}
@@ -155,6 +163,49 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       className={`h-full rounded-xs transition-all ${bg}`}
                       style={{ width: `${acc.percentage}%` }}
                     />
+                  );
+                })}
+              </div>
+
+              {/* Individual Account Progress Bars List: a ----- 50%, b ---- 30% */}
+              <div className="space-y-2.5 pt-2 border-t border-zinc-900/90">
+                {accountStats.map((acc, idx) => {
+                  const dotColors = [
+                    'bg-white',
+                    'bg-zinc-300',
+                    'bg-zinc-500',
+                    'bg-zinc-600',
+                    'bg-zinc-700',
+                    'bg-zinc-800',
+                  ];
+                  const barBg = dotColors[idx % dotColors.length];
+
+                  return (
+                    <div key={acc.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${barBg} shrink-0`} />
+                          <span className="text-zinc-300 font-semibold truncate">{acc.name}</span>
+                          <span className="text-[10px] text-zinc-600 uppercase font-mono">({acc.type})</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[11px] text-zinc-500 font-mono">
+                            {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
+                          </span>
+                          <span className="text-xs font-bold text-white font-mono w-10 text-right">
+                            {acc.percentage}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Horizontal progress track */}
+                      <div className="w-full h-1.5 rounded-full bg-zinc-900 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${barBg}`}
+                          style={{ width: `${Math.max(2, acc.percentage)}%` }}
+                        />
+                      </div>
+                    </div>
                   );
                 })}
               </div>
