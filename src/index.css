@@ -17,6 +17,11 @@
   --accent-transfer: #60a5fa;
 }
 
+.font-display {
+  font-family: 'Chakra Petch', sans-serif;
+  letter-spacing: 0.08em;
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;

@@ -30,9 +30,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div>
         {/* Brand Header */}
         <div className="mb-8 px-2">
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-xl font-extrabold tracking-wider text-white leading-tight font-mono">N∅VA</h1>
-            <span className="text-[10px] text-zinc-500 font-mono">v1.0</span>
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">NØVA</h1>
+            <span className="text-[11px] text-zinc-500 font-mono">v1.0</span>
           </div>
           <p className="text-[11px] text-zinc-500 font-mono tracking-wider mt-0.5">ongkung.me / vault</p>
         </div>
