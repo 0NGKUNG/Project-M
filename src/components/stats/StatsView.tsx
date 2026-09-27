@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Flame,
-  Target,
-  AlertCircle
+  Target, 
+  AlertCircle 
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -68,53 +67,6 @@ export const StatsView: React.FC = () => {
 
   const netSavings = totalIncome - totalExpense;
   const savingsRate = totalIncome > 0 ? Math.max(0, Math.round((netSavings / totalIncome) * 100)) : 0;
-
-  // Heatmap generation: last 12 full calendar weeks (84 days) structured Sunday to Saturday
-  const heatmapWeeks = useMemo(() => {
-    const weeks: { date: string; amount: number; dayOfWeek: number }[][] = [];
-    const now = new Date();
-    // End on upcoming Saturday or today's Saturday
-    const currentDayOfWeek = now.getDay(); // 0 = Sun, 6 = Sat
-    const daysUntilEndOfWeek = 6 - currentDayOfWeek;
-    const endDate = new Date(now.getTime() + daysUntilEndOfWeek * 86400000);
-
-    // Total 12 weeks = 84 days
-    const totalDays = 12 * 7;
-    const startDate = new Date(endDate.getTime() - (totalDays - 1) * 86400000);
-
-    let currentWeek: { date: string; amount: number; dayOfWeek: number }[] = [];
-
-    for (let i = 0; i < totalDays; i++) {
-      const d = new Date(startDate.getTime() + i * 86400000);
-      const dStr = d.toISOString().split('T')[0];
-      const dayExp = state.transactions
-        .filter((tx) => tx.date === dStr && tx.type === 'expense')
-        .reduce((sum, tx) => sum + tx.amount, 0);
-
-      currentWeek.push({
-        date: dStr,
-        amount: dayExp,
-        dayOfWeek: d.getDay(),
-      });
-
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-    }
-
-    return weeks;
-  }, [state.transactions]);
-
-  const maxHeatmapDay = useMemo(() => {
-    let max = 1;
-    heatmapWeeks.forEach((w) => {
-      w.forEach((d) => {
-        if (d.amount > max) max = d.amount;
-      });
-    });
-    return max;
-  }, [heatmapWeeks]);
 
   const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
 
@@ -218,70 +170,6 @@ export const StatsView: React.FC = () => {
 
       {/* Cashflow Graph (Dynamic Bars based on TimeRange) */}
       <CashflowChart timeRange={timeRange} />
-
-      {/* Spending Activity Heatmap (GitHub style) */}
-      <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Flame size={16} className="text-amber-400" />
-            <span className="text-xs font-mono font-bold tracking-wider text-white uppercase">
-              12-Week Spending Intensity Heatmap
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
-            <span>Low</span>
-            <div className="w-2.5 h-2.5 rounded-xs bg-zinc-900" />
-            <div className="w-2.5 h-2.5 rounded-xs bg-emerald-950 border border-emerald-800/40" />
-            <div className="w-2.5 h-2.5 rounded-xs bg-emerald-700" />
-            <div className="w-2.5 h-2.5 rounded-xs bg-emerald-500" />
-            <div className="w-2.5 h-2.5 rounded-xs bg-white" />
-            <span>High</span>
-          </div>
-        </div>
-
-        {/* Heatmap Matrix with Day Labels */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {/* Day of week abbreviations */}
-          <div className="flex flex-col justify-between text-[9px] font-mono text-zinc-600 py-0.5 select-none shrink-0 pr-1">
-            <span>Sun</span>
-            <span>Mon</span>
-            <span>Tue</span>
-            <span>Wed</span>
-            <span>Thu</span>
-            <span>Fri</span>
-            <span>Sat</span>
-          </div>
-
-          {/* Week columns */}
-          <div className="flex gap-1.5">
-            {heatmapWeeks.map((week, wIdx) => (
-              <div key={wIdx} className="flex flex-col gap-1.5 shrink-0">
-                {week.map((d) => {
-                  const intensity = maxHeatmapDay > 0 ? d.amount / maxHeatmapDay : 0;
-                  const bgClass =
-                    d.amount === 0
-                      ? 'bg-[#18181f] border border-zinc-800/40'
-                      : intensity < 0.25
-                      ? 'bg-emerald-950 border border-emerald-800/50'
-                      : intensity < 0.6
-                      ? 'bg-emerald-700'
-                      : intensity < 0.85
-                      ? 'bg-emerald-500'
-                      : 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]';
-
-                  return (
-                    <div
-                      key={d.date}
-                      title={`${d.date}: ${formatCurrency(d.amount, state.settings.currencySymbol)}`}
-                      className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-xs ${bgClass} cursor-pointer transition-transform hover:scale-130`}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Top Outflows & Inflows */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
