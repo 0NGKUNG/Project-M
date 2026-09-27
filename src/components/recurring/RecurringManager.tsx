@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   RefreshCw, 
   Plus, 
@@ -10,6 +10,57 @@ import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
 import type { RecurringItem } from '../../types/finance';
 
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function computeNextDue(
+  frequency: RecurringItem['frequency'],
+  repeatEvery: number,
+  dayOfWeek: number,
+  dayOfMonth: number | 'last',
+  monthOfYear: number,
+): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (frequency === 'daily') {
+    const d = new Date(today);
+    d.setDate(d.getDate() + repeatEvery);
+    return d.toISOString().split('T')[0];
+  }
+
+  if (frequency === 'weekly') {
+    const d = new Date(today);
+    let diff = (dayOfWeek - d.getDay() + 7) % 7;
+    if (diff === 0) diff = 7 * repeatEvery;
+    else diff += 7 * (repeatEvery - 1);
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().split('T')[0];
+  }
+
+  if (frequency === 'monthly') {
+    const getDay = (year: number, month: number) =>
+      dayOfMonth === 'last'
+        ? new Date(year, month + 1, 0).getDate()
+        : (dayOfMonth as number);
+    let d = new Date(today.getFullYear(), today.getMonth(), getDay(today.getFullYear(), today.getMonth()));
+    if (d <= today) d = new Date(today.getFullYear(), today.getMonth() + repeatEvery, getDay(today.getFullYear(), today.getMonth() + repeatEvery));
+    return d.toISOString().split('T')[0];
+  }
+
+  if (frequency === 'yearly') {
+    const getDay = (year: number) =>
+      dayOfMonth === 'last'
+        ? new Date(year, monthOfYear + 1, 0).getDate()
+        : (dayOfMonth as number);
+    let d = new Date(today.getFullYear(), monthOfYear, getDay(today.getFullYear()));
+    if (d <= today) d = new Date(today.getFullYear() + repeatEvery, monthOfYear, getDay(today.getFullYear() + repeatEvery));
+    return d.toISOString().split('T')[0];
+  }
+
+  return today.toISOString().split('T')[0];
+}
+
 export const RecurringManager: React.FC = () => {
   const { state, addRecurring, updateRecurring, deleteRecurring } = useFinance();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -19,35 +70,51 @@ export const RecurringManager: React.FC = () => {
   const [categoryId, setCategoryId] = useState('');
   const [accountId, setAccountId] = useState('');
   const [frequency, setFrequency] = useState<RecurringItem['frequency']>('monthly');
-  const [nextDueDate, setNextDueDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [repeatEvery, setRepeatEvery] = useState(1);
+  const [dayOfWeek, setDayOfWeek] = useState(new Date().getDay());
+  const [dayOfMonth, setDayOfMonth] = useState<number | 'last'>(new Date().getDate());
+  const [monthOfYear, setMonthOfYear] = useState(new Date().getMonth());
 
   const recurringList = state.recurring || [];
+
+  const resetForm = () => {
+    setName('');
+    setAmount('');
+    setType('expense');
+    setCategoryId('');
+    setAccountId('');
+    setFrequency('monthly');
+    setRepeatEvery(1);
+    setDayOfWeek(new Date().getDay());
+    setDayOfMonth(new Date().getDate());
+    setMonthOfYear(new Date().getMonth());
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
     if (!name.trim() || !parsedAmount || parsedAmount <= 0) return;
 
+    const nextDueDate = computeNextDue(frequency, repeatEvery, dayOfWeek, dayOfMonth, monthOfYear);
+
     addRecurring({
       name: name.trim(),
       type,
       amount: parsedAmount,
-      categoryId: categoryId || state.categories[0]?.id || '',
+      categoryId: categoryId || state.categories.find(c => c.type === type)?.id || '',
       accountId: accountId || state.accounts[0]?.id || '',
       frequency,
       nextDueDate,
       isActive: true,
     });
 
-    setName('');
-    setAmount('');
+    resetForm();
     setShowAddModal(false);
   };
 
   const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
   const getAccount = (accId: string) => state.accounts.find((a) => a.id === accId);
 
-  // Total monthly commitment
   const totalMonthlyCommitment = recurringList.reduce((sum, item) => {
     if (!item.isActive || item.type !== 'expense') return sum;
     let factor = 1;
@@ -57,25 +124,32 @@ export const RecurringManager: React.FC = () => {
     return sum + item.amount * factor;
   }, 0);
 
+  const freqLabel = useCallback(() => {
+    const unit = frequency === 'daily' ? (repeatEvery === 1 ? 'day' : 'days')
+      : frequency === 'weekly' ? (repeatEvery === 1 ? 'week' : 'weeks')
+      : frequency === 'monthly' ? (repeatEvery === 1 ? 'month' : 'months')
+      : (repeatEvery === 1 ? 'year' : 'years');
+    return `Every ${repeatEvery} ${unit}`;
+  }, [frequency, repeatEvery]);
+
   return (
     <div className="space-y-4">
-      {/* Top Banner & Summary */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Recurring & Subscriptions ({recurringList.length})
+            Recurring &amp; Subscriptions ({recurringList.length})
           </span>
           <p className="text-[11px] text-zinc-500 font-mono">
             Est. Monthly Outflow: ~{formatCurrency(totalMonthlyCommitment, state.settings.currencySymbol)}
           </p>
         </div>
-
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-sm"
         >
           <Plus size={14} strokeWidth={2.8} />
-          <span>New Recurring</span>
+          <span>New</span>
         </button>
       </div>
 
@@ -119,13 +193,8 @@ export const RecurringManager: React.FC = () => {
                         </div>
                       </div>
                     </div>
-
-                    <div className="text-right">
-                      <div className={`text-sm font-bold font-mono ${
-                        isExpense ? 'text-white' : 'text-emerald-400'
-                      }`}>
-                        {isExpense ? '-' : '+'}{formatCurrency(item.amount, state.settings.currencySymbol)}
-                      </div>
+                    <div className={`text-sm font-bold font-mono ${isExpense ? 'text-white' : 'text-emerald-400'}`}>
+                      {isExpense ? '-' : '+'}{formatCurrency(item.amount, state.settings.currencySymbol)}
                     </div>
                   </div>
                 </div>
@@ -140,7 +209,6 @@ export const RecurringManager: React.FC = () => {
                     <CheckCircle2 size={13} />
                     <span>{item.isActive ? 'Active' : 'Paused'}</span>
                   </button>
-
                   <button
                     onClick={() => deleteRecurring(item.id)}
                     className="text-zinc-600 hover:text-rose-400 p-1 cursor-pointer transition-colors"
@@ -157,140 +225,210 @@ export const RecurringManager: React.FC = () => {
 
       {/* Add Recurring Modal */}
       {showAddModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
-          onClick={() => setShowAddModal(false)}
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          onClick={() => { resetForm(); setShowAddModal(false); }}
         >
-          <div 
-            className="w-full max-w-sm bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+          <div
+            className="w-full sm:max-w-sm bg-[#101014] rounded-t-3xl sm:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-bold text-white font-mono">Add Recurring Transaction</h3>
+            <div className="p-5 space-y-4">
+              <h3 className="text-sm font-bold text-white font-mono">New Recurring</h3>
 
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Netflix, Rent, Salary"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
-                  autoFocus
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+              <form onSubmit={handleCreate} className="space-y-3">
+                {/* Title */}
                 <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                    Type
-                  </label>
-                  <CustomSelect
-                    value={type}
-                    onChange={(val) => setType(val as 'expense' | 'income')}
-                    options={[
-                      { value: 'expense', label: 'Expense' },
-                      { value: 'income', label: 'Income' },
-                    ]}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                    Amount
-                  </label>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Title</label>
                   <input
-                    type="number"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                    type="text"
+                    placeholder="e.g. Netflix, Rent, Salary"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
+                    autoFocus
                     required
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                    Frequency
-                  </label>
-                  <CustomSelect
-                    value={frequency}
-                    onChange={(val) => setFrequency(val as RecurringItem['frequency'])}
-                    options={[
-                      { value: 'daily', label: 'Daily' },
-                      { value: 'weekly', label: 'Weekly' },
-                      { value: 'monthly', label: 'Monthly' },
-                      { value: 'yearly', label: 'Yearly' },
-                    ]}
-                  />
+                {/* Type + Amount */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Type</label>
+                    <CustomSelect
+                      value={type}
+                      onChange={(val) => setType(val as 'expense' | 'income')}
+                      options={[
+                        { value: 'expense', label: 'Expense' },
+                        { value: 'income', label: 'Income' },
+                      ]}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Amount</label>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                    Next Due Date
-                  </label>
-                  <input
-                    type="date"
-                    value={nextDueDate}
-                    onChange={(e) => setNextDueDate(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                    Wallet / Account
-                  </label>
-                  <CustomSelect
-                    value={accountId || state.accounts[0]?.id || ''}
-                    onChange={(val) => setAccountId(val)}
-                    options={state.accounts.map((a) => ({
-                      value: a.id,
-                      label: a.name,
-                    }))}
-                  />
+                {/* Wallet + Category */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Wallet</label>
+                    <CustomSelect
+                      value={accountId || state.accounts[0]?.id || ''}
+                      onChange={(val) => setAccountId(val)}
+                      options={state.accounts.map((a) => ({ value: a.id, label: a.name }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Category</label>
+                    <CustomSelect
+                      value={categoryId || state.categories.filter((c) => c.type === type)[0]?.id || ''}
+                      onChange={(val) => setCategoryId(val)}
+                      options={state.categories.filter((c) => c.type === type).map((c) => ({ value: c.id, label: c.name }))}
+                    />
+                  </div>
                 </div>
 
+                {/* ─── Frequency Picker ─── */}
                 <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                    Category
-                  </label>
-                  <CustomSelect
-                    value={categoryId || state.categories.filter((c) => c.type === type)[0]?.id || ''}
-                    onChange={(val) => setCategoryId(val)}
-                    options={state.categories
-                      .filter((c) => c.type === type)
-                      .map((c) => ({
-                        value: c.id,
-                        label: c.name,
-                      }))}
-                  />
-                </div>
-              </div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">Repeat</label>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
-                >
-                  Save Recurring
-                </button>
-              </div>
-            </form>
+                  {/* Tabs */}
+                  <div className="bg-[#16161d] rounded-xl p-1 flex gap-1 border border-zinc-800/60 mb-3">
+                    {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => { setFrequency(f); setRepeatEvery(1); }}
+                        className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono font-medium transition-all cursor-pointer ${
+                          frequency === f ? 'bg-white text-black font-bold shadow-sm' : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {f === 'daily' ? 'Day' : f === 'weekly' ? 'Week' : f === 'monthly' ? 'Month' : 'Year'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Weekly: day-of-week grid */}
+                  {frequency === 'weekly' && (
+                    <div className="grid grid-cols-7 gap-1 mb-3">
+                      {DAY_LABELS.map((day, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setDayOfWeek(i)}
+                          className={`py-2 rounded-xl text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                            dayOfWeek === i
+                              ? 'bg-white text-black'
+                              : 'bg-[#16161d] text-zinc-400 border border-zinc-800/60 hover:border-zinc-600'
+                          }`}
+                        >
+                          {day.slice(0, 2)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Monthly / Yearly: day-of-month grid */}
+                  {(frequency === 'monthly' || frequency === 'yearly') && (
+                    <>
+                      {/* Yearly: month picker */}
+                      {frequency === 'yearly' && (
+                        <div className="grid grid-cols-4 gap-1 mb-2">
+                          {MONTH_LABELS.map((m, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setMonthOfYear(i)}
+                              className={`py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                                monthOfYear === i
+                                  ? 'bg-white text-black'
+                                  : 'bg-[#16161d] text-zinc-400 border border-zinc-800/60 hover:border-zinc-600'
+                              }`}
+                            >
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Day-of-month grid */}
+                      <div className="grid grid-cols-7 gap-1 mb-3">
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setDayOfMonth(d)}
+                            className={`py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                              dayOfMonth === d
+                                ? 'bg-white text-black'
+                                : 'bg-[#16161d] text-zinc-400 border border-zinc-800/60 hover:border-zinc-600'
+                            }`}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setDayOfMonth('last')}
+                          className={`col-span-3 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                            dayOfMonth === 'last'
+                              ? 'bg-white text-black'
+                              : 'bg-[#16161d] text-zinc-400 border border-zinc-800/60 hover:border-zinc-600'
+                          }`}
+                        >
+                          End of month
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Interval +/- */}
+                  <div className="flex items-center gap-2 bg-[#16161d] rounded-xl border border-zinc-800/60 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setRepeatEvery(Math.max(1, repeatEvery - 1))}
+                      className="w-7 h-7 rounded-lg bg-zinc-800 text-white flex items-center justify-center text-base font-bold cursor-pointer hover:bg-zinc-700 transition-colors shrink-0"
+                    >
+                      −
+                    </button>
+                    <span className="flex-1 text-center text-xs font-mono text-white">{freqLabel()}</span>
+                    <button
+                      type="button"
+                      onClick={() => setRepeatEvery(repeatEvery + 1)}
+                      className="w-7 h-7 rounded-lg bg-zinc-800 text-white flex items-center justify-center text-base font-bold cursor-pointer hover:bg-zinc-700 transition-colors shrink-0"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { resetForm(); setShowAddModal(false); }}
+                    className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer active:scale-95 transition-all"
+                  >
+                    Save
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
