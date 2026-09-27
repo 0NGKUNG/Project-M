@@ -75,7 +75,7 @@ const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 // ─── Sub-page 1: Spending Goals (Range + Category breakdown) ──────────
 
 const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { state, addBudget, deleteBudget } = useFinance();
+  const { state, addBudget, updateBudget, deleteBudget } = useFinance();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Budget | null>(null);
 
@@ -95,6 +95,8 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [tempCatId, setTempCatId] = useState('');
   const [tempCatAmount, setTempCatAmount] = useState('');
 
+  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+
   const expenseCategories = useMemo(
     () => state.categories.filter((c) => c.type === 'expense' && !c.parentId),
     [state.categories]
@@ -102,7 +104,8 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const openCreateModal = () => {
     const now = new Date();
-    setName('Monthly Budget');
+    setEditingBudgetId(null);
+    setName('Spending Goal');
     setPeriod('monthly');
     setAmount('');
     setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]);
@@ -110,6 +113,20 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setCategoryAllocations([]);
     setTempCatId(expenseCategories[0]?.id || '');
     setTempCatAmount('');
+    setShowCreateModal(true);
+  };
+
+  const openEditModal = (b: Budget) => {
+    setEditingBudgetId(b.id);
+    setName(b.name || 'Spending Goal');
+    setPeriod(b.period || 'monthly');
+    setAmount(String(b.amount));
+    setStartDate(b.startDate || new Date().toISOString().split('T')[0]);
+    setEndDate(b.endDate || new Date().toISOString().split('T')[0]);
+    setCategoryAllocations(b.categories || []);
+    setTempCatId(expenseCategories[0]?.id || '');
+    setTempCatAmount('');
+    setSelectedGoal(null);
     setShowCreateModal(true);
   };
 
@@ -153,16 +170,29 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const totalAmount = parseFloat(amount);
     if (!totalAmount || totalAmount <= 0) return;
 
-    addBudget({
-      name: name.trim() || 'Spending Goal',
-      amount: totalAmount,
-      period,
-      startDate,
-      endDate,
-      categories: categoryAllocations,
-    });
+    if (editingBudgetId) {
+      updateBudget({
+        id: editingBudgetId,
+        name: name.trim() || 'Spending Goal',
+        amount: totalAmount,
+        period,
+        startDate,
+        endDate,
+        categories: categoryAllocations,
+      });
+    } else {
+      addBudget({
+        name: name.trim() || 'Spending Goal',
+        amount: totalAmount,
+        period,
+        startDate,
+        endDate,
+        categories: categoryAllocations,
+      });
+    }
 
     setShowCreateModal(false);
+    setEditingBudgetId(null);
   };
 
   // Helper to compute spendings in range for a budget
@@ -202,7 +232,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
           <div>
             <h2 className="text-base font-bold text-white font-mono">SPENDING GOALS</h2>
-            <div className="text-[10px] text-zinc-500 font-mono">Range &amp; Category Budgets</div>
+            <div className="text-[10px] text-zinc-500 font-mono">Custom Range &amp; Category Allocations</div>
           </div>
         </div>
 
@@ -215,78 +245,64 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </button>
       </div>
 
-      {/* List of Goals */}
+      {/* List of Goals matching reference 1 & 2 */}
       {state.budgets.length === 0 ? (
         <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/60 text-center space-y-2">
           <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
             <Target size={18} />
           </div>
-          <div className="text-xs text-zinc-400 font-medium">No spending goals active</div>
+          <div className="text-xs text-zinc-400 font-medium">No spending goals set</div>
           <p className="text-[10px] text-zinc-600 max-w-xs mx-auto">
-            Create a custom date range goal and break it down across categories like Essentials, Food, and General.
+            Create a date range goal and allocate limits for categories like Food, Essentials, or Savings.
           </p>
           <button
             onClick={openCreateModal}
             className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-black text-xs font-bold cursor-pointer"
           >
-            <Plus size={13} /> Create Budget
+            <Plus size={13} /> Add Goal
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {state.budgets.map((b) => {
             const { totalSpent, categorySpent } = getBudgetSpending(b);
             const percent = Math.min(100, Math.round((totalSpent / b.amount) * 100));
-            const remaining = Math.max(0, b.amount - totalSpent);
 
             return (
               <div
                 key={b.id}
                 onClick={() => setSelectedGoal(b)}
-                className="p-4 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer space-y-3 active:scale-99 shadow-sm"
+                className="space-y-2 cursor-pointer active:scale-99 transition-all"
               >
-                {/* Header info */}
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase text-zinc-400 px-1.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800">
-                      {b.period}
-                    </span>
-                    <span className="text-zinc-200 font-bold truncate">{b.name || 'Goal'}</span>
-                  </div>
-                  <span className="text-[10px] text-zinc-500 font-mono">
-                    {b.startDate} — {b.endDate}
+                {/* Header row: Red-tinted period name (e.g. Monthly) + Date range */}
+                <div className="flex items-center justify-between text-xs font-mono px-1">
+                  <span className="font-bold text-rose-400">
+                    {b.period === 'daily' ? 'Daily' : b.period === 'weekly' ? 'Weekly' : b.period === 'monthly' ? 'Monthly' : 'Custom Range'}
+                  </span>
+                  <span className="text-[11px] text-zinc-400 font-bold">
+                    {b.startDate} ━ {b.endDate}
                   </span>
                 </div>
 
-                {/* Overall banner card */}
-                <div className="p-3 rounded-xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between">
+                {/* Overalls banner card (Reference styling) */}
+                <div className="p-3.5 rounded-2xl bg-[#16161f] border border-zinc-800/80 flex items-center justify-between shadow-xs">
                   <div>
-                    <div className="text-[10px] text-zinc-400 uppercase font-mono">Overalls</div>
-                    <div className="text-base font-extrabold text-white font-mono">
+                    <div className="text-xs font-bold text-white font-mono">Overalls</div>
+                    <div className="text-xs text-zinc-400 font-mono mt-0.5">
                       {formatCurrency(b.amount, state.settings.currencySymbol)}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs font-bold text-zinc-300 font-mono">{percent}% used</div>
-                    <div className="text-[10px] text-zinc-500 font-mono">
-                      {formatCurrency(remaining, state.settings.currencySymbol)} left
+                    <div className="text-xs font-bold text-white font-mono">{percent}%</div>
+                    <div className="text-xs text-zinc-400 font-mono mt-0.5">
+                      {formatCurrency(totalSpent, state.settings.currencySymbol)}
                     </div>
                   </div>
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-full h-1.5 rounded-full bg-zinc-900 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      percent > 90 ? 'bg-rose-500' : percent > 75 ? 'bg-amber-400' : 'bg-white'
-                    }`}
-                    style={{ width: `${percent}%` }}
-                  />
-                </div>
-
-                {/* Category chips if any */}
+                {/* Subcategory mini chips row (Reference styling) */}
                 {b.categories && b.categories.length > 0 && (
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-0.5">
                     {b.categories.map((catAlloc) => {
                       const cat = state.categories.find((c) => c.id === catAlloc.categoryId);
                       const catUsed = categorySpent[catAlloc.categoryId] || 0;
@@ -295,17 +311,15 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       return (
                         <div
                           key={catAlloc.categoryId}
-                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800/80 shrink-0 text-xs"
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-[#121218] border border-zinc-800/60 shrink-0 text-xs shadow-xs"
                         >
-                          <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300">
-                            <CategoryIcon name={cat?.icon || 'Tag'} size={12} />
+                          <div className="w-7 h-7 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-200">
+                            <CategoryIcon name={cat?.icon || 'Tag'} size={13} />
                           </div>
                           <div>
-                            <div className="text-[10px] font-bold text-white truncate max-w-[80px]">
-                              {cat?.name || 'Category'}
-                            </div>
-                            <div className="text-[9px] text-zinc-400 font-mono">
-                              {catPercent}% • {formatCurrency(catAlloc.amount, state.settings.currencySymbol)}
+                            <div className="text-[9px] font-bold text-zinc-300 font-mono">{catPercent}%</div>
+                            <div className="text-[10px] text-white font-bold font-mono">
+                              {formatCurrency(catAlloc.amount, state.settings.currencySymbol)}
                             </div>
                           </div>
                         </div>
@@ -319,7 +333,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
       )}
 
-      {/* Goal Detail & Action Sheet Modal */}
+      {/* Goal Detail & Action Sheet Modal (Matching 1st reference screenshot) */}
       {selectedGoal && (() => {
         const { totalSpent, categorySpent } = getBudgetSpending(selectedGoal);
         const percent = Math.min(100, Math.round((totalSpent / selectedGoal.amount) * 100));
@@ -339,38 +353,28 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             onClick={() => setSelectedGoal(null)}
           >
             <div
-              className="w-full sm:max-w-md bg-[#101014] rounded-t-3xl sm:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-4"
+              className="w-full sm:max-w-sm bg-[#101014] rounded-t-3xl sm:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-3"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between pb-2 border-b border-zinc-900">
-                <span className="text-xs font-mono font-bold text-zinc-400 uppercase">
-                  {selectedGoal.period} Budget Details
-                </span>
-                <span className="text-xs font-mono text-zinc-500">
-                  {selectedGoal.startDate} — {selectedGoal.endDate}
-                </span>
-              </div>
-
-              {/* Overalls Highlight Card */}
-              <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
+              {/* Overalls Big Highlight Card */}
+              <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between shadow-xs">
                 <div>
-                  <div className="text-xs text-zinc-400 font-mono uppercase font-bold">Overalls</div>
-                  <div className="text-2xl font-extrabold text-white font-mono mt-0.5">
+                  <div className="text-xs font-bold text-white font-mono">Overalls</div>
+                  <div className="text-xs text-zinc-400 font-mono mt-0.5">
                     {formatCurrency(selectedGoal.amount, state.settings.currencySymbol)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-white font-mono">{percent}%</div>
-                  <div className="text-xs text-zinc-400 font-mono">
-                    {formatCurrency(totalSpent, state.settings.currencySymbol)} spent
+                  <div className="text-xs font-bold text-white font-mono">{percent}%</div>
+                  <div className="text-xs text-zinc-400 font-mono mt-0.5">
+                    {formatCurrency(totalSpent, state.settings.currencySymbol)}
                   </div>
                 </div>
               </div>
 
-              {/* Category Breakdown list */}
+              {/* Category Breakdown list (Reference style cards) */}
               {selectedGoal.categories && selectedGoal.categories.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-[10px] uppercase font-mono font-bold text-zinc-500">Category Allocations</div>
                   {selectedGoal.categories.map((c) => {
                     const cat = state.categories.find((item) => item.id === c.categoryId);
                     const spent = categorySpent[c.categoryId] || 0;
@@ -379,24 +383,19 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     return (
                       <div
                         key={c.categoryId}
-                        className="p-3 rounded-xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between text-xs"
+                        className="p-3 rounded-2xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between text-xs"
                       >
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-300">
-                            <CategoryIcon name={cat?.icon || 'Tag'} size={14} />
+                          <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-200">
+                            <CategoryIcon name={cat?.icon || 'Tag'} size={15} />
                           </div>
-                          <div>
-                            <div className="font-bold text-white">{cat?.name || 'Category'}</div>
-                            <div className="text-[10px] text-zinc-500 font-mono">
-                              Limit: {formatCurrency(c.amount, state.settings.currencySymbol)}
-                            </div>
-                          </div>
+                          <div className="font-bold text-white">{cat?.name || 'Category'}</div>
                         </div>
 
                         <div className="text-right">
-                          <div className="font-mono font-bold text-zinc-300">{catPct}%</div>
-                          <div className="text-[10px] text-zinc-500 font-mono">
-                            {formatCurrency(spent, state.settings.currencySymbol)}
+                          <div className="font-mono font-bold text-white text-xs">{catPct}%</div>
+                          <div className="text-[11px] text-zinc-400 font-mono">
+                            {formatCurrency(c.amount, state.settings.currencySymbol)}
                           </div>
                         </div>
                       </div>
@@ -405,24 +404,32 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
               )}
 
-              {/* Stats Footer */}
-              <div className="p-3 rounded-xl bg-black/40 border border-zinc-900 space-y-1.5 text-xs font-mono">
-                <div className="flex justify-between text-zinc-400">
-                  <span>Days Remaining:</span>
+              {/* Stats Footer (Days Remaining, Daily Remaining) */}
+              <div className="pt-2 border-t border-zinc-900 space-y-1.5 text-xs font-mono text-zinc-400">
+                <div className="flex justify-between">
+                  <span>Period</span>
+                  <span className="text-white capitalize">{selectedGoal.period}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Date Range</span>
+                  <span className="text-white">{selectedGoal.startDate} ━ {selectedGoal.endDate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Days Remaining</span>
                   <span className="text-white font-bold">{daysLeft} days</span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
-                  <span>Daily Allowance Remaining:</span>
+                <div className="flex justify-between">
+                  <span>Daily Allowance</span>
                   <span className="text-emerald-400 font-bold">
-                    {state.settings.currencySymbol}
-                    {dailyAllowance} / day
+                    {state.settings.currencySymbol}{dailyAllowance} / day
                   </span>
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons: Delete | Edit | Close (Reference style 3-button footer) */}
               <div className="flex items-center gap-2 pt-2">
                 <button
+                  type="button"
                   onClick={() => {
                     deleteBudget(selectedGoal.id);
                     setSelectedGoal(null);
@@ -432,8 +439,16 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   Delete
                 </button>
                 <button
+                  type="button"
+                  onClick={() => openEditModal(selectedGoal)}
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-mono font-bold transition-all cursor-pointer text-center"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSelectedGoal(null)}
-                  className="flex-1 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold transition-all cursor-pointer text-center"
+                  className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold transition-all cursor-pointer text-center"
                 >
                   Close
                 </button>
