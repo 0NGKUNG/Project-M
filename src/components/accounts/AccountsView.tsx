@@ -118,11 +118,10 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           <div className="bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-3xl p-7 border border-zinc-900/60 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex items-center justify-between text-zinc-400 text-xs font-mono mb-2">
+            <div className="flex items-center text-zinc-400 text-xs font-mono mb-2">
               <span className="flex items-center gap-2 uppercase tracking-widest text-zinc-400 font-semibold">
                 <Wallet size={16} /> Total Combined Net Worth
               </span>
-              <span className="text-[10px] text-zinc-500 font-mono">{state.accounts.length} Active Accounts</span>
             </div>
 
             <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white mb-6">

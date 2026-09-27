@@ -177,7 +177,7 @@ export const RecurringManager: React.FC = () => {
                   placeholder="e.g. Netflix, Rent, Salary"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
                   autoFocus
                   required
                 />
@@ -207,7 +207,7 @@ export const RecurringManager: React.FC = () => {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none"
+                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
                     required
                   />
                 </div>
@@ -238,7 +238,7 @@ export const RecurringManager: React.FC = () => {
                     type="date"
                     value={nextDueDate}
                     onChange={(e) => setNextDueDate(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none"
+                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
                   />
                 </div>
               </div>

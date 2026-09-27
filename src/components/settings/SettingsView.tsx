@@ -165,52 +165,78 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
-          {/* Spending Goals (Day, Week, Month) */}
-          <div className="pt-3 border-t border-zinc-900 space-y-2">
-            <div>
-              <div className="text-xs text-white font-medium">Spending Goals & Limits</div>
-              <div className="text-[10px] text-zinc-500">Cap your outflows per day, week, and month</div>
-            </div>
-            <div className="grid grid-cols-3 gap-2 pt-1">
+        </div>
+
+        {/* Spending Goals & Categories */}
+        <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 space-y-5 shadow-sm md:col-span-2">
+          <span className="text-xs font-mono uppercase font-bold tracking-wider text-zinc-400 block">
+            Spending Goals &amp; Categories
+          </span>
+
+          {/* Spending Limits */}
+          <div className="space-y-2">
+            <div className="text-[10px] text-zinc-500 uppercase font-mono font-bold">Outflow Limits</div>
+            <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Day Limit</label>
+                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Day</label>
                 <input
                   type="number"
-                  placeholder="e.g. 500"
+                  placeholder="500"
                   value={state.settings.goals?.daily || ''}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value) || undefined;
                     updateSettings({ goals: { ...state.settings.goals, daily: val } });
                   }}
-                  className="w-full bg-[#16161d] rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
                 />
               </div>
               <div>
-                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Week Limit</label>
+                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Week</label>
                 <input
                   type="number"
-                  placeholder="e.g. 3000"
+                  placeholder="3000"
                   value={state.settings.goals?.weekly || ''}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value) || undefined;
                     updateSettings({ goals: { ...state.settings.goals, weekly: val } });
                   }}
-                  className="w-full bg-[#16161d] rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
                 />
               </div>
               <div>
-                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Month Limit</label>
+                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Month</label>
                 <input
                   type="number"
-                  placeholder="e.g. 15000"
+                  placeholder="15000"
                   value={state.settings.goals?.monthly || ''}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value) || undefined;
                     updateSettings({ goals: { ...state.settings.goals, monthly: val } });
                   }}
-                  className="w-full bg-[#16161d] rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Categories */}
+          <div className="pt-4 border-t border-zinc-900 space-y-3">
+            <div className="text-[10px] text-zinc-500 uppercase font-mono font-bold">Categories</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {['expense', 'income'].map((catType) => (
+                <div key={catType}>
+                  <div className={`text-[10px] font-bold font-mono mb-1.5 ${catType === 'expense' ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {catType === 'expense' ? 'Expenses' : 'Income'}
+                  </div>
+                  <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                    {state.categories.filter((c) => c.type === catType).map((cat) => (
+                      <div key={cat.id} className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#16161d] border border-zinc-800/60">
+                        <span className="text-xs text-white font-medium truncate">{cat.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

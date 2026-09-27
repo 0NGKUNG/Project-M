@@ -32,6 +32,7 @@ export const AppContent: React.FC = () => {
 
   // Switch tab and smooth scroll on mobile container
   const handleTabChange = (tab: NavTab) => {
+    if (tab !== currentTab && navigator.vibrate) navigator.vibrate(8);
     setCurrentTab(tab);
     const tabIndex = TABS.indexOf(tab);
     if (containerRef.current && tabIndex !== -1) {
@@ -39,11 +40,11 @@ export const AppContent: React.FC = () => {
       const width = containerRef.current.clientWidth;
       containerRef.current.scrollTo({
         left: tabIndex * width,
-        behavior: 'smooth',
+        behavior: 'instant' as ScrollBehavior,
       });
       setTimeout(() => {
         isScrollingFromCode.current = false;
-      }, 400);
+      }, 150);
     }
   };
 
