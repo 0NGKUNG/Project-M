@@ -38,7 +38,7 @@ const Row: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`w-full flex items-center gap-3 py-3 px-4 text-left transition-colors cursor-pointer ${
+    className={`w-full flex items-center gap-3 py-3 px-4 text-left transition-colors cursor-pointer first:rounded-t-2xl last:rounded-b-2xl ${
       onClick ? 'active:bg-zinc-900/60 hover:bg-zinc-900/40' : 'cursor-default'
     }`}
   >
@@ -67,7 +67,7 @@ const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 );
 
 const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="bg-[#101014] rounded-2xl border border-zinc-900/60 overflow-hidden divide-y divide-zinc-900/70">
+  <div className="bg-[#101014] rounded-2xl border border-zinc-900/60 divide-y divide-zinc-900/70">
     {children}
   </div>
 );
