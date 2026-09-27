@@ -49,7 +49,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="flex items-center justify-between pt-1">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white font-mono">NULLVAULT</h1>
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-wider text-white font-mono">N∅VA</h1>
             <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono ${
                 isCloudSynced 
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 

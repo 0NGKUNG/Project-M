@@ -138,7 +138,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
         {/* Brand Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold font-mono tracking-tight text-white leading-tight">NULLVAULT</h1>
+            <h1 className="text-lg font-extrabold font-mono tracking-wider text-white leading-tight">N∅VA</h1>
             <span className="text-[10px] text-zinc-500 font-mono">v1.0</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-[10px] font-mono text-zinc-400">
