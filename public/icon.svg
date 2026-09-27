@@ -1,23 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <rect width="512" height="512" rx="128" fill="#060608"/>
   <rect x="24" y="24" width="464" height="464" rx="104" fill="none" stroke="#1f1f24" stroke-width="4"/>
-  
-  <g transform="translate(256, 256) scale(3.4) translate(-50, -50)">
-    <!-- Outer concentric ring -->
-    <circle cx="50" cy="50" r="32" stroke="#ffffff" stroke-width="1.75" stroke-opacity="0.35" fill="none" />
-    
-    <!-- Main circle ring -->
-    <circle cx="50" cy="50" r="26" stroke="#ffffff" stroke-width="3.5" fill="none" />
-
-    <!-- Top caliper eye -->
-    <path d="M 33 22 C 40 18, 60 18, 67 22 C 61 24, 39 24, 33 22 Z" fill="#ffffff" />
-    <circle cx="50" cy="22" r="2.2" fill="#060608" />
-
-    <!-- Bottom caliper eye -->
-    <path d="M 33 78 C 40 82, 60 82, 67 78 C 61 76, 39 76, 33 78 Z" fill="#ffffff" />
-    <circle cx="50" cy="78" r="2.2" fill="#060608" />
-
-    <!-- Cybernetic slash blade -->
-    <path d="M 12 88 L 38 60 L 35 56 L 44 48 L 41 44 L 56 32 L 88 12 L 62 40 L 65 44 L 56 52 L 59 56 L 44 68 Z" fill="#ffffff" />
-  </g>
+  <!-- Minimalist Clean Typography Monogram -->
+  <text x="256" y="310" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif" font-size="140" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1">NV</text>
+  <circle cx="256" cy="370" r="10" fill="#ffffff" />
 </svg>

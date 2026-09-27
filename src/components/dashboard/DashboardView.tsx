@@ -13,7 +13,6 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { SpendingChart } from './SpendingChart';
-import { NullVaultLogo } from '../common/NullVaultLogo';
 import type { Account } from '../../types/finance';
 
 interface DashboardViewProps {
@@ -48,14 +47,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     <div className="space-y-6 pb-24 md:pb-12 safe-top px-4 md:px-8 w-full animate-fade-in">
       {/* Top Header */}
       <div className="flex items-center justify-between pt-1">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-white text-black flex items-center justify-center lg:hidden shadow-md">
-            <NullVaultLogo size={22} className="text-black" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">NULLVAULT</h1>
-              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono ${
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white font-mono">NULLVAULT</h1>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono ${
                 isCloudSynced 
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
                   : 'bg-zinc-800 text-zinc-400'
@@ -63,9 +58,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {isCloudSynced ? <Cloud size={10} /> : <span className="font-mono">∅</span>}
                 {isCloudSynced ? 'Supabase Synced' : 'Local Offline'}
               </span>
-            </div>
-            <p className="text-xs text-zinc-500 font-mono mt-0.5">Capital reserves & asset health</p>
           </div>
+          <p className="text-xs text-zinc-500 font-mono mt-0.5">Capital reserves & asset health</p>
         </div>
 
         <button

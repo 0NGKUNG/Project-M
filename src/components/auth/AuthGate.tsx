@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, ShieldAlert, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '../../db/supabaseClient';
-import { NullVaultLogo } from '../common/NullVaultLogo';
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -115,8 +114,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     return (
       <div className="min-h-screen bg-[#060608] flex items-center justify-center text-white">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#101014] flex items-center justify-center animate-pulse text-white">
-            <NullVaultLogo size={28} className="text-white" />
+          <div className="w-12 h-12 rounded-2xl bg-[#101014] flex items-center justify-center text-zinc-400 border border-zinc-800 animate-pulse">
+            <Lock size={20} />
           </div>
           <span className="text-xs font-mono text-zinc-500 tracking-wider">VERIFYING VAULT ACCESS...</span>
         </div>
@@ -136,14 +135,15 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
         {/* Subtle radial glow */}
         <div className="absolute -top-12 -left-12 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
 
-        {/* Brand Icon */}
+        {/* Brand Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center shadow-[0_4px_20px_rgba(255,255,255,0.18)]">
-            <NullVaultLogo size={26} className="text-black" />
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold font-mono tracking-tight text-white leading-tight">NULLVAULT</h1>
+            <span className="text-[10px] text-zinc-500 font-mono">v1.0</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-[10px] font-mono text-zinc-400">
             <Lock size={12} className="text-emerald-400" />
-            <span>ENCRYPTED VAULT</span>
+            <span>ENCRYPTED</span>
           </div>
         </div>
 
