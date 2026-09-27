@@ -84,8 +84,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
 
   return (
     <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
-      {/* Chart Header */}
-      <div className="flex items-center justify-between">
+      {/* Chart Header - fixed height container so hover tooltip never shifts card layout or size */}
+      <div className="flex items-center justify-between min-h-[46px]">
         <div>
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
             Cashflow Trends & Movement
@@ -102,22 +102,37 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           </div>
         </div>
 
-        {hoveredIndex !== null && chartData[hoveredIndex] && (
-          <div className="text-right font-mono bg-zinc-900/80 px-2.5 py-1 rounded-xl border border-zinc-800">
-            <div className="text-[10px] text-zinc-400">{chartData[hoveredIndex].label}</div>
-            <div className="text-xs text-white font-bold">
-              {chartData[hoveredIndex].income > 0 && (
-                <span className="text-emerald-400 mr-2">+{formatCurrency(chartData[hoveredIndex].income, state.settings.currencySymbol)}</span>
-              )}
-              {chartData[hoveredIndex].expense > 0 && (
-                <span className="text-rose-400">-{formatCurrency(chartData[hoveredIndex].expense, state.settings.currencySymbol)}</span>
-              )}
-              {chartData[hoveredIndex].income === 0 && chartData[hoveredIndex].expense === 0 && (
-                <span className="text-zinc-500">No flow</span>
-              )}
-            </div>
+        {/* Hover info badge with fixed dimensions / invisible placeholder when not hovered */}
+        <div className={`text-right font-mono px-2.5 py-1 rounded-xl border transition-opacity duration-150 ${
+          hoveredIndex !== null && chartData[hoveredIndex]
+            ? 'opacity-100 bg-zinc-900/80 border-zinc-800'
+            : 'opacity-0 pointer-events-none border-transparent'
+        }`}>
+          <div className="text-[10px] text-zinc-400">
+            {hoveredIndex !== null && chartData[hoveredIndex] ? chartData[hoveredIndex].label : '-'}
           </div>
-        )}
+          <div className="text-xs text-white font-bold whitespace-nowrap">
+            {hoveredIndex !== null && chartData[hoveredIndex] ? (
+              <>
+                {chartData[hoveredIndex].income > 0 && (
+                  <span className="text-emerald-400 mr-2">
+                    +{formatCurrency(chartData[hoveredIndex].income, state.settings.currencySymbol)}
+                  </span>
+                )}
+                {chartData[hoveredIndex].expense > 0 && (
+                  <span className="text-rose-400">
+                    -{formatCurrency(chartData[hoveredIndex].expense, state.settings.currencySymbol)}
+                  </span>
+                )}
+                {chartData[hoveredIndex].income === 0 && chartData[hoveredIndex].expense === 0 && (
+                  <span className="text-zinc-500">No flow</span>
+                )}
+              </>
+            ) : (
+              <span className="text-zinc-700">0.00</span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Bar Graph Canvas */}
