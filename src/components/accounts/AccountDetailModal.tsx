@@ -158,7 +158,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                           {tx.type === 'transfer' ? 'Transfer' : (cat?.name || 'Other')}
                         </div>
                         <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                          {tx.date} {tx.note && `• ${tx.note}`}
+                          {tx.date} {tx.time && `• ${tx.time}`} {tx.note && `• ${tx.note}`}
                         </div>
                       </div>
                     </div>

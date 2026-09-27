@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Calendar, FileText, Check } from 'lucide-react';
+import { X, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Calendar, Clock, FileText, Check } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import type { TransactionType } from '../../types/finance';
 import { CategoryIcon } from '../common/Icons';
@@ -9,6 +9,13 @@ interface QuickAddModalProps {
   onClose: () => void;
   defaultAccountId?: string;
 }
+
+const getCurrentTimeStr = () => {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+};
 
 export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, defaultAccountId }) => {
   const { state, addTransaction, triggerHaptic } = useFinance();
@@ -20,7 +27,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
     defaultAccountId || state.accounts[0]?.id || ''
   );
   const [toAccountId, setToAccountId] = useState<string>(state.accounts[1]?.id || state.accounts[0]?.id || '');
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState<string>(() => getCurrentTimeStr());
   const [note, setNote] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -142,6 +150,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       accountId: selectedAccountId,
       toAccountId: type === 'transfer' ? toAccountId : undefined,
       date,
+      time: time || undefined,
       note: note.trim() || undefined,
     });
 
@@ -386,19 +395,50 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             </div>
           )}
 
-          {/* Date and Optional Note */}
-          <div className="flex gap-2 pt-1">
-            <div className="flex items-center gap-1.5 bg-[#141418] rounded-2xl px-3 py-2 flex-1">
-              <Calendar size={14} className="text-zinc-500" />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="bg-transparent text-xs text-white focus:outline-none w-full"
-              />
+          {/* Date, Time, and Optional Note */}
+          <div className="space-y-2 pt-1">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Custom Date Selector */}
+              <div className="flex items-center gap-2 bg-[#141418] border border-zinc-900 rounded-2xl px-3 py-2">
+                <Calendar size={14} className="text-zinc-400 shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-[8px] font-mono uppercase text-zinc-500">Date</span>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="bg-transparent text-xs text-white focus:outline-none w-full font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Custom Time Selector (defaults to now) */}
+              <div className="flex items-center gap-2 bg-[#141418] border border-zinc-900 rounded-2xl px-3 py-2">
+                <Clock size={14} className="text-zinc-400 shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-mono uppercase text-zinc-500">Time</span>
+                    <button
+                      type="button"
+                      onClick={() => setTime(getCurrentTimeStr())}
+                      className="text-[8px] text-zinc-400 hover:text-white font-mono cursor-pointer"
+                    >
+                      Now
+                    </button>
+                  </div>
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="bg-transparent text-xs text-white focus:outline-none w-full font-mono"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 bg-[#141418] rounded-2xl px-3 py-2 flex-1">
-              <FileText size={14} className="text-zinc-500" />
+
+            {/* Note input */}
+            <div className="flex items-center gap-2 bg-[#141418] border border-zinc-900 rounded-2xl px-3 py-2">
+              <FileText size={14} className="text-zinc-500 shrink-0" />
               <input
                 type="text"
                 placeholder="Note (optional)"

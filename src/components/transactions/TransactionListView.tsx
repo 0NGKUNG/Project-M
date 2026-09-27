@@ -164,6 +164,7 @@ export const TransactionListView: React.FC = () => {
                             </div>
                             <div className="text-[11px] text-zinc-500 font-mono mt-0.5 flex items-center gap-1.5">
                               {!isTransfer && <span>{acc?.name}</span>}
+                              {tx.time && <span>• {tx.time}</span>}
                               {tx.note && <span>• {tx.note}</span>}
                             </div>
                           </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Trash2, Check, ArrowRightLeft, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { X, Trash2, Check, ArrowRightLeft, ArrowDownRight, ArrowUpRight, Calendar, Clock } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import type { Transaction, TransactionType } from '../../types/finance';
 import { CategoryIcon } from '../common/Icons';
@@ -8,6 +8,13 @@ interface EditTransactionModalProps {
   transaction: Transaction | null;
   onClose: () => void;
 }
+
+const getCurrentTimeStr = () => {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+};
 
 export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   transaction,
@@ -24,6 +31,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   const [accountId, setAccountId] = useState<string>(transaction.accountId);
   const [toAccountId, setToAccountId] = useState<string | undefined>(transaction.toAccountId);
   const [date, setDate] = useState<string>(transaction.date);
+  const [time, setTime] = useState<string>(transaction.time || getCurrentTimeStr());
   const [note, setNote] = useState<string>(transaction.note || '');
 
   const parentCategories = state.categories.filter(
@@ -48,6 +56,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       accountId,
       toAccountId: type === 'transfer' ? toAccountId : undefined,
       date,
+      time: time || undefined,
       note: note.trim() || undefined,
     });
 
@@ -120,32 +129,57 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             </button>
           </div>
 
-          {/* Amount and Date */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                Amount ({state.settings.currencySymbol})
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value)}
-                className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
-                required
-              />
+          {/* Amount */}
+          <div>
+            <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+              Amount ({state.settings.currencySymbol})
+            </label>
+            <input
+              type="number"
+              step="any"
+              value={amountStr}
+              onChange={(e) => setAmountStr(e.target.value)}
+              className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
+              required
+            />
+          </div>
+
+          {/* Custom Date & Time Selectors */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3 py-2">
+              <Calendar size={14} className="text-zinc-400 shrink-0" />
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-[8px] font-mono uppercase text-zinc-500">Date</span>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="bg-transparent text-xs text-white focus:outline-none w-full font-mono"
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                Date
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
-                required
-              />
+
+            <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3 py-2">
+              <Clock size={14} className="text-zinc-400 shrink-0" />
+              <div className="flex flex-col flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] font-mono uppercase text-zinc-500">Time</span>
+                  <button
+                    type="button"
+                    onClick={() => setTime(getCurrentTimeStr())}
+                    className="text-[8px] text-zinc-400 hover:text-white font-mono cursor-pointer"
+                  >
+                    Now
+                  </button>
+                </div>
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="bg-transparent text-xs text-white focus:outline-none w-full font-mono"
+                />
+              </div>
             </div>
           </div>
 
