@@ -103,7 +103,7 @@ export const TransactionListView: React.FC = () => {
 
       {/* Transaction Feed */}
       {groupedTransactions.length === 0 ? (
-        <div className="bg-[#101014] rounded-3xl p-12 text-center mt-4">
+        <div className="bg-[#101014] rounded-2xl p-12 text-center mt-4">
           <p className="text-xs text-zinc-500">No matching transactions found.</p>
         </div>
       ) : (
@@ -129,7 +129,7 @@ export const TransactionListView: React.FC = () => {
                   )}
                 </div>
 
-                <div className="bg-[#101014] rounded-3xl divide-y divide-zinc-900 overflow-hidden shadow-sm">
+                <div className="bg-[#101014] rounded-2xl divide-y divide-zinc-900 overflow-hidden shadow-sm">
                   {txList.map((tx) => {
                     const cat = getCategory(tx.categoryId);
                     const acc = getAccount(tx.accountId);

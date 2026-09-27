@@ -74,7 +74,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Top Hero Cards: Net Worth & Savings */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div className="lg:col-span-8 bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-3xl p-7 shadow-xl flex flex-col justify-between relative overflow-hidden">
+        <div className="lg:col-span-8 bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-7 shadow-xl flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
 
           <div>
@@ -119,7 +119,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-[#101014] rounded-3xl p-7 flex flex-col justify-between shadow-xl">
+        <div className="lg:col-span-4 bg-[#101014] rounded-2xl p-7 flex flex-col justify-between shadow-xl">
           <div>
             <div className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
               Monthly Retention Rate
@@ -161,7 +161,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 key={acc.id}
                 onClick={() => onSelectAccount(acc)}
-                className="bg-[#101014] hover:bg-[#15151c] active:scale-98 rounded-3xl p-5 flex flex-col justify-between transition-all group text-left cursor-pointer shadow-sm relative"
+                className="bg-[#101014] hover:bg-[#15151c] active:scale-98 rounded-2xl p-5 flex flex-col justify-between transition-all group text-left cursor-pointer shadow-sm relative"
               >
                 <div className="flex items-center justify-between mb-4 w-full">
                   <span className="text-xs text-zinc-300 font-semibold truncate group-hover:text-white transition-colors">
@@ -189,7 +189,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <SpendingChart />
 
-        <div className="bg-[#101014] rounded-3xl p-6 flex flex-col justify-between space-y-4 shadow-sm">
+        <div className="bg-[#101014] rounded-2xl p-6 flex flex-col justify-between space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase font-semibold tracking-wider text-zinc-400">
               Recent Vault Activity

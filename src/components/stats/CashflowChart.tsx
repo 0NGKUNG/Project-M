@@ -174,7 +174,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const activeX = hoveredIndex !== null ? getX(hoveredIndex) : 0;
 
   return (
-    <div className="bg-[#101014] rounded-3xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm space-y-3">
+    <div className="bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm space-y-3">
       {/* Chart Header - fixed height, flex-wrap proof */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-h-[52px]">
         <div>

@@ -230,7 +230,7 @@ export const RecurringManager: React.FC = () => {
           onClick={() => { resetForm(); setShowAddModal(false); }}
         >
           <div
-            className="w-full sm:max-w-sm bg-[#101014] rounded-t-3xl sm:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto"
+            className="w-full sm:max-w-sm bg-[#101014] rounded-t-2xl sm:rounded-2xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5 space-y-4">

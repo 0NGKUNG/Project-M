@@ -115,7 +115,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       {currentSubTab === 'wallets' && (
         <div className="space-y-6 animate-fade-in">
           {/* Net Worth Hero Card */}
-          <div className="bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-3xl p-7 border border-zinc-900/60 shadow-xl relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-7 border border-zinc-900/60 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
 
             <div className="flex items-center text-zinc-400 text-xs font-mono mb-2">
@@ -258,7 +258,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           onClick={() => setShowAddModal(false)}
         >
           <div 
-            className="w-full max-w-sm bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+            className="w-full max-w-sm bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-white font-mono">Create New Account</h3>

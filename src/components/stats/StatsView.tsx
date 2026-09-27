@@ -176,7 +176,7 @@ export const StatsView: React.FC = () => {
       {/* Top Outflows & Inflows */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Top Expense Categories */}
-        <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
+        <div className="bg-[#101014] rounded-2xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
             Top Outflows ({categoryOutflows.length})
           </span>
@@ -211,7 +211,7 @@ export const StatsView: React.FC = () => {
         </div>
 
         {/* Top Income Sources */}
-        <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
+        <div className="bg-[#101014] rounded-2xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
             Top Inflows ({categoryInflows.length})
           </span>

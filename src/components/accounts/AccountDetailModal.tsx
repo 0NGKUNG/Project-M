@@ -86,7 +86,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-lg bg-[#0e0e12] border-t sm:border border-zinc-800 sm:rounded-3xl rounded-t-3xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl safe-bottom cursor-default"
+        className="w-full max-w-lg bg-[#0e0e12] border-t sm:border border-zinc-800 sm:rounded-2xl rounded-t-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl safe-bottom cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -129,7 +129,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
         {/* Balance & Stats Card */}
         <div className="px-6 py-3">
-          <div className="bg-[#14141a] rounded-3xl p-5 shadow-sm space-y-4">
+          <div className="bg-[#14141a] rounded-2xl p-5 shadow-sm space-y-4">
             <div>
               <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
                 Current Available Balance
@@ -243,7 +243,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             onClick={() => setIsEditingAccount(false)}
           >
             <div 
-              className="w-full max-w-sm bg-[#101014] rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+              className="w-full max-w-sm bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">

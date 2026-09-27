@@ -131,7 +131,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
   // Otherwise, lock screen for anyone else
   return (
     <div className="min-h-screen bg-[#060608] flex flex-col justify-center items-center p-4 selection:bg-white selection:text-black">
-      <div className="w-full max-w-sm bg-[#101014] rounded-3xl p-7 border border-zinc-900 shadow-2xl relative overflow-hidden animate-fade-in">
+      <div className="w-full max-w-sm bg-[#101014] rounded-2xl p-7 border border-zinc-900 shadow-2xl relative overflow-hidden animate-fade-in">
         {/* Subtle radial glow */}
         <div className="absolute -top-12 -left-12 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
 

@@ -56,7 +56,7 @@ export const BudgetsView: React.FC = () => {
       {showAddForm && (
         <form
           onSubmit={handleCreateBudget}
-          className="bg-[#101014] rounded-3xl p-6 space-y-4 animate-fade-in max-w-2xl shadow-xl"
+          className="bg-[#101014] rounded-2xl p-6 space-y-4 animate-fade-in max-w-2xl shadow-xl"
         >
           <div className="text-sm font-bold text-white">Set Monthly Category Limit</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -109,7 +109,7 @@ export const BudgetsView: React.FC = () => {
 
       {/* Budgets List (Grid filling width) */}
       {state.budgets.length === 0 ? (
-        <div className="bg-[#101014] rounded-3xl p-12 text-center">
+        <div className="bg-[#101014] rounded-2xl p-12 text-center">
           <Target className="mx-auto text-zinc-600 mb-2" size={28} />
           <p className="text-xs text-zinc-500">No budget limits defined yet.</p>
         </div>
@@ -126,7 +126,7 @@ export const BudgetsView: React.FC = () => {
             return (
               <div
                 key={budget.id}
-                className="bg-[#101014] hover:bg-[#14141a] rounded-3xl p-5 space-y-3.5 relative transition-all shadow-sm"
+                className="bg-[#101014] hover:bg-[#14141a] rounded-2xl p-5 space-y-3.5 relative transition-all shadow-sm"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

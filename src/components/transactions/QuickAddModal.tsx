@@ -187,7 +187,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       />
 
       <div 
-        className="w-full sm:max-w-md bg-[#0c0c10] border-t sm:border border-zinc-900 sm:rounded-3xl rounded-t-3xl max-h-[96vh] flex flex-col overflow-hidden shadow-2xl safe-bottom select-none"
+        className="w-full sm:max-w-md bg-[#0c0c10] border-t sm:border border-zinc-900 sm:rounded-2xl rounded-t-2xl max-h-[96vh] flex flex-col overflow-hidden shadow-2xl safe-bottom select-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top App Bar: Back icon + Type Switcher Pills */}

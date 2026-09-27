@@ -353,7 +353,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             onClick={() => setSelectedGoal(null)}
           >
             <div
-              className="w-full sm:max-w-sm bg-[#101014] rounded-t-3xl sm:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-3"
+              className="w-full sm:max-w-sm bg-[#101014] rounded-t-2xl sm:rounded-2xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-3"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Overalls Big Highlight Card */}
@@ -465,7 +465,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           onClick={() => setShowCreateModal(false)}
         >
           <div
-            className="w-full sm:max-w-md bg-[#101014] rounded-t-3xl sm:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-4"
+            className="w-full sm:max-w-md bg-[#101014] rounded-t-2xl sm:rounded-2xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-sm font-bold text-white font-mono">Create Spending Goal</h3>
@@ -792,7 +792,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           onClick={() => setSelectedParentCat(null)}
         >
           <div
-            className="w-full max-w-xs bg-[#101014] rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 cursor-default animate-scale-in"
+            className="w-full max-w-xs bg-[#101014] rounded-2xl p-5 border border-zinc-800 shadow-2xl space-y-4 cursor-default animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Category Banner Card */}
@@ -879,7 +879,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           onClick={() => setShowAddSubModal(false)}
         >
           <div
-            className="w-full max-w-xs bg-[#101014] rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-3 cursor-default"
+            className="w-full max-w-xs bg-[#101014] rounded-2xl p-5 border border-zinc-800 shadow-2xl space-y-3 cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xs font-bold text-white font-mono">
@@ -922,7 +922,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           onClick={() => setShowAddParentModal(false)}
         >
           <div
-            className="w-full max-w-sm bg-[#101014] rounded-3xl p-5 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+            className="w-full max-w-sm bg-[#101014] rounded-2xl p-5 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-sm font-bold text-white font-mono capitalize">
