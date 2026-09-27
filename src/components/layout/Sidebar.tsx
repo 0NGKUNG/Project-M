@@ -1,8 +1,8 @@
 import React from 'react';
-import { LayoutDashboard, ReceiptText, Plus, Target, Settings, Shield } from 'lucide-react';
+import { Calendar, BarChart3, Wallet, Settings, Plus, Shield } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 
-export type NavTab = 'dashboard' | 'transactions' | 'budgets' | 'settings';
+export type NavTab = 'today' | 'stats' | 'accounts' | 'settings';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -19,10 +19,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const keybind = (state.settings.quickAddKeybind || 'n').toUpperCase();
 
   const navItems = [
-    { id: 'dashboard' as NavTab, label: 'Overview', icon: LayoutDashboard },
-    { id: 'transactions' as NavTab, label: 'Transactions', icon: ReceiptText },
-    { id: 'budgets' as NavTab, label: 'Budgets & Goals', icon: Target },
-    { id: 'settings' as NavTab, label: 'Settings & Vault', icon: Settings },
+    { id: 'today' as NavTab, label: 'Today (Flow)', icon: Calendar },
+    { id: 'stats' as NavTab, label: 'Stats & Trends', icon: BarChart3 },
+    { id: 'accounts' as NavTab, label: 'Accounts & Net', icon: Wallet },
+    { id: 'settings' as NavTab, label: 'Vault & Settings', icon: Settings },
   ];
 
   return (

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import type { Account, Budget, FinanceSettings, FinanceState, Transaction } from '../types/finance';
+import type { Account, Budget, DebtItem, FinanceSettings, FinanceState, RecurringItem, Transaction } from '../types/finance';
 import { loadFinanceData, saveFinanceData, DEFAULT_ACCOUNTS, DEFAULT_CATEGORIES } from '../db/storage';
 import { supabase, isSupabaseConfigured } from '../db/supabaseClient';
 
@@ -16,6 +16,12 @@ interface FinanceContextType {
   addBudget: (budget: Omit<Budget, 'id'>) => void;
   updateBudget: (budget: Budget) => void;
   deleteBudget: (id: string) => void;
+  addRecurring: (item: Omit<RecurringItem, 'id'>) => void;
+  updateRecurring: (item: RecurringItem) => void;
+  deleteRecurring: (id: string) => void;
+  addDebt: (item: Omit<DebtItem, 'id' | 'createdAt'>) => void;
+  updateDebt: (item: DebtItem) => void;
+  deleteDebt: (id: string) => void;
   updateSettings: (settings: Partial<FinanceSettings>) => void;
   exportDataJSON: () => void;
   importDataJSON: (jsonString: string) => boolean;
@@ -27,6 +33,9 @@ interface FinanceContextType {
   monthlyIncome: number;
   monthlyExpense: number;
   monthlySavingsRate: number;
+  todayExpense: number;
+  todayIncome: number;
+  thisWeekExpense: number;
   accountBalances: Record<string, number>;
 }
 
@@ -322,6 +331,59 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const addRecurring = (itemData: Omit<RecurringItem, 'id'>) => {
+    triggerHaptic();
+    const newItem: RecurringItem = {
+      ...itemData,
+      id: 'rec_' + Date.now(),
+    };
+    setState((prev) => ({
+      ...prev,
+      recurring: [...(prev.recurring || []), newItem],
+    }));
+  };
+
+  const updateRecurring = (updatedItem: RecurringItem) => {
+    setState((prev) => ({
+      ...prev,
+      recurring: (prev.recurring || []).map((r) => (r.id === updatedItem.id ? updatedItem : r)),
+    }));
+  };
+
+  const deleteRecurring = (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      recurring: (prev.recurring || []).filter((r) => r.id !== id),
+    }));
+  };
+
+  const addDebt = (itemData: Omit<DebtItem, 'id' | 'createdAt'>) => {
+    triggerHaptic();
+    const newDebt: DebtItem = {
+      ...itemData,
+      id: 'debt_' + Date.now(),
+      createdAt: Date.now(),
+    };
+    setState((prev) => ({
+      ...prev,
+      debts: [...(prev.debts || []), newDebt],
+    }));
+  };
+
+  const updateDebt = (updatedDebt: DebtItem) => {
+    setState((prev) => ({
+      ...prev,
+      debts: (prev.debts || []).map((d) => (d.id === updatedDebt.id ? updatedDebt : d)),
+    }));
+  };
+
+  const deleteDebt = (id: string) => {
+    setState((prev) => ({
+      ...prev,
+      debts: (prev.debts || []).filter((d) => d.id !== id),
+    }));
+  };
+
   const updateSettings = (newSettings: Partial<FinanceSettings>) => {
     const updated = { ...state.settings, ...newSettings };
     setState((prev) => ({
@@ -358,6 +420,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           categories: parsed.categories,
           accounts: parsed.accounts || state.accounts,
           budgets: parsed.budgets || state.budgets,
+          recurring: parsed.recurring || state.recurring || [],
+          debts: parsed.debts || state.debts || [],
           settings: { ...state.settings, ...(parsed.settings || {}) },
         });
         return true;
@@ -431,6 +495,33 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, [state.transactions]);
 
+  const { todayIncome, todayExpense, thisWeekExpense } = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 86400000);
+
+    let tIncome = 0;
+    let tExpense = 0;
+    let wExpense = 0;
+
+    state.transactions.forEach((tx) => {
+      if (tx.date === todayStr) {
+        if (tx.type === 'income') tIncome += tx.amount;
+        if (tx.type === 'expense') tExpense += tx.amount;
+      }
+      const txDate = new Date(tx.date);
+      if (txDate >= oneWeekAgo && txDate <= now && tx.type === 'expense') {
+        wExpense += tx.amount;
+      }
+    });
+
+    return {
+      todayIncome: tIncome,
+      todayExpense: tExpense,
+      thisWeekExpense: wExpense,
+    };
+  }, [state.transactions]);
+
   return (
     <FinanceContext.Provider
       value={{
@@ -446,6 +537,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addBudget,
         updateBudget,
         deleteBudget,
+        addRecurring,
+        updateRecurring,
+        deleteRecurring,
+        addDebt,
+        updateDebt,
+        deleteDebt,
         updateSettings,
         exportDataJSON,
         importDataJSON,
@@ -456,6 +553,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         monthlyIncome,
         monthlyExpense,
         monthlySavingsRate,
+        todayExpense,
+        todayIncome,
+        thisWeekExpense,
         accountBalances,
       }}
     >

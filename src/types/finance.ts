@@ -6,6 +6,7 @@ export interface Category {
   type: 'expense' | 'income';
   icon: string;
   color?: string; // Subtle monochrome or muted hue
+  parentId?: string; // For subcategory hierarchy
 }
 
 export interface Account {
@@ -23,12 +24,43 @@ export interface Transaction {
   type: TransactionType;
   amount: number;
   categoryId: string;
+  subcategoryId?: string;
   accountId: string;
   toAccountId?: string; // Used for transfer
   date: string; // ISO date YYYY-MM-DD
   time?: string; // HH:mm
   note?: string;
   tags?: string[];
+  createdAt: number;
+}
+
+export interface SpendingGoal {
+  daily?: number;
+  weekly?: number;
+  monthly?: number;
+}
+
+export interface RecurringItem {
+  id: string;
+  name: string;
+  type: 'expense' | 'income';
+  amount: number;
+  categoryId: string;
+  accountId: string;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  nextDueDate: string; // ISO date YYYY-MM-DD
+  isActive: boolean;
+}
+
+export interface DebtItem {
+  id: string;
+  type: 'lend' | 'borrow'; // 'lend' = someone owes me, 'borrow' = I owe someone
+  personName: string;
+  totalAmount: number;
+  remainingAmount: number;
+  dueDate?: string;
+  note?: string;
+  status: 'active' | 'settled';
   createdAt: number;
 }
 
@@ -45,6 +77,7 @@ export interface FinanceSettings {
   monochromeOnly: boolean; // strict mono vs muted color accents
   vibrateOnTap: boolean;
   quickAddKeybind: string; // e.g. 'n', 't', '+', 'Space'
+  goals?: SpendingGoal;
 }
 
 export interface FinanceState {
@@ -52,5 +85,8 @@ export interface FinanceState {
   categories: Category[];
   accounts: Account[];
   budgets: Budget[];
+  recurring: RecurringItem[];
+  debts: DebtItem[];
   settings: FinanceSettings;
 }
+

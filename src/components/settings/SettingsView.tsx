@@ -159,6 +159,55 @@ export const SettingsView: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* Spending Goals (Day, Week, Month) */}
+          <div className="pt-3 border-t border-zinc-900 space-y-2">
+            <div>
+              <div className="text-xs text-white font-medium">Spending Goals & Limits</div>
+              <div className="text-[10px] text-zinc-500">Cap your outflows per day, week, and month</div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <div>
+                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Day Limit</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 500"
+                  value={state.settings.goals?.daily || ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || undefined;
+                    updateSettings({ goals: { ...state.settings.goals, daily: val } });
+                  }}
+                  className="w-full bg-[#16161d] rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Week Limit</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 3000"
+                  value={state.settings.goals?.weekly || ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || undefined;
+                    updateSettings({ goals: { ...state.settings.goals, weekly: val } });
+                  }}
+                  className="w-full bg-[#16161d] rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] text-zinc-500 uppercase font-mono block mb-1">Month Limit</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 15000"
+                  value={state.settings.goals?.monthly || ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || undefined;
+                    updateSettings({ goals: { ...state.settings.goals, monthly: val } });
+                  }}
+                  className="w-full bg-[#16161d] rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Wallets & Accounts Management */}

@@ -49,6 +49,8 @@ export function loadFinanceData(): FinanceState {
       categories: parsed.categories && parsed.categories.length ? parsed.categories : DEFAULT_CATEGORIES,
       accounts: parsed.accounts && parsed.accounts.length ? parsed.accounts : DEFAULT_ACCOUNTS,
       budgets: parsed.budgets || [],
+      recurring: parsed.recurring || [],
+      debts: parsed.debts || [],
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
     };
   } catch (e) {
@@ -109,6 +111,8 @@ function getInitialState(): FinanceState {
       { id: 'b_groceries', categoryId: 'cat_groceries', amount: 350, period: 'monthly' },
       { id: 'b_coffee', categoryId: 'cat_coffee', amount: 80, period: 'monthly' },
     ],
+    recurring: [],
+    debts: [],
     settings: DEFAULT_SETTINGS,
   };
 }
