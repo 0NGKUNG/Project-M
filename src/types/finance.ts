@@ -86,6 +86,7 @@ export interface FinanceSettings {
   monochromeOnly: boolean; // strict mono vs muted color accents
   vibrateOnTap: boolean;
   quickAddKeybind: string; // e.g. 'n', 't', '+', 'Space'
+  weekStartDay?: 0 | 1 | 6; // 0 = Sunday, 1 = Monday, 6 = Saturday
   goals?: SpendingGoal;
 }
 

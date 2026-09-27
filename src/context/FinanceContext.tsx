@@ -577,7 +577,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { todayIncome, todayExpense, thisWeekExpense } = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0];
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 86400000);
+    
+    // Compute start of current week based on weekStartDay setting (0=Sun, 1=Mon, 6=Sat)
+    const startDay = state.settings.weekStartDay ?? 1;
+    const currentDay = now.getDay();
+    const diff = (currentDay < startDay ? 7 : 0) + currentDay - startDay;
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+    weekStart.setHours(0, 0, 0, 0);
 
     let tIncome = 0;
     let tExpense = 0;
@@ -589,7 +595,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (tx.type === 'expense') tExpense += tx.amount;
       }
       const txDate = new Date(tx.date);
-      if (txDate >= oneWeekAgo && txDate <= now && tx.type === 'expense') {
+      if (txDate >= weekStart && txDate <= now && tx.type === 'expense') {
         wExpense += tx.amount;
       }
     });
@@ -599,7 +605,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       todayExpense: tExpense,
       thisWeekExpense: wExpense,
     };
-  }, [state.transactions]);
+  }, [state.transactions, state.settings.weekStartDay]);
 
   return (
     <FinanceContext.Provider

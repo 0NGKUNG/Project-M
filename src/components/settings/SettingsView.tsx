@@ -14,6 +14,7 @@ import {
   Keyboard,
   DollarSign,
   Wallet,
+  CalendarDays,
   X,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
@@ -1089,6 +1090,32 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
+
+        <div className="flex items-center gap-3 py-3 px-4">
+          <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
+            <CalendarDays size={15} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-medium text-white">Start Day of Week</div>
+            <div className="text-[10px] text-zinc-500 font-mono">
+              Calendar &amp; weekly calculations
+            </div>
+          </div>
+          <div className="w-36 shrink-0">
+            <CustomSelect
+              value={String(state.settings.weekStartDay ?? 1)}
+              onChange={(val) => {
+                const day = parseInt(val, 10) as 0 | 1 | 6;
+                updateSettings({ weekStartDay: day });
+              }}
+              options={[
+                { value: '1', label: 'Monday' },
+                { value: '0', label: 'Sunday' },
+                { value: '6', label: 'Saturday' },
+              ]}
+            />
+          </div>
+        </div>
 
         <div className="flex items-center gap-3 py-3 px-4">
           <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">

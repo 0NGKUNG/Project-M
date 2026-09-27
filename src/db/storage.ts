@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: FinanceSettings = {
   monochromeOnly: false,
   vibrateOnTap: true,
   quickAddKeybind: 'n',
+  weekStartDay: 1, // Default Monday
 };
 
 const STORAGE_KEY = 'monodark_finance_state_v1';
