@@ -69,48 +69,47 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       <div className="flex items-center justify-between pt-1">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white font-mono">PORTFOLIO & ACCOUNTS</h2>
-          <p className="text-xs text-zinc-500 font-mono">Balance Distribution & Net Worth</p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.12)]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.12)] shrink-0"
         >
           <Plus size={14} strokeWidth={2.8} />
-          <span>New Account</span>
+          <span>New</span>
         </button>
       </div>
 
-      {/* View Sub-tabs: Wallets, Recurring, Debts */}
-      <div className="flex bg-[#101014] p-1.5 rounded-2xl border border-zinc-900 gap-1">
+      {/* View Sub-tabs: Wallets, Recurring, Debts - clean compact single line */}
+      <div className="flex bg-[#101014] p-1 rounded-2xl border border-zinc-900 gap-1 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setCurrentSubTab('wallets')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             currentSubTab === 'wallets' ? 'bg-white text-black font-bold shadow-md' : 'text-zinc-400 hover:text-white'
           }`}
         >
-          <Wallet size={14} />
+          <Wallet size={13} />
           <span>Wallets ({accountStats.length})</span>
         </button>
 
         <button
           onClick={() => setCurrentSubTab('recurring')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             currentSubTab === 'recurring' ? 'bg-white text-black font-bold shadow-md' : 'text-zinc-400 hover:text-white'
           }`}
         >
-          <RefreshCw size={14} />
+          <RefreshCw size={13} />
           <span>Recurring ({state.recurring?.length || 0})</span>
         </button>
 
         <button
           onClick={() => setCurrentSubTab('debts')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             currentSubTab === 'debts' ? 'bg-white text-black font-bold shadow-md' : 'text-zinc-400 hover:text-white'
           }`}
         >
-          <Users size={14} />
-          <span>Borrow & Lend ({state.debts?.length || 0})</span>
+          <Users size={13} />
+          <span>Debts ({state.debts?.length || 0})</span>
         </button>
       </div>
 
@@ -218,7 +217,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               Account Ledger ({accountStats.length})
             </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Compact 2-per-row card grid on mobile and desktop */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               {accountStats.map((acc) => {
                 const isNegative = (acc.currentBalance ?? 0) < 0;
 
@@ -226,33 +226,33 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   <div
                     key={acc.id}
                     onClick={() => onSelectAccount(acc)}
-                    className="p-5 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between group active:scale-98 shadow-sm"
+                    className="p-3.5 sm:p-5 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between group active:scale-98 shadow-sm"
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors">
-                            {acc.type === 'cash' ? <Wallet size={16} /> : <CreditCard size={16} />}
+                      <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <div className="flex items-center gap-2 truncate">
+                          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
+                            {acc.type === 'cash' ? <Wallet size={14} /> : <CreditCard size={14} />}
                           </div>
-                          <div>
-                            <div className="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors">
+                          <div className="truncate">
+                            <div className="text-xs font-bold text-white group-hover:text-zinc-200 transition-colors truncate">
                               {acc.name}
                             </div>
-                            <span className="text-[10px] text-zinc-500 uppercase font-mono">
+                            <span className="text-[9px] sm:text-[10px] text-zinc-500 uppercase font-mono block">
                               {acc.type}
                             </span>
                           </div>
                         </div>
 
                         {/* Percentage Pill */}
-                        <div className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300 font-semibold">
+                        <div className="px-1.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] sm:text-[11px] font-mono text-zinc-300 font-semibold shrink-0">
                           {acc.percentage}%
                         </div>
                       </div>
 
-                      <div className="mt-3">
-                        <div className="text-[10px] text-zinc-500 font-mono uppercase">Current Balance</div>
-                        <div className={`text-xl font-extrabold font-mono mt-0.5 ${
+                      <div className="mt-2">
+                        <div className="text-[9px] sm:text-[10px] text-zinc-500 font-mono uppercase">Balance</div>
+                        <div className={`text-base sm:text-xl font-extrabold font-mono mt-0.5 truncate ${
                           isNegative ? 'text-rose-400' : 'text-white'
                         }`}>
                           {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
@@ -260,9 +260,10 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-4 mt-3 border-t border-zinc-900/80 flex items-center justify-between text-[11px] text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                      <span>View isolated ledger</span>
-                      <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                    <div className="pt-2.5 sm:pt-4 mt-2 sm:mt-3 border-t border-zinc-900/80 flex items-center justify-between text-[10px] sm:text-[11px] text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                      <span className="hidden sm:inline">View ledger</span>
+                      <span className="sm:hidden">Ledger</span>
+                      <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 );

@@ -126,15 +126,14 @@ export const AppContent: React.FC = () => {
             {currentTab === 'settings' && <SettingsView />}
           </main>
 
-          {/* Mobile display: Horizontal swipe/drag scroll snap container */}
+          {/* Mobile display: Horizontal swipe/drag scroll snap container with 1-page snap lock */}
           <div
             ref={containerRef}
             onScroll={handleScroll}
-            className="lg:hidden flex-1 w-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            className="lg:hidden flex-1 w-full flex overflow-x-auto page-carousel-container no-scrollbar"
           >
             {/* View 1: Today */}
-            <div className="w-full shrink-0 snap-start overflow-y-auto pt-3">
+            <div className="w-full shrink-0 page-carousel-item overflow-y-auto pt-3">
               <TodayView
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigateTab={handleTabChange}
@@ -142,12 +141,12 @@ export const AppContent: React.FC = () => {
             </div>
 
             {/* View 2: Stats */}
-            <div className="w-full shrink-0 snap-start overflow-y-auto pt-3">
+            <div className="w-full shrink-0 page-carousel-item overflow-y-auto pt-3">
               <StatsView />
             </div>
 
             {/* View 3: Accounts */}
-            <div className="w-full shrink-0 snap-start overflow-y-auto pt-3">
+            <div className="w-full shrink-0 page-carousel-item overflow-y-auto pt-3">
               <AccountsView
                 onSelectAccount={(acc) => setSelectedAccount(acc)}
                 onOpenQuickAddWithAccount={handleOpenQuickAdd}
@@ -155,7 +154,7 @@ export const AppContent: React.FC = () => {
             </div>
 
             {/* View 4: Settings */}
-            <div className="w-full shrink-0 snap-start overflow-y-auto pt-3">
+            <div className="w-full shrink-0 page-carousel-item overflow-y-auto pt-3">
               <SettingsView />
             </div>
           </div>

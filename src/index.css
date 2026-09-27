@@ -94,3 +94,15 @@ select {
 .safe-top {
   padding-top: max(0.75rem, env(safe-area-inset-top));
 }
+
+/* Page Carousel Snap and Transitions - limit to max 1 page per swipe */
+.page-carousel-container {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.page-carousel-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}

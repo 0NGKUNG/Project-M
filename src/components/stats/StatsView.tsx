@@ -75,8 +75,7 @@ export const StatsView: React.FC = () => {
       {/* Timeframe Pill Selector */}
       <div className="flex items-center justify-between pt-1">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white font-mono">FINANCIAL STATS</h2>
-          <p className="text-xs text-zinc-500 font-mono">Trends, Heatmap & Top Categories</p>
+          <h2 className="text-xl font-bold tracking-tight text-white font-mono">STATS</h2>
         </div>
 
         <div className="flex bg-[#101014] p-1 rounded-xl border border-zinc-900">

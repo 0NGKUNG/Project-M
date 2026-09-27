@@ -144,7 +144,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const expensePath = generateSmoothPath(chartData.map((d) => d.expense));
   const balancePath = generateSmoothPath(chartData.map((d) => d.balance));
 
-  // Area under balance line
+  // Area under balance line: from start to end down to bottom line
   const balanceAreaPath = chartData.length > 1
     ? `${balancePath} L ${getX(chartData.length - 1).toFixed(1)},${(paddingTop + innerHeight).toFixed(1)} L ${getX(0).toFixed(1)},${(paddingTop + innerHeight).toFixed(1)} Z`
     : '';
@@ -174,14 +174,14 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const activeX = hoveredIndex !== null ? getX(hoveredIndex) : 0;
 
   return (
-    <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
-      {/* Chart Header - fixed height container */}
-      <div className="flex items-center justify-between min-h-[46px]">
+    <div className="bg-[#101014] rounded-3xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm space-y-3">
+      {/* Chart Header - fixed height, flex-wrap proof */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-h-[52px]">
         <div>
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Cashflow & Balance Curves
+            Cashflow & Balance
           </span>
-          <div className="flex items-center gap-3 sm:gap-4 text-[11px] font-mono mt-1">
+          <div className="flex items-center gap-3 text-[11px] font-mono mt-1">
             <button
               onClick={() => setActiveMetric('all')}
               className={`flex items-center gap-1.5 cursor-pointer transition-opacity ${
@@ -208,8 +208,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           </div>
         </div>
 
-        {/* Hover info badge */}
-        <div className={`text-right font-mono px-3 py-1.5 rounded-2xl border transition-opacity duration-150 ${
+        {/* Hover info badge - neatly contained within card, never overflowing */}
+        <div className={`font-mono px-3 py-1 rounded-xl border transition-opacity duration-150 self-start sm:self-auto text-left sm:text-right ${
           activePoint
             ? 'opacity-100 bg-[#16161d] border-zinc-700/80 shadow-lg'
             : 'opacity-0 pointer-events-none border-transparent'
@@ -217,17 +217,17 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           <div className="text-[10px] text-zinc-400 font-bold">
             {activePoint ? activePoint.label : '-'}
           </div>
-          <div className="text-xs text-white font-bold whitespace-nowrap flex items-center gap-2">
+          <div className="text-[11px] sm:text-xs text-white font-bold whitespace-nowrap flex items-center gap-2">
             {activePoint ? (
               <>
                 <span className="text-blue-400">
                   {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
                 </span>
                 <span className="text-[10px] text-zinc-500">•</span>
-                <span className="text-emerald-400 text-[11px]">
+                <span className="text-emerald-400">
                   +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
                 </span>
-                <span className="text-rose-400 text-[11px]">
+                <span className="text-rose-400">
                   -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
                 </span>
               </>
@@ -476,7 +476,6 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             <span className="w-2 h-2 rounded-full bg-rose-500" /> Outflow
           </span>
         </div>
-        <span className="text-zinc-600">Curved Catmull-Rom Spline</span>
       </div>
     </div>
   );
