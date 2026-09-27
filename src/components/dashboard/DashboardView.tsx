@@ -13,6 +13,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { SpendingChart } from './SpendingChart';
+import { NullVaultLogo } from '../common/NullVaultLogo';
 import type { Account } from '../../types/finance';
 
 interface DashboardViewProps {
@@ -48,8 +49,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Top Header */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-white text-black font-mono font-bold flex items-center justify-center text-base lg:hidden shadow-md">
-            ∅
+          <div className="w-9 h-9 rounded-2xl bg-white text-black flex items-center justify-center lg:hidden shadow-md">
+            <NullVaultLogo size={22} className="text-black" />
           </div>
           <div>
             <div className="flex items-center gap-2">

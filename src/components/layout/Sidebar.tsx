@@ -1,6 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, ReceiptText, Plus, Target, Settings } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
+import { NullVaultLogo } from '../common/NullVaultLogo';
 
 export type NavTab = 'dashboard' | 'transactions' | 'budgets' | 'settings';
 
@@ -28,10 +29,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="hidden lg:flex flex-col w-72 bg-[#09090c] p-6 shrink-0 select-none justify-between">
       <div>
-        {/* Brand Header with ∅ Null Set Symbol */}
+        {/* Brand Header with Custom Minimalist Logo */}
         <div className="flex items-center gap-3.5 mb-8 px-2">
-          <div className="w-10 h-10 rounded-2xl bg-white text-black font-mono font-bold flex items-center justify-center text-lg shadow-[0_4px_20px_rgba(255,255,255,0.18)]">
-            ∅
+          <div className="w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center shadow-[0_4px_20px_rgba(255,255,255,0.18)]">
+            <NullVaultLogo size={24} className="text-black" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
@@ -83,8 +84,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Footer Card */}
       <div className="bg-[#101014] rounded-2xl p-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300 shrink-0 font-mono font-bold text-sm">
-          ∅
+        <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300 shrink-0">
+          <NullVaultLogo size={18} className="text-zinc-300" />
         </div>
         <div className="text-[11px]">
           <div className="text-zinc-300 font-medium">Sovereign Vault</div>

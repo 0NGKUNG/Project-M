@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, ShieldAlert, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '../../db/supabaseClient';
+import { NullVaultLogo } from '../common/NullVaultLogo';
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -114,8 +115,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     return (
       <div className="min-h-screen bg-[#060608] flex items-center justify-center text-white">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#101014] flex items-center justify-center font-mono text-xl font-bold animate-pulse text-white">
-            ∅
+          <div className="w-12 h-12 rounded-2xl bg-[#101014] flex items-center justify-center animate-pulse text-white">
+            <NullVaultLogo size={28} className="text-white" />
           </div>
           <span className="text-xs font-mono text-zinc-500 tracking-wider">VERIFYING VAULT ACCESS...</span>
         </div>
@@ -137,8 +138,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
 
         {/* Brand Icon */}
         <div className="flex items-center justify-between mb-6">
-          <div className="w-11 h-11 rounded-2xl bg-white text-black font-mono font-bold flex items-center justify-center text-xl shadow-[0_4px_20px_rgba(255,255,255,0.18)]">
-            ∅
+          <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center shadow-[0_4px_20px_rgba(255,255,255,0.18)]">
+            <NullVaultLogo size={26} className="text-black" />
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-[10px] font-mono text-zinc-400">
             <Lock size={12} className="text-emerald-400" />
