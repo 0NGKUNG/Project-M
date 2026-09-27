@@ -93,82 +93,85 @@ export const StatsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm">
-          <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Total Inflow</div>
-          <div className="text-lg font-bold font-mono text-emerald-400 mt-1">
-            +{formatCurrency(totalIncome, state.settings.currencySymbol)}
+      {/* Top Cards & Chart Section with unified gap-3 */}
+      <div className="space-y-3">
+        {/* Summary Metrics */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Total Inflow</div>
+            <div className="text-lg font-bold font-mono text-emerald-400 mt-1">
+              +{formatCurrency(totalIncome, state.settings.currencySymbol)}
+            </div>
+          </div>
+
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Total Outflow</div>
+            <div className="text-lg font-bold font-mono text-rose-400 mt-1">
+              -{formatCurrency(totalExpense, state.settings.currencySymbol)}
+            </div>
+          </div>
+
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Net Saved</div>
+            <div className={`text-lg font-bold font-mono mt-1 ${netSavings >= 0 ? 'text-white' : 'text-rose-400'}`}>
+              {netSavings >= 0 ? '+' : ''}{formatCurrency(netSavings, state.settings.currencySymbol)}
+            </div>
+          </div>
+
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Savings Rate</div>
+            <div className="text-lg font-bold font-mono text-white mt-1">
+              {savingsRate}%
+            </div>
           </div>
         </div>
 
-        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm">
-          <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Total Outflow</div>
-          <div className="text-lg font-bold font-mono text-rose-400 mt-1">
-            -{formatCurrency(totalExpense, state.settings.currencySymbol)}
-          </div>
-        </div>
+        {/* Target Spending Goal Progress for Selected Period */}
+        {(() => {
+          const goalLimit = timeRange === 'week' ? state.settings.goals?.weekly : timeRange === 'month' ? state.settings.goals?.monthly : undefined;
+          if (!goalLimit || goalLimit <= 0) return null;
+          const progress = Math.min(100, Math.round((totalExpense / goalLimit) * 100));
+          const isOver = totalExpense > goalLimit;
 
-        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm">
-          <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Net Saved</div>
-          <div className={`text-lg font-bold font-mono mt-1 ${netSavings >= 0 ? 'text-white' : 'text-rose-400'}`}>
-            {netSavings >= 0 ? '+' : ''}{formatCurrency(netSavings, state.settings.currencySymbol)}
-          </div>
-        </div>
+          return (
+            <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-white">
+                  <Target size={15} className="text-zinc-400" />
+                  <span className="capitalize">{timeRange} Spending Limit</span>
+                </div>
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {progress}% used
+                </span>
+              </div>
 
-        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm">
-          <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Savings Rate</div>
-          <div className="text-lg font-bold font-mono text-white mt-1">
-            {savingsRate}%
-          </div>
-        </div>
+              <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isOver ? 'bg-rose-500' : progress > 85 ? 'bg-amber-400' : 'bg-white'
+                  }`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+
+              <div className="flex justify-between items-center text-[11px] font-mono text-zinc-400">
+                <span>{formatCurrency(totalExpense, state.settings.currencySymbol)} spent</span>
+                <span>Target: {formatCurrency(goalLimit, state.settings.currencySymbol)}</span>
+              </div>
+
+              {isOver && (
+                <div className="flex items-center gap-1.5 text-[10px] font-mono text-rose-400 pt-0.5">
+                  <AlertCircle size={12} />
+                  <span>Over budget by {formatCurrency(totalExpense - goalLimit, state.settings.currencySymbol)}</span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Cashflow Graph (Dynamic Bars based on TimeRange) */}
+        <CashflowChart timeRange={timeRange} />
       </div>
-
-      {/* Target Spending Goal Progress for Selected Period */}
-      {(() => {
-        const goalLimit = timeRange === 'week' ? state.settings.goals?.weekly : timeRange === 'month' ? state.settings.goals?.monthly : undefined;
-        if (!goalLimit || goalLimit <= 0) return null;
-        const progress = Math.min(100, Math.round((totalExpense / goalLimit) * 100));
-        const isOver = totalExpense > goalLimit;
-
-        return (
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-white">
-                <Target size={15} className="text-zinc-400" />
-                <span className="capitalize">{timeRange} Spending Limit</span>
-              </div>
-              <span className="text-[10px] font-mono text-zinc-400">
-                {progress}% used
-              </span>
-            </div>
-
-            <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
-                  isOver ? 'bg-rose-500' : progress > 85 ? 'bg-amber-400' : 'bg-white'
-                }`}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-
-            <div className="flex justify-between items-center text-[11px] font-mono text-zinc-400">
-              <span>{formatCurrency(totalExpense, state.settings.currencySymbol)} spent</span>
-              <span>Target: {formatCurrency(goalLimit, state.settings.currencySymbol)}</span>
-            </div>
-
-            {isOver && (
-              <div className="flex items-center gap-1.5 text-[10px] font-mono text-rose-400 pt-0.5">
-                <AlertCircle size={12} />
-                <span>Over budget by {formatCurrency(totalExpense - goalLimit, state.settings.currencySymbol)}</span>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Cashflow Graph (Dynamic Bars based on TimeRange) */}
-      <CashflowChart timeRange={timeRange} />
 
       {/* Top Outflows & Inflows */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

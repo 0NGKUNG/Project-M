@@ -120,49 +120,51 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
         </button>
       </div>
 
-      {/* Daily Cashflow Hero Summary */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
-            <ArrowDownLeft size={13} className="text-emerald-400" />
-            <span>Income</span>
+      {/* Summary Cards & Spending Goal Section */}
+      <div className="space-y-3">
+        {/* Daily Cashflow Hero Summary */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
+              <ArrowDownLeft size={13} className="text-emerald-400" />
+              <span>Income</span>
+            </div>
+            <div className="text-base sm:text-lg font-bold font-mono text-emerald-400 mt-2 truncate">
+              +{formatCurrency(dayIncome, state.settings.currencySymbol)}
+            </div>
           </div>
-          <div className="text-base sm:text-lg font-bold font-mono text-emerald-400 mt-2 truncate">
-            +{formatCurrency(dayIncome, state.settings.currencySymbol)}
+
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
+              <ArrowUpRight size={13} className="text-rose-400" />
+              <span>Outflow</span>
+            </div>
+            <div className="text-base sm:text-lg font-bold font-mono text-rose-400 mt-2 truncate">
+              -{formatCurrency(dayExpense, state.settings.currencySymbol)}
+            </div>
+          </div>
+
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
+            <div className="text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
+              Net Flow
+            </div>
+            <div className={`text-base sm:text-lg font-bold font-mono mt-2 truncate ${
+              dayNet >= 0 ? 'text-white' : 'text-rose-400'
+            }`}>
+              {dayNet >= 0 ? '+' : ''}{formatCurrency(dayNet, state.settings.currencySymbol)}
+            </div>
           </div>
         </div>
 
-        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
-            <ArrowUpRight size={13} className="text-rose-400" />
-            <span>Outflow</span>
-          </div>
-          <div className="text-base sm:text-lg font-bold font-mono text-rose-400 mt-2 truncate">
-            -{formatCurrency(dayExpense, state.settings.currencySymbol)}
-          </div>
-        </div>
-
-        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between">
-          <div className="text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
-            Net Flow
-          </div>
-          <div className={`text-base sm:text-lg font-bold font-mono mt-2 truncate ${
-            dayNet >= 0 ? 'text-white' : 'text-rose-400'
-          }`}>
-            {dayNet >= 0 ? '+' : ''}{formatCurrency(dayNet, state.settings.currencySymbol)}
-          </div>
-        </div>
-      </div>
-
-      {/* Daily Spending Goal Pill / Progress */}
-      <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold text-white">
-            <Target size={15} className="text-zinc-400" />
-            <span>Daily Spending Goal</span>
-          </div>
-          <button
-            onClick={() => setIsEditingGoal(!isEditingGoal)}
+        {/* Daily Spending Goal Pill / Progress */}
+        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-white">
+              <Target size={15} className="text-zinc-400" />
+              <span>Daily Spending Goal</span>
+            </div>
+            <button
+              onClick={() => setIsEditingGoal(!isEditingGoal)}
             className="text-[10px] font-mono text-zinc-400 hover:text-white cursor-pointer"
           >
             {dailyGoal > 0 ? (isEditingGoal ? 'Cancel' : 'Edit Limit') : '+ Set Goal'}
@@ -212,6 +214,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
             No daily limit set. Tap '+ Set Goal' to track and cap your daily spending.
           </p>
         )}
+      </div>
       </div>
 
       {/* Day Transaction Timeline Feed */}
