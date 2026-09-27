@@ -3,7 +3,6 @@ import {
   Download,
   Upload,
   Trash2,
-  Vibrate,
   Plus,
   CreditCard,
   LogOut,
@@ -61,17 +60,6 @@ const Row: React.FC<{
   </button>
 );
 
-const Toggle: React.FC<{ on: boolean; onChange: () => void }> = ({ on, onChange }) => (
-  <button
-    type="button"
-    onClick={onChange}
-    className={`w-11 h-6 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
-      on ? 'bg-white' : 'bg-zinc-800'
-    }`}
-  >
-    <div className={`w-5 h-5 rounded-full transition-transform ${on ? 'translate-x-5 bg-black' : 'translate-x-0 bg-white/70'}`} />
-  </button>
-);
 
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="text-[10px] font-bold font-mono uppercase tracking-widest text-zinc-500 px-1 pt-2 pb-1">{children}</div>
@@ -1096,19 +1084,6 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 py-3 px-4">
-          <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
-            <Vibrate size={15} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-medium text-white">Haptic Vibration</div>
-            <div className="text-[10px] text-zinc-500">Feedback when logging on phone</div>
-          </div>
-          <Toggle
-            on={!!state.settings.vibrateOnTap}
-            onChange={() => updateSettings({ vibrateOnTap: !state.settings.vibrateOnTap })}
-          />
-        </div>
 
         <div className="flex items-center gap-3 py-3 px-4">
           <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
