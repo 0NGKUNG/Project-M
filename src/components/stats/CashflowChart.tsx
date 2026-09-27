@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
 
@@ -7,22 +7,24 @@ interface CashflowChartProps {
 }
 
 export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month' }) => {
-  const { state } = useFinance();
+  const { state, totalNetWorth } = useFinance();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [activeMetric, setActiveMetric] = useState<'all' | 'balance' | 'flow'>('all');
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // Build daily data points based on timeRange
+  // Build sequential data points based on timeRange
   const chartData = useMemo(() => {
-    const points: { label: string; date: string; income: number; expense: number }[] = [];
+    const points: { label: string; date: string; income: number; expense: number; balance: number }[] = [];
     const now = new Date();
 
     let numDays = 14;
     if (timeRange === 'week') numDays = 7;
     else if (timeRange === 'month') numDays = 30;
-    else if (timeRange === 'year') numDays = 12; // 12 months
+    else if (timeRange === 'year') numDays = 12;
     else numDays = 30;
 
     if (timeRange === 'year') {
-      // Monthly aggregation for past 12 months
+      // Monthly points
       for (let i = 11; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const y = d.getFullYear();
@@ -44,10 +46,11 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           date: prefix,
           income: inc,
           expense: exp,
+          balance: inc - exp,
         });
       }
     } else {
-      // Daily aggregation
+      // Daily points
       for (let i = numDays - 1; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 86400000);
         const dateStr = d.toISOString().split('T')[0];
@@ -67,66 +70,166 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           date: dateStr,
           income: inc,
           expense: exp,
+          balance: inc - exp,
         });
       }
     }
 
-    return points;
-  }, [state.transactions, timeRange]);
+    // Compute cumulative balance trajectory ending at totalNetWorth
+    let runningBalance = totalNetWorth;
+    // Walk backwards from last point to compute historical balance at each point
+    for (let i = points.length - 1; i >= 0; i--) {
+      points[i].balance = runningBalance;
+      runningBalance -= (points[i].income - points[i].expense);
+    }
 
-  const maxVal = Math.max(
-    ...chartData.map((d) => Math.max(d.income, d.expense)),
-    10
-  );
+    return points;
+  }, [state.transactions, timeRange, totalNetWorth]);
 
   const totalIn = chartData.reduce((s, p) => s + p.income, 0);
   const totalOut = chartData.reduce((s, p) => s + p.expense, 0);
 
+  // SVG dimensions
+  const width = 800;
+  const height = 240;
+  const paddingX = 40;
+  const paddingTop = 35;
+  const paddingBottom = 40;
+  const innerWidth = width - paddingX * 2;
+  const innerHeight = height - paddingTop - paddingBottom;
+
+  // Determine scaling
+  const allValues = chartData.flatMap((d) => [d.income, d.expense, d.balance]);
+  const minVal = Math.min(0, ...allValues);
+  const maxVal = Math.max(100, ...allValues);
+  const range = maxVal - minVal || 1;
+
+  const getX = (idx: number) => {
+    if (chartData.length <= 1) return paddingX + innerWidth / 2;
+    return paddingX + (idx / (chartData.length - 1)) * innerWidth;
+  };
+
+  const getY = (val: number) => {
+    const norm = (val - minVal) / range;
+    return paddingTop + innerHeight - norm * innerHeight;
+  };
+
+  // Generate smooth cubic bezier SVG path (Catmull-Rom to cubic Bezier)
+  const generateSmoothPath = (values: number[]) => {
+    if (values.length === 0) return '';
+    if (values.length === 1) return `M ${getX(0)},${getY(values[0])}`;
+
+    const pts = values.map((v, i) => ({ x: getX(i), y: getY(v) }));
+    let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i === 0 ? 0 : i - 1];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+
+      // Catmull-Rom tension 0.5 converted to Bezier control points
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+
+    return d;
+  };
+
+  const incomePath = generateSmoothPath(chartData.map((d) => d.income));
+  const expensePath = generateSmoothPath(chartData.map((d) => d.expense));
+  const balancePath = generateSmoothPath(chartData.map((d) => d.balance));
+
+  // Area under balance line
+  const balanceAreaPath = chartData.length > 1
+    ? `${balancePath} L ${getX(chartData.length - 1).toFixed(1)},${(paddingTop + innerHeight).toFixed(1)} L ${getX(0).toFixed(1)},${(paddingTop + innerHeight).toFixed(1)} Z`
+    : '';
+
+  // Handle pointer hover across the SVG
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current || chartData.length === 0) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const clientX = e.clientX - rect.left;
+    const svgX = (clientX / rect.width) * width;
+
+    // Find nearest data index
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    chartData.forEach((_, idx) => {
+      const diff = Math.abs(getX(idx) - svgX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    setHoveredIndex(closestIdx);
+  };
+
+  const activePoint = hoveredIndex !== null && chartData[hoveredIndex] ? chartData[hoveredIndex] : null;
+  const activeX = hoveredIndex !== null ? getX(hoveredIndex) : 0;
+
   return (
     <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
-      {/* Chart Header - fixed height container so hover tooltip never shifts card layout or size */}
+      {/* Chart Header - fixed height container */}
       <div className="flex items-center justify-between min-h-[46px]">
         <div>
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Cashflow Trends & Movement
+            Cashflow & Balance Curves
           </span>
-          <div className="flex items-center gap-3 text-[11px] font-mono mt-1">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              Inflow: +{formatCurrency(totalIn, state.settings.currencySymbol)}
-            </span>
-            <span className="flex items-center gap-1.5 text-rose-400">
-              <span className="w-2 h-2 rounded-full bg-rose-400" />
-              Outflow: -{formatCurrency(totalOut, state.settings.currencySymbol)}
-            </span>
+          <div className="flex items-center gap-3 sm:gap-4 text-[11px] font-mono mt-1">
+            <button
+              onClick={() => setActiveMetric('all')}
+              className={`flex items-center gap-1.5 cursor-pointer transition-opacity ${
+                activeMetric === 'all' ? 'opacity-100 font-bold' : 'opacity-50'
+              }`}
+            >
+              <span className="w-2.5 h-0.5 bg-[#a855f7] rounded-full" />
+              <span className="text-purple-400">Balance</span>
+            </button>
+            <button
+              onClick={() => setActiveMetric(activeMetric === 'flow' ? 'all' : 'flow')}
+              className="flex items-center gap-1.5 cursor-pointer"
+            >
+              <span className="w-2.5 h-0.5 bg-[#eab308] rounded-full" />
+              <span className="text-amber-400">In: +{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
+            </button>
+            <button
+              onClick={() => setActiveMetric(activeMetric === 'flow' ? 'all' : 'flow')}
+              className="flex items-center gap-1.5 cursor-pointer"
+            >
+              <span className="w-2.5 h-0.5 bg-[#f43f5e] rounded-full" />
+              <span className="text-rose-400">Out: -{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
+            </button>
           </div>
         </div>
 
-        {/* Hover info badge with fixed dimensions / invisible placeholder when not hovered */}
-        <div className={`text-right font-mono px-2.5 py-1 rounded-xl border transition-opacity duration-150 ${
-          hoveredIndex !== null && chartData[hoveredIndex]
-            ? 'opacity-100 bg-zinc-900/80 border-zinc-800'
+        {/* Hover info badge matching user image with pill highlight */}
+        <div className={`text-right font-mono px-3 py-1.5 rounded-2xl border transition-opacity duration-150 ${
+          activePoint
+            ? 'opacity-100 bg-[#16161d] border-zinc-700/80 shadow-lg'
             : 'opacity-0 pointer-events-none border-transparent'
         }`}>
-          <div className="text-[10px] text-zinc-400">
-            {hoveredIndex !== null && chartData[hoveredIndex] ? chartData[hoveredIndex].label : '-'}
+          <div className="text-[10px] text-zinc-400 font-bold">
+            {activePoint ? activePoint.label : '-'}
           </div>
-          <div className="text-xs text-white font-bold whitespace-nowrap">
-            {hoveredIndex !== null && chartData[hoveredIndex] ? (
+          <div className="text-xs text-white font-bold whitespace-nowrap flex items-center gap-2">
+            {activePoint ? (
               <>
-                {chartData[hoveredIndex].income > 0 && (
-                  <span className="text-emerald-400 mr-2">
-                    +{formatCurrency(chartData[hoveredIndex].income, state.settings.currencySymbol)}
-                  </span>
-                )}
-                {chartData[hoveredIndex].expense > 0 && (
-                  <span className="text-rose-400">
-                    -{formatCurrency(chartData[hoveredIndex].expense, state.settings.currencySymbol)}
-                  </span>
-                )}
-                {chartData[hoveredIndex].income === 0 && chartData[hoveredIndex].expense === 0 && (
-                  <span className="text-zinc-500">No flow</span>
-                )}
+                <span className="text-purple-300">
+                  {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
+                </span>
+                <span className="text-[10px] text-zinc-500">•</span>
+                <span className="text-amber-400 text-[11px]">
+                  +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
+                </span>
+                <span className="text-rose-400 text-[11px]">
+                  -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
+                </span>
               </>
             ) : (
               <span className="text-zinc-700">0.00</span>
@@ -135,53 +238,240 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
         </div>
       </div>
 
-      {/* Bar Graph Canvas */}
-      <div className="h-44 w-full flex items-end gap-1 sm:gap-2 pt-6 pb-2 px-1 border-b border-zinc-900 overflow-x-auto">
-        {chartData.map((d, idx) => {
-          const incHeight = maxVal > 0 ? (d.income / maxVal) * 100 : 0;
-          const expHeight = maxVal > 0 ? (d.expense / maxVal) * 100 : 0;
-          const isHovered = hoveredIndex === idx;
+      {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
+      <div className="w-full relative select-none">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full h-48 sm:h-56 overflow-visible cursor-crosshair"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHoveredIndex(null)}
+        >
+          <defs>
+            {/* Soft gradient fill for balance area */}
+            <linearGradient id="balanceGlow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.0" />
+            </linearGradient>
 
-          return (
-            <div
-              key={d.date}
-              onMouseEnter={() => setHoveredIndex(idx)}
-              onMouseLeave={() => setHoveredIndex(null)}
-              className="flex-1 min-w-[12px] sm:min-w-[18px] h-full flex flex-col justify-end items-center gap-1 cursor-pointer group relative"
-            >
-              {/* Bars side by side or stacked */}
-              <div className="w-full flex items-end justify-center gap-0.5 h-full">
-                {/* Income bar */}
-                <div
-                  style={{ height: `${Math.max(incHeight > 0 ? 6 : 0, incHeight)}%` }}
-                  className={`w-1/2 max-w-[8px] rounded-t-xs transition-all duration-300 ${
-                    incHeight > 0 ? 'bg-emerald-400' : 'bg-transparent'
-                  } ${isHovered ? 'brightness-125 scale-x-110' : 'opacity-85'}`}
-                />
-                {/* Expense bar */}
-                <div
-                  style={{ height: `${Math.max(expHeight > 0 ? 6 : 0, expHeight)}%` }}
-                  className={`w-1/2 max-w-[8px] rounded-t-xs transition-all duration-300 ${
-                    expHeight > 0 ? 'bg-rose-500' : 'bg-transparent'
-                  } ${isHovered ? 'brightness-125 scale-x-110' : 'opacity-85'}`}
-                />
-              </div>
+            {/* Inflow gradient */}
+            <linearGradient id="incomeGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#fbbf24" />
+              <stop offset="100%" stopColor="#eab308" />
+            </linearGradient>
 
-              {/* Baseline pill if empty */}
-              {d.income === 0 && d.expense === 0 && (
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-800/80 group-hover:bg-zinc-600 transition-colors" />
-              )}
-            </div>
-          );
-        })}
+            {/* Subtle glow filter */}
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          {/* Horizontal grid lines */}
+          <line
+            x1={paddingX}
+            y1={paddingTop}
+            x2={width - paddingX}
+            y2={paddingTop}
+            stroke="#27272a"
+            strokeDasharray="4 4"
+            strokeWidth="0.8"
+          />
+          <line
+            x1={paddingX}
+            y1={paddingTop + innerHeight / 2}
+            x2={width - paddingX}
+            y2={paddingTop + innerHeight / 2}
+            stroke="#27272a"
+            strokeDasharray="4 4"
+            strokeWidth="0.8"
+          />
+          <line
+            x1={paddingX}
+            y1={paddingTop + innerHeight}
+            x2={width - paddingX}
+            y2={paddingTop + innerHeight}
+            stroke="#27272a"
+            strokeWidth="1"
+          />
+
+          {/* Area fill under Net Balance */}
+          {balanceAreaPath && (
+            <path d={balanceAreaPath} fill="url(#balanceGlow)" />
+          )}
+
+          {/* Hover highlight column (translucent dark pillar from user reference) */}
+          {hoveredIndex !== null && activePoint && (
+            <g className="transition-all duration-75">
+              <rect
+                x={activeX - 18}
+                y={paddingTop - 10}
+                width={36}
+                height={innerHeight + 20}
+                fill="#ffffff"
+                fillOpacity="0.06"
+                rx={6}
+              />
+              <line
+                x1={activeX}
+                y1={paddingTop - 8}
+                x2={activeX}
+                y2={paddingTop + innerHeight}
+                stroke="#a855f7"
+                strokeWidth="1.2"
+                strokeDasharray="3 3"
+                opacity="0.8"
+              />
+            </g>
+          )}
+
+          {/* 1. Net Balance Curve (Purple, bold) */}
+          <path
+            d={balancePath}
+            fill="none"
+            stroke="#a855f7"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* 2. Inflow Curve (Yellow/Amber, smooth) */}
+          <path
+            d={incomePath}
+            fill="none"
+            stroke="url(#incomeGrad)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.9"
+          />
+
+          {/* 3. Outflow Curve (Rose, subtle) */}
+          <path
+            d={expensePath}
+            fill="none"
+            stroke="#f43f5e"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.75"
+          />
+
+          {/* Highlight Nodes / Targets on the active hovered column */}
+          {hoveredIndex !== null && activePoint && (
+            <g>
+              {/* Balance point circle (white core, purple outer glow) */}
+              <circle
+                cx={activeX}
+                cy={getY(activePoint.balance)}
+                r={7}
+                fill="#000000"
+                stroke="#a855f7"
+                strokeWidth={2.5}
+              />
+              <circle
+                cx={activeX}
+                cy={getY(activePoint.balance)}
+                r={3.5}
+                fill="#ffffff"
+              />
+
+              {/* Income point circle (amber) */}
+              <circle
+                cx={activeX}
+                cy={getY(activePoint.income)}
+                r={5}
+                fill="#000000"
+                stroke="#eab308"
+                strokeWidth={2}
+              />
+              <circle
+                cx={activeX}
+                cy={getY(activePoint.income)}
+                r={2}
+                fill="#fde047"
+              />
+
+              {/* Floating Pill Tooltip tag directly on the chart (like reference image '7k' tag) */}
+              <g transform={`translate(${Math.min(width - 65, Math.max(activeX, 45))}, ${Math.max(20, getY(activePoint.balance) - 28)})`}>
+                <rect
+                  x={-28}
+                  y={-14}
+                  width={56}
+                  height={22}
+                  rx={11}
+                  fill="#f59e0b"
+                  filter="url(#glow)"
+                />
+                <rect
+                  x={-28}
+                  y={-14}
+                  width={56}
+                  height={22}
+                  rx={11}
+                  fill="#f59e0b"
+                />
+                <text
+                  x={0}
+                  y={1.5}
+                  textAnchor="middle"
+                  fill="#000000"
+                  fontSize="11"
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                >
+                  {formatCurrency(activePoint.balance, state.settings.currencySymbol).replace('.00', '')}
+                </text>
+                {/* Pointer arrow downward */}
+                <polygon
+                  points="-4,8 4,8 0,12"
+                  fill="#f59e0b"
+                />
+              </g>
+            </g>
+          )}
+
+          {/* X Axis Labels */}
+          {chartData.map((d, idx) => {
+            // Show select evenly spaced labels
+            const step = Math.max(1, Math.floor(chartData.length / 6));
+            const isEdgeOrStep = idx === 0 || idx === chartData.length - 1 || idx % step === 0;
+            if (!isEdgeOrStep) return null;
+
+            return (
+              <text
+                key={d.date}
+                x={getX(idx)}
+                y={height - 10}
+                textAnchor="middle"
+                fill={hoveredIndex === idx ? '#ffffff' : '#71717a'}
+                fontSize="10"
+                fontFamily="monospace"
+                fontWeight={hoveredIndex === idx ? 'bold' : 'normal'}
+              >
+                {d.label}
+              </text>
+            );
+          })}
+        </svg>
       </div>
 
-      {/* Axis dates */}
-      <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 px-1">
-        <span>{chartData[0]?.label}</span>
-        {chartData.length > 2 && <span>{chartData[Math.floor(chartData.length / 2)]?.label}</span>}
-        <span>{chartData[chartData.length - 1]?.label}</span>
+      {/* Metric legend description */}
+      <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 pt-1 border-t border-zinc-900/60">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-purple-500" /> Net Balance
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-400" /> Inflow
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-rose-500" /> Outflow
+          </span>
+        </div>
+        <span className="text-zinc-600">Curved Catmull-Rom Spline</span>
       </div>
     </div>
   );
 };
+
