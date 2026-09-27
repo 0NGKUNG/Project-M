@@ -89,19 +89,19 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const totalIn = chartData.reduce((s, p) => s + p.income, 0);
   const totalOut = chartData.reduce((s, p) => s + p.expense, 0);
 
-  // SVG dimensions
-  const width = 800;
+  // SVG dimensions - full responsive width with minimal horizontal padding
+  const width = 1000;
   const height = 240;
-  const paddingX = 40;
-  const paddingTop = 35;
-  const paddingBottom = 40;
+  const paddingX = 14;
+  const paddingTop = 32;
+  const paddingBottom = 36;
   const innerWidth = width - paddingX * 2;
   const innerHeight = height - paddingTop - paddingBottom;
 
   // Determine scaling
   const allValues = chartData.flatMap((d) => [d.income, d.expense, d.balance]);
   const minVal = Math.min(0, ...allValues);
-  const maxVal = Math.max(100, ...allValues);
+  const maxVal = Math.max(10, ...allValues);
   const range = maxVal - minVal || 1;
 
   const getX = (idx: number) => {
@@ -188,15 +188,15 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                 activeMetric === 'all' ? 'opacity-100 font-bold' : 'opacity-50'
               }`}
             >
-              <span className="w-2.5 h-0.5 bg-[#a855f7] rounded-full" />
-              <span className="text-purple-400">Balance</span>
+              <span className="w-2.5 h-0.5 bg-[#3b82f6] rounded-full" />
+              <span className="text-blue-400">Balance</span>
             </button>
             <button
               onClick={() => setActiveMetric(activeMetric === 'flow' ? 'all' : 'flow')}
               className="flex items-center gap-1.5 cursor-pointer"
             >
-              <span className="w-2.5 h-0.5 bg-[#eab308] rounded-full" />
-              <span className="text-amber-400">In: +{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
+              <span className="w-2.5 h-0.5 bg-[#10b981] rounded-full" />
+              <span className="text-emerald-400">In: +{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
             </button>
             <button
               onClick={() => setActiveMetric(activeMetric === 'flow' ? 'all' : 'flow')}
@@ -208,7 +208,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           </div>
         </div>
 
-        {/* Hover info badge matching user image with pill highlight */}
+        {/* Hover info badge */}
         <div className={`text-right font-mono px-3 py-1.5 rounded-2xl border transition-opacity duration-150 ${
           activePoint
             ? 'opacity-100 bg-[#16161d] border-zinc-700/80 shadow-lg'
@@ -220,11 +220,11 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           <div className="text-xs text-white font-bold whitespace-nowrap flex items-center gap-2">
             {activePoint ? (
               <>
-                <span className="text-purple-300">
+                <span className="text-blue-400">
                   {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
                 </span>
                 <span className="text-[10px] text-zinc-500">•</span>
-                <span className="text-amber-400 text-[11px]">
+                <span className="text-emerald-400 text-[11px]">
                   +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
                 </span>
                 <span className="text-rose-400 text-[11px]">
@@ -243,21 +243,28 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-48 sm:h-56 overflow-visible cursor-crosshair"
+          preserveAspectRatio="none"
+          className="w-full h-52 sm:h-60 overflow-visible cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoveredIndex(null)}
         >
           <defs>
-            {/* Soft gradient fill for balance area */}
+            {/* Soft blue gradient fill for balance area */}
             <linearGradient id="balanceGlow" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
             </linearGradient>
 
-            {/* Inflow gradient */}
+            {/* Inflow gradient (Green) */}
             <linearGradient id="incomeGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="100%" stopColor="#eab308" />
+              <stop offset="0%" stopColor="#34d399" />
+              <stop offset="100%" stopColor="#10b981" />
+            </linearGradient>
+
+            {/* Outflow gradient (Red) */}
+            <linearGradient id="expenseGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#fb7185" />
+              <stop offset="100%" stopColor="#f43f5e" />
             </linearGradient>
 
             {/* Subtle glow filter */}
@@ -304,9 +311,9 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           {hoveredIndex !== null && activePoint && (
             <g className="transition-all duration-75">
               <rect
-                x={activeX - 18}
+                x={activeX - 20}
                 y={paddingTop - 10}
-                width={36}
+                width={40}
                 height={innerHeight + 20}
                 fill="#ffffff"
                 fillOpacity="0.06"
@@ -317,7 +324,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                 y1={paddingTop - 8}
                 x2={activeX}
                 y2={paddingTop + innerHeight}
-                stroke="#a855f7"
+                stroke="#3b82f6"
                 strokeWidth="1.2"
                 strokeDasharray="3 3"
                 opacity="0.8"
@@ -325,17 +332,17 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             </g>
           )}
 
-          {/* 1. Net Balance Curve (Purple, bold) */}
+          {/* 1. Net Balance Curve (Blue, bold) */}
           <path
             d={balancePath}
             fill="none"
-            stroke="#a855f7"
+            stroke="#3b82f6"
             strokeWidth="2.8"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
 
-          {/* 2. Inflow Curve (Yellow/Amber, smooth) */}
+          {/* 2. Inflow Curve (Green, smooth) */}
           <path
             d={incomePath}
             fill="none"
@@ -346,27 +353,27 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             opacity="0.9"
           />
 
-          {/* 3. Outflow Curve (Rose, subtle) */}
+          {/* 3. Outflow Curve (Red, smooth) */}
           <path
             d={expensePath}
             fill="none"
-            stroke="#f43f5e"
-            strokeWidth="1.8"
+            stroke="url(#expenseGrad)"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.75"
+            opacity="0.9"
           />
 
           {/* Highlight Nodes / Targets on the active hovered column */}
           {hoveredIndex !== null && activePoint && (
             <g>
-              {/* Balance point circle (white core, purple outer glow) */}
+              {/* Balance point circle (Blue) */}
               <circle
                 cx={activeX}
                 cy={getY(activePoint.balance)}
                 r={7}
                 fill="#000000"
-                stroke="#a855f7"
+                stroke="#3b82f6"
                 strokeWidth={2.5}
               />
               <circle
@@ -376,23 +383,23 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                 fill="#ffffff"
               />
 
-              {/* Income point circle (amber) */}
+              {/* Income point circle (Green) */}
               <circle
                 cx={activeX}
                 cy={getY(activePoint.income)}
                 r={5}
                 fill="#000000"
-                stroke="#eab308"
+                stroke="#10b981"
                 strokeWidth={2}
               />
               <circle
                 cx={activeX}
                 cy={getY(activePoint.income)}
                 r={2}
-                fill="#fde047"
+                fill="#34d399"
               />
 
-              {/* Floating Pill Tooltip tag directly on the chart (like reference image '7k' tag) */}
+              {/* Floating Pill Tooltip tag directly on the chart */}
               <g transform={`translate(${Math.min(width - 65, Math.max(activeX, 45))}, ${Math.max(20, getY(activePoint.balance) - 28)})`}>
                 <rect
                   x={-28}
@@ -400,7 +407,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                   width={56}
                   height={22}
                   rx={11}
-                  fill="#f59e0b"
+                  fill="#3b82f6"
                   filter="url(#glow)"
                 />
                 <rect
@@ -409,13 +416,13 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                   width={56}
                   height={22}
                   rx={11}
-                  fill="#f59e0b"
+                  fill="#3b82f6"
                 />
                 <text
                   x={0}
                   y={1.5}
                   textAnchor="middle"
-                  fill="#000000"
+                  fill="#ffffff"
                   fontSize="11"
                   fontFamily="monospace"
                   fontWeight="bold"
@@ -425,7 +432,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                 {/* Pointer arrow downward */}
                 <polygon
                   points="-4,8 4,8 0,12"
-                  fill="#f59e0b"
+                  fill="#3b82f6"
                 />
               </g>
             </g>
@@ -460,10 +467,10 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
       <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 pt-1 border-t border-zinc-900/60">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-purple-500" /> Net Balance
+            <span className="w-2 h-2 rounded-full bg-blue-500" /> Net Balance
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400" /> Inflow
+            <span className="w-2 h-2 rounded-full bg-emerald-500" /> Inflow
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-rose-500" /> Outflow
