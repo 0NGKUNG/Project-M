@@ -250,7 +250,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
         >
           <defs>
             {/* Soft blue gradient fill for balance area */}
-            <linearGradient id="balanceGlow" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="balanceGlow" x1="0" y1={paddingTop} x2="0" y2={paddingTop + innerHeight} gradientUnits="userSpaceOnUse">
               <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
               <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
             </linearGradient>
@@ -346,7 +346,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           <path
             d={incomePath}
             fill="none"
-            stroke="url(#incomeGrad)"
+            stroke="#10b981"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -357,7 +357,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           <path
             d={expensePath}
             fill="none"
-            stroke="url(#expenseGrad)"
+            stroke="#f43f5e"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
