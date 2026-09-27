@@ -74,21 +74,28 @@ export const SettingsView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 pb-24 md:pb-12 safe-top px-4 md:px-8 w-full animate-fade-in">
-      <div className="pt-1">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white">Settings & Vault</h2>
-        <p className="text-xs text-zinc-500 font-mono mt-0.5">Preferences, Wallets & Offline Backups</p>
+    <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+      {/* Header matching Portfolio & Stats layout */}
+      <div className="flex items-center justify-between pt-1">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-white font-mono uppercase">
+            SETTINGS & VAULT
+          </h2>
+          <p className="text-xs text-zinc-500 font-mono">
+            Preferences, Wallets & Offline Backups
+          </p>
+        </div>
       </div>
 
       {importStatus && (
-        <div className="p-3.5 rounded-2xl bg-white text-black text-xs font-bold text-center animate-fade-in">
+        <div className="p-3.5 rounded-2xl bg-white text-black text-xs font-bold text-center animate-fade-in font-mono">
           {importStatus}
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Currency & Interface Preference */}
-        <div className="bg-[#101014] rounded-3xl p-6 space-y-4 shadow-sm">
+        <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 space-y-4 shadow-sm">
           <span className="text-xs font-mono uppercase font-bold tracking-wider text-zinc-400 block">
             Currency Preference
           </span>
@@ -212,7 +219,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Wallets & Accounts Management */}
-        <div className="bg-[#101014] rounded-3xl p-6 space-y-4 shadow-sm">
+        <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase font-bold tracking-wider text-zinc-400">
               Wallets & Accounts ({state.accounts.length})
@@ -295,7 +302,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Backup and Data Export / Import */}
-        <div className="bg-[#101014] rounded-3xl p-6 space-y-4 shadow-sm">
+        <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 space-y-4 shadow-sm">
           <span className="text-xs font-mono uppercase font-bold tracking-wider text-zinc-400 block">
             Local Storage & Data Ownership
           </span>
@@ -341,7 +348,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Multi-Device Tip & Security */}
-        <div className="bg-[#101014] rounded-3xl p-6 flex flex-col justify-between shadow-sm space-y-4">
+        <div className="bg-[#101014] rounded-3xl p-6 border border-zinc-900/60 flex flex-col justify-between shadow-sm space-y-4">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-2xl bg-zinc-800/80 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
               <ShieldCheck size={20} />
