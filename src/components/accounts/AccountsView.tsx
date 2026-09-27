@@ -63,7 +63,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full max-w-4xl mx-auto animate-fade-in select-none">
+    <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
       {/* Header */}
       <div className="flex items-center justify-between pt-1">
         <div>
