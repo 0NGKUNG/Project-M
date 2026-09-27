@@ -115,15 +115,6 @@ export const RecurringManager: React.FC = () => {
   const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
   const getAccount = (accId: string) => state.accounts.find((a) => a.id === accId);
 
-  const totalMonthlyCommitment = recurringList.reduce((sum, item) => {
-    if (!item.isActive || item.type !== 'expense') return sum;
-    let factor = 1;
-    if (item.frequency === 'daily') factor = 30;
-    if (item.frequency === 'weekly') factor = 4.33;
-    if (item.frequency === 'yearly') factor = 1 / 12;
-    return sum + item.amount * factor;
-  }, 0);
-
   const freqLabel = useCallback(() => {
     const unit = frequency === 'daily' ? (repeatEvery === 1 ? 'day' : 'days')
       : frequency === 'weekly' ? (repeatEvery === 1 ? 'week' : 'weeks')
@@ -140,9 +131,6 @@ export const RecurringManager: React.FC = () => {
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
             Recurring &amp; Subscriptions ({recurringList.length})
           </span>
-          <p className="text-[11px] text-zinc-500 font-mono">
-            Est. Monthly Outflow: ~{formatCurrency(totalMonthlyCommitment, state.settings.currencySymbol)}
-          </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}

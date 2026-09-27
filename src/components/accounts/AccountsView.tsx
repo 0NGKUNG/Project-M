@@ -62,7 +62,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+    <div className="space-y-3 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
       {/* Header */}
       <div className="flex items-center justify-between pt-1">
         <div>
@@ -113,7 +113,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
       {/* Tab 1: Wallets & Asset Distribution */}
       {currentSubTab === 'wallets' && (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-3 animate-fade-in">
           {/* Net Worth Hero Card */}
           <div className="bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-7 border border-zinc-900/60 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />

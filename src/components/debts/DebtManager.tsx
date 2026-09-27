@@ -62,15 +62,6 @@ export const DebtManager: React.FC = () => {
     setSettleAmount('');
   };
 
-  // Summaries
-  const totalLent = debtList
-    .filter((d) => d.type === 'lend' && d.status === 'active')
-    .reduce((sum, d) => sum + d.remainingAmount, 0);
-
-  const totalBorrowed = debtList
-    .filter((d) => d.type === 'borrow' && d.status === 'active')
-    .reduce((sum, d) => sum + d.remainingAmount, 0);
-
   return (
     <div className="space-y-4">
       {/* Top Banner & Summary */}
@@ -79,10 +70,6 @@ export const DebtManager: React.FC = () => {
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
             Borrow & Lend Tracker ({debtList.length})
           </span>
-          <p className="text-[11px] text-zinc-500 font-mono">
-            Owed to you: <span className="text-emerald-400 font-bold">+{formatCurrency(totalLent, state.settings.currencySymbol)}</span> • 
-            You owe: <span className="text-rose-400 font-bold">-{formatCurrency(totalBorrowed, state.settings.currencySymbol)}</span>
-          </p>
         </div>
 
         <button

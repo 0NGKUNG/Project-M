@@ -49,7 +49,6 @@ export const TransactionListView: React.FC = () => {
       <div className="pt-1 flex items-center justify-between">
         <div>
           <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white">Transaction Logs</h2>
-          <p className="text-xs text-zinc-500 font-mono mt-0.5">Filterable history across all accounts</p>
         </div>
         <span className="text-xs font-mono text-zinc-300 bg-[#121216] px-3.5 py-1.5 rounded-full">
           {filteredTransactions.length} entries

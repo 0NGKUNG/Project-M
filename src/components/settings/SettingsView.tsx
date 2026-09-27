@@ -220,7 +220,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-3 animate-fade-in">
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -230,10 +230,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           >
             <ArrowLeft size={16} />
           </button>
-          <div>
-            <h2 className="text-base font-bold text-white font-mono">SPENDING GOALS</h2>
-            <div className="text-[10px] text-zinc-500 font-mono">Custom Range &amp; Category Allocations</div>
-          </div>
+          <h2 className="text-base font-bold text-white font-mono">SPENDING GOALS</h2>
         </div>
 
         <button
@@ -691,7 +688,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   ];
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-3 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -701,10 +698,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           >
             <ArrowLeft size={16} />
           </button>
-          <div>
-            <h2 className="text-base font-bold text-white font-mono">CATEGORIES</h2>
-            <div className="text-[10px] text-zinc-500 font-mono">Parent &amp; Subcategories</div>
-          </div>
+          <h2 className="text-base font-bold text-white font-mono">CATEGORIES</h2>
         </div>
 
         <button
@@ -736,7 +730,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {/* Grid of Categories (Matching 2-column Reference Style) */}
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {parentCategories.map((cat) => {
           const subs = getSubcategories(cat.id);
 

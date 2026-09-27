@@ -59,7 +59,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {isCloudSynced ? 'Supabase Synced' : 'Local Offline'}
               </span>
           </div>
-          <p className="text-xs text-zinc-500 font-mono mt-0.5">Capital reserves & asset health</p>
         </div>
 
         <button
