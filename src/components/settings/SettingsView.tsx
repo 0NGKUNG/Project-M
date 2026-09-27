@@ -299,7 +299,7 @@ export const SettingsView: React.FC = () => {
             <div className="space-y-1">
               <div className="text-xs font-bold text-white">Owner Vault Security</div>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Authorized for <span className="text-white font-mono">ong.chayathon@gmail.com</span>. All other internet traffic is denied.
+                Protected by encrypted Supabase Auth. All unauthorized internet traffic is blocked.
               </p>
             </div>
           </div>

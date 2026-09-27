@@ -6,7 +6,7 @@ interface AuthGateProps {
   children: React.ReactNode;
 }
 
-const AUTHORIZED_EMAIL = 'ong.chayathon@gmail.com';
+const AUTHORIZED_EMAIL = (import.meta.env.VITE_AUTHORIZED_EMAIL || '').toLowerCase().trim();
 
 export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
   const [session, setSession] = useState<any>(null);
@@ -62,8 +62,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     setInfoMsg(null);
 
     const cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail !== AUTHORIZED_EMAIL.toLowerCase()) {
-      setErrorMsg('Access Denied: Only ong.chayathon@gmail.com can enter NullVault.');
+    if (AUTHORIZED_EMAIL && cleanEmail !== AUTHORIZED_EMAIL) {
+      setErrorMsg('Access Denied: You are not authorized to access this Vault.');
       return;
     }
 
@@ -120,8 +120,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     );
   }
 
-  // If user is authenticated and is the authorized owner, show full app
-  if (session && session.user.email?.toLowerCase() === AUTHORIZED_EMAIL.toLowerCase()) {
+  // If user is authenticated and matches authorized owner
+  if (session && (!AUTHORIZED_EMAIL || session.user?.email?.toLowerCase() === AUTHORIZED_EMAIL)) {
     return <>{children}</>;
   }
 
@@ -172,7 +172,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ong.chayathon@gmail.com"
+              placeholder="owner@domain.com"
               className="w-full bg-[#16161d] rounded-2xl px-4 py-3 text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-white transition-all font-mono"
               required
             />
