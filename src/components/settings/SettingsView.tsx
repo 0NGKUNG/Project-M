@@ -4,11 +4,13 @@ import {
   Upload, 
   Trash2, 
   Vibrate, 
-  Smartphone, 
   Plus, 
-  CreditCard 
+  CreditCard,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
+import { supabase } from '../../db/supabaseClient';
 import type { Account } from '../../types/finance';
 
 export const SettingsView: React.FC = () => {
@@ -288,16 +290,33 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Multi-Device Tip */}
-        <div className="bg-[#101014] rounded-3xl p-6 flex items-start gap-4 shadow-sm">
-          <div className="w-10 h-10 rounded-2xl bg-zinc-800/80 flex items-center justify-center text-zinc-300 shrink-0 mt-0.5">
-            <Smartphone size={20} />
+        {/* Multi-Device Tip & Security */}
+        <div className="bg-[#101014] rounded-3xl p-6 flex flex-col justify-between shadow-sm space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-2xl bg-zinc-800/80 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+              <ShieldCheck size={20} />
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-bold text-white">Owner Vault Security</div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Authorized for <span className="text-white font-mono">ong.chayathon@gmail.com</span>. All other internet traffic is denied.
+              </p>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <div className="text-xs font-bold text-white">Cross-Device Freedom</div>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Use this app simultaneously on your mobile phone and PC. Export your backup file on one device and restore on the other whenever you want a fresh snapshot.
-            </p>
+
+          <div className="pt-3 border-t border-zinc-900 flex justify-between items-center">
+            <span className="text-[10px] text-zinc-500 font-mono">STAYS SIGNED IN</span>
+            <button
+              onClick={() => {
+                if (window.confirm('Lock Vault and log out?')) {
+                  supabase?.auth.signOut();
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer"
+            >
+              <LogOut size={13} />
+              <span>Lock Vault</span>
+            </button>
           </div>
         </div>
       </div>

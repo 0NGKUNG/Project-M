@@ -107,10 +107,15 @@ export const AppContent: React.FC = () => {
   );
 };
 
+import { AuthGate } from './components/auth/AuthGate';
+
 export default function App() {
   return (
     <FinanceProvider>
-      <AppContent />
+      <AuthGate>
+        <AppContent />
+      </AuthGate>
     </FinanceProvider>
   );
 }
+
