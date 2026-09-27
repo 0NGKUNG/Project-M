@@ -302,9 +302,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             strokeWidth="1"
           />
 
-          {/* Area fill under Net Balance */}
           {balanceAreaPath && (
-            <path d={balanceAreaPath} fill="url(#balanceGlow)" />
+            <path d={balanceAreaPath} fill="#3b82f6" fillOpacity="0.12" />
           )}
 
           {/* Hover highlight column (translucent dark pillar from user reference) */}
