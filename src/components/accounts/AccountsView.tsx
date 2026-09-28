@@ -139,25 +139,27 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               {/* Individual Account Progress Bars List: a ----- 50%, b ---- 30% */}
               <div className="space-y-2.5">
                 {accountStats.map((acc, idx) => {
-                  const dotColors = [
-                    'bg-white',
-                    'bg-zinc-300',
-                    'bg-zinc-500',
-                    'bg-zinc-600',
-                    'bg-zinc-700',
-                    'bg-zinc-800',
+                  // ── Unified accent palette ──────────────────────────────
+                  // Written as complete class strings so Tailwind JIT picks them up.
+                  const ACCENTS = [
+                    { dot: 'bg-white',    bar: 'bg-white',    border: 'border-white/30',    from: 'from-[#ffffff09]', via: 'via-[#151520]' },
+                    { dot: 'bg-zinc-300', bar: 'bg-zinc-300', border: 'border-zinc-300/25', from: 'from-[#d4d4d809]', via: 'via-[#141520]' },
+                    { dot: 'bg-zinc-500', bar: 'bg-zinc-500', border: 'border-zinc-500/30', from: 'from-[#71717509]', via: 'via-[#141420]' },
+                    { dot: 'bg-zinc-600', bar: 'bg-zinc-600', border: 'border-zinc-600/35', from: 'from-[#52525609]', via: 'via-[#131420]' },
+                    { dot: 'bg-zinc-700', bar: 'bg-zinc-700', border: 'border-zinc-700/40', from: 'from-[#3f3f4609]', via: 'via-[#131418]' },
+                    { dot: 'bg-zinc-800', bar: 'bg-zinc-800', border: 'border-zinc-800/50', from: 'from-[#27272a09]', via: 'via-[#121418]' },
                   ];
-                  const barBg = dotColors[idx % dotColors.length];
+                  const accent = ACCENTS[idx % ACCENTS.length];
 
                   return (
-                    <div 
-                      key={acc.id} 
+                    <div
+                      key={acc.id}
                       onClick={() => onSelectAccount(acc)}
                       className="space-y-1 p-1.5 -mx-1.5 rounded-xl hover:bg-white/5 active:scale-[0.99] transition-all cursor-pointer group"
                     >
                       <div className="flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${barBg} shrink-0`} />
+                          <span className={`w-2 h-2 rounded-full ${accent.dot} shrink-0`} />
                           <span className="text-zinc-300 font-semibold truncate group-hover:text-white transition-colors">{acc.name}</span>
                           <span className="text-[10px] text-zinc-500 uppercase font-mono">({acc.type})</span>
                         </div>
@@ -171,10 +173,10 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Horizontal progress track */}
+                      {/* Progress bar — same colour as dot */}
                       <div className="w-full h-1.5 rounded-full bg-zinc-900 overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${barBg}`}
+                          className={`h-full rounded-full transition-all duration-500 ${accent.bar}`}
                           style={{ width: `${Math.max(2, acc.percentage)}%` }}
                         />
                       </div>
@@ -185,34 +187,35 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </div>
           </div>
 
-          {/* Account Cards List with Percentage Breakdown */}
+          {/* Account Cards List */}
           <div className="space-y-3">
             <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block px-1">
               Account Ledger ({accountStats.length})
             </span>
 
-            {/* Compact 2-per-row card grid on mobile and desktop */}
-            {/* Bank Card / Folder Style 2-per-row grid on mobile and desktop */}
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {accountStats.map((acc, index) => {
                 const isNegative = (acc.currentBalance ?? 0) < 0;
-                // Subtle gradient accent variations for realistic card/folder look
-                const cardGradients = [
-                  'from-[#191924] via-[#14141c] to-[#0e0e14] border-zinc-800/90',
-                  'from-[#1a1c24] via-[#14161c] to-[#0e0e14] border-zinc-800/90',
-                  'from-[#1e1a24] via-[#16141c] to-[#0e0e14] border-zinc-800/90',
-                  'from-[#181a20] via-[#13151a] to-[#0e0e14] border-zinc-800/90',
+
+                // Same accent palette — same index = same colour as the chart row above
+                const ACCENTS = [
+                  { dot: 'bg-white',    bar: 'bg-white',    border: 'border-white/30',    from: 'from-[#ffffff09]', via: 'via-[#151520]' },
+                  { dot: 'bg-zinc-300', bar: 'bg-zinc-300', border: 'border-zinc-300/25', from: 'from-[#d4d4d809]', via: 'via-[#141520]' },
+                  { dot: 'bg-zinc-500', bar: 'bg-zinc-500', border: 'border-zinc-500/30', from: 'from-[#71717509]', via: 'via-[#141420]' },
+                  { dot: 'bg-zinc-600', bar: 'bg-zinc-600', border: 'border-zinc-600/35', from: 'from-[#52525609]', via: 'via-[#131420]' },
+                  { dot: 'bg-zinc-700', bar: 'bg-zinc-700', border: 'border-zinc-700/40', from: 'from-[#3f3f4609]', via: 'via-[#131418]' },
+                  { dot: 'bg-zinc-800', bar: 'bg-zinc-800', border: 'border-zinc-800/50', from: 'from-[#27272a09]', via: 'via-[#121418]' },
                 ];
-                const gradientClass = cardGradients[index % cardGradients.length];
+                const accent = ACCENTS[index % ACCENTS.length];
 
                 return (
                   <div
                     key={acc.id}
                     onClick={() => onSelectAccount(acc)}
-                    className={`relative p-4 rounded-2xl bg-linear-to-br ${gradientClass} border hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] active:scale-[0.98] shadow-lg group overflow-hidden`}
+                    className={`relative p-4 rounded-2xl bg-linear-to-br ${accent.from} ${accent.via} to-[#0e0e12] border ${accent.border} hover:brightness-125 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] active:scale-[0.98] shadow-lg group overflow-hidden`}
                   >
-                    {/* Subtle sheen accent */}
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.025] rounded-full blur-xl pointer-events-none -mr-6 -mt-6" />
+                    {/* Colour-matched sheen in top-right corner */}
+                    <div className={`absolute top-0 right-0 w-24 h-24 ${accent.dot} opacity-[0.04] rounded-full blur-xl pointer-events-none -mr-6 -mt-6`} />
 
                     {/* Top: Account name */}
                     <div className="relative z-10">
