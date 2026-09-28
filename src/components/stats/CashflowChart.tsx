@@ -268,8 +268,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
     // Always include the rightmost point (totalPoints - 1) and step backward
     for (let i = targetLabelCount - 1; i >= 0; i--) {
       const idx = Math.round(i * step);
-      // Omit index 0 (most left) per request
-      if (idx > 0) {
+      // Omit index 0 for multi-day views so spacing is clean, but keep for single day/hour view if needed or when totalPoints is small
+      if (idx > 0 || timeRange === 'day') {
         indices.unshift(idx);
       }
     }
