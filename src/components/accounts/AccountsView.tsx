@@ -193,7 +193,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               Account Ledger ({accountStats.length})
             </span>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4">
               {accountStats.map((acc, index) => {
                 const isNegative = (acc.currentBalance ?? 0) < 0;
 
