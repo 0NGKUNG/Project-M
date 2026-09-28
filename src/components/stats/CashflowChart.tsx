@@ -305,10 +305,10 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
 
       {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
       <div ref={chartFrameRef} className="w-full flex-1 min-h-0 relative select-none">
-        <div className="relative w-full h-44 sm:h-52">
+        <div className="relative w-full h-48 sm:h-56">
           <svg
             ref={svgRef}
-            viewBox={`0 0 ${width} ${height - 28}`}
+            viewBox={`0 0 ${width} ${height}`}
             preserveAspectRatio="none"
             className="w-full h-full overflow-visible cursor-crosshair touch-none"
             onMouseMove={handleMouseMove}
@@ -431,6 +431,43 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             opacity="0.9"
           />
 
+          {/* X-Axis Grid Tick Marks & Date Labels (Rendered inside SVG for 100% exact alignment and equal spacing) */}
+          {axisIndices.map((idx, indexOrder) => {
+            const d = chartData[idx];
+            if (!d) return null;
+            const isHovered = hoveredIndex === idx;
+            const isFirst = indexOrder === 0;
+            const isLast = indexOrder === axisIndices.length - 1;
+            const posX = getX(idx);
+            const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
+
+            return (
+              <g key={d.date}>
+                {/* Subtle vertical tick mark */}
+                <line
+                  x1={posX}
+                  y1={paddingTop + innerHeight}
+                  x2={posX}
+                  y2={paddingTop + innerHeight + 4}
+                  stroke="#3f3f46"
+                  strokeWidth="1"
+                />
+                <text
+                  x={posX}
+                  y={paddingTop + innerHeight + 18}
+                  textAnchor={anchor}
+                  fill={isHovered ? '#ffffff' : '#71717a'}
+                  fontWeight={isHovered ? '700' : '500'}
+                  fontSize="12"
+                  fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+                  className="transition-colors select-none"
+                >
+                  {d.label}
+                </text>
+              </g>
+            );
+          })}
+
           </svg>
 
           {/* Fixed-size HTML markers stay circular even though the SVG plot fills a wide card. */}
@@ -438,53 +475,24 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
               <div
                 className="absolute w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-[#060608] flex items-center justify-center"
-                style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.balance) / (height - 28)) * 100}%` }}
+                style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.balance) / height) * 100}%` }}
               >
                 <span className="w-1 h-1 rounded-full bg-white" />
               </div>
               {activePoint.income > 0 && (
                 <span
                   className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-emerald-500"
-                  style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.income) / (height - 28)) * 100}%` }}
+                  style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.income) / height) * 100}%` }}
                 />
               )}
               {activePoint.expense > 0 && (
                 <span
                   className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-rose-500"
-                  style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.expense) / (height - 28)) * 100}%` }}
+                  style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.expense) / height) * 100}%` }}
                 />
               )}
             </div>
           )}
-        </div>
-
-        {/* Date labels positioned with exact center alignment to match points evenly */}
-        <div className="relative h-4 mt-2 text-[10px] sm:text-[11px] font-mono text-zinc-500 select-none">
-          {axisIndices.map((idx, indexOrder) => {
-            const d = chartData[idx];
-            if (!d) return null;
-            const isHovered = hoveredIndex === idx;
-            const isFirst = indexOrder === 0;
-            const isLast = indexOrder === axisIndices.length - 1;
-            const xPercent = (getX(idx) / width) * 100;
-
-            return (
-              <span
-                key={d.date}
-                className={`absolute whitespace-nowrap transition-colors leading-none ${isHovered ? 'text-white font-bold' : 'text-zinc-500'}`}
-                style={{
-                  left: `${xPercent}%`,
-                  transform: isFirst 
-                    ? 'translateX(0%)' 
-                    : isLast 
-                    ? 'translateX(-100%)' 
-                    : 'translateX(-50%)',
-                }}
-              >
-                {d.label}
-              </span>
-            );
-          })}
         </div>
       </div>
     </div>
