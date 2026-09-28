@@ -79,7 +79,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="flex items-center justify-between text-zinc-400 text-xs font-mono mb-2">
               <span className="flex items-center gap-2 uppercase tracking-widest text-zinc-400 font-semibold">
-                <Wallet size={16} /> Total Net Worth
+                <Wallet size={16} /> Net Worth
               </span>
               <span className="text-xs px-3 py-1 rounded-full bg-zinc-800/90 text-zinc-300 font-mono">
                 {state.settings.currencyCode}
@@ -97,7 +97,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <TrendingUp size={20} />
               </div>
               <div>
-                <div className="text-[11px] text-zinc-400 uppercase font-mono">Monthly Inflow</div>
+                <div className="text-[11px] text-zinc-400 uppercase font-mono">Income</div>
                 <div className="text-sm sm:text-base font-mono font-bold text-white tabular-nums">
                   {hideBalances ? '••••' : formatCurrency(monthlyIncome, state.settings.currencySymbol)}
                 </div>
@@ -109,7 +109,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <TrendingDown size={20} />
               </div>
               <div>
-                <div className="text-[11px] text-zinc-400 uppercase font-mono">Monthly Outflow</div>
+                <div className="text-[11px] text-zinc-400 uppercase font-mono">Expenses</div>
                 <div className="text-sm sm:text-base font-mono font-bold text-white tabular-nums">
                   {hideBalances ? '••••' : formatCurrency(monthlyExpense, state.settings.currencySymbol)}
                 </div>
@@ -129,7 +129,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <p className="text-xs text-zinc-400 mt-3 leading-relaxed">
               {monthlySavingsRate >= 20
                 ? 'Strong retention rate. Maintaining healthy financial reserve.'
-                : 'Spending currently close to incoming earnings.'}
+                : 'Expenses currently close to incoming earnings.'}
             </p>
           </div>
 

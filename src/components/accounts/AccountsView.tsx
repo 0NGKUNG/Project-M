@@ -127,7 +127,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
             <div className="flex items-center text-zinc-400 text-xs font-mono mb-2">
               <span className="flex items-center gap-2 uppercase tracking-widest text-zinc-400 font-semibold">
-                <Wallet size={16} /> Total Combined Net Worth
+                <Wallet size={16} /> Net Worth
               </span>
             </div>
 

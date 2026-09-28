@@ -99,7 +99,7 @@ export const StatsView: React.FC = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
             <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
-              Total Inflow
+              Income
             </div>
             <div className="text-lg font-bold font-mono text-emerald-400 truncate leading-none">
               +{formatCurrency(totalIncome, state.settings.currencySymbol)}
@@ -108,7 +108,7 @@ export const StatsView: React.FC = () => {
 
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
             <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
-              Total Outflow
+              Expenses
             </div>
             <div className="text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(totalExpense, state.settings.currencySymbol)}
@@ -117,7 +117,7 @@ export const StatsView: React.FC = () => {
 
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
             <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
-              Net Saved
+              Net
             </div>
             <div className={`text-lg font-bold font-mono truncate leading-none ${netSavings >= 0 ? 'text-white' : 'text-rose-400'}`}>
               {netSavings >= 0 ? '+' : ''}{formatCurrency(netSavings, state.settings.currencySymbol)}
@@ -181,12 +181,12 @@ export const StatsView: React.FC = () => {
         <CashflowChart timeRange={timeRange} />
       </div>
 
-      {/* Top Outflows & Inflows */}
+      {/* Top Expenses & Income */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Top Expense Categories */}
         <div className="bg-[#101014] rounded-2xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Top Outflows ({categoryOutflows.length})
+            Top Expenses ({categoryOutflows.length})
           </span>
 
           {categoryOutflows.length === 0 ? (
@@ -221,7 +221,7 @@ export const StatsView: React.FC = () => {
         {/* Top Income Sources */}
         <div className="bg-[#101014] rounded-2xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Top Inflows ({categoryInflows.length})
+            Top Income ({categoryInflows.length})
           </span>
 
           {categoryInflows.length === 0 ? (

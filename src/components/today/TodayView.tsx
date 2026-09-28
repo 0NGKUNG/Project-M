@@ -138,7 +138,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <ArrowUpRight size={13} className="text-rose-400 shrink-0" />
-              <span className="truncate">Outflow</span>
+              <span className="truncate">Expenses</span>
             </div>
             <div className="text-base sm:text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(dayExpense, state.settings.currencySymbol)}
@@ -148,7 +148,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <span className="w-3.5 h-3.5 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-[9px] font-bold shrink-0">≈</span>
-              <span className="truncate">Net Flow</span>
+              <span className="truncate">Net</span>
             </div>
             <div className={`text-base sm:text-lg font-bold font-mono truncate leading-none ${
               dayNet >= 0 ? 'text-white' : 'text-rose-400'

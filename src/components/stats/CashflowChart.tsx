@@ -209,12 +209,12 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
       <div className="h-11 shrink-0 flex items-center justify-between gap-3">
         <div>
           <span className="text-[11px] font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Cashflow &amp; Balance
+            Income, Expenses &amp; Net Worth
           </span>
           <div className="flex items-center gap-3 text-[11px] font-mono mt-1 text-zinc-500">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              <span>Balance</span>
+              <span>Net Worth</span>
             </span>
             <span className="flex items-center gap-1.5 text-zinc-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
