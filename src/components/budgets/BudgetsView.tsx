@@ -3,6 +3,7 @@ import { Target, Plus, AlertCircle, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
+import { CurrencyInput } from '../common/CurrencyInput';
 
 export const BudgetsView: React.FC = () => {
   const { state, addBudget, deleteBudget } = useFinance();
@@ -76,9 +77,10 @@ export const BudgetsView: React.FC = () => {
 
             <div>
               <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1.5">
-                Limit Amount ({state.settings.currencySymbol})
+                Limit Amount
               </label>
-              <input
+              <CurrencyInput
+                currencySymbol={state.settings.currencySymbol}
                 type="number"
                 step="0.01"
                 placeholder="e.g. 350.00"

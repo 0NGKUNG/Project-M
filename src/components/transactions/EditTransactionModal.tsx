@@ -4,6 +4,7 @@ import { useFinance } from '../../context/FinanceContext';
 import type { Transaction, TransactionType } from '../../types/finance';
 import { CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
+import { CurrencyInput } from '../common/CurrencyInput';
 import { useBackButton } from '../../hooks/useBackButton';
 
 interface EditTransactionModalProps {
@@ -143,9 +144,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
           {/* Amount */}
           <div>
             <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-              Amount ({state.settings.currencySymbol})
+              Amount
             </label>
-            <input
+            <CurrencyInput
+              currencySymbol={state.settings.currencySymbol}
               type="number"
               step="any"
               value={amountStr}

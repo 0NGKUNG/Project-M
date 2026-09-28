@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
+import { CurrencyInput } from '../common/CurrencyInput';
 import { CustomSelect } from '../common/CustomSelect';
 import type { Account } from '../../types/finance';
 import { RecurringManager } from '../recurring/RecurringManager';
@@ -301,7 +302,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                     Initial Balance
                   </label>
-                  <input
+                  <CurrencyInput
+                    currencySymbol={state.settings.currencySymbol}
                     type="number"
                     value={newAccBalance}
                     onChange={(e) => setNewAccBalance(e.target.value)}

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
+import { CurrencyInput } from '../common/CurrencyInput';
 import type { DebtItem } from '../../types/finance';
 import { useBackButton } from '../../hooks/useBackButton';
 
@@ -151,12 +152,14 @@ export const DebtManager: React.FC = () => {
                 <div className="pt-3 mt-2 border-t border-zinc-900/60 flex items-center justify-between text-xs">
                   {settleDebtId === debt.id ? (
                     <div className="flex items-center gap-1.5 w-full">
-                      <input
+                      <CurrencyInput
+                        currencySymbol={state.settings.currencySymbol}
+                        containerClassName="flex-1 min-w-0"
                         type="number"
                         placeholder="Amount"
                         value={settleAmount}
                         onChange={(e) => setSettleAmount(e.target.value)}
-                        className="flex-1 bg-[#16161d] rounded-xl px-2.5 py-1 text-xs text-white font-mono focus:outline-none"
+                        className="w-full bg-[#16161d] rounded-xl px-2.5 py-1 text-xs text-white font-mono focus:outline-none"
                         autoFocus
                       />
                       <button
@@ -266,7 +269,8 @@ export const DebtManager: React.FC = () => {
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
                     Amount
                   </label>
-                  <input
+                  <CurrencyInput
+                    currencySymbol={state.settings.currencySymbol}
                     type="number"
                     placeholder="0.00"
                     value={amount}

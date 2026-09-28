@@ -21,6 +21,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { supabase } from '../../db/supabaseClient';
 import { CustomSelect } from '../common/CustomSelect';
+import { CurrencyInput } from '../common/CurrencyInput';
 import { CategoryIcon, formatCurrency } from '../common/Icons';
 import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
 import { RecurringManager } from '../recurring/RecurringManager';
@@ -535,9 +536,10 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               {/* Total Overall Amount */}
               <div>
                 <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                  Total Overall Limit ({state.settings.currencySymbol})
+                  Total Overall Limit
                 </label>
-                <input
+                <CurrencyInput
+                  currencySymbol={state.settings.currencySymbol}
                   type="number"
                   placeholder="e.g. 8000"
                   value={amount}
@@ -560,12 +562,14 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       options={expenseCategories.map((c) => ({ value: c.id, label: c.name }))}
                     />
                   </div>
-                  <input
+                  <CurrencyInput
+                    currencySymbol={state.settings.currencySymbol}
                     type="number"
                     placeholder="Limit"
                     value={tempCatAmount}
                     onChange={(e) => setTempCatAmount(e.target.value)}
-                    className="w-28 h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                    containerClassName="w-28 shrink-0"
                   />
                   <button
                     type="button"
@@ -1216,7 +1220,8 @@ export const SettingsView: React.FC = () => {
                       { value: 'investment', label: 'Investment' },
                     ]}
                   />
-                  <input
+                  <CurrencyInput
+                    currencySymbol={state.settings.currencySymbol}
                     type="number"
                     placeholder="Initial balance"
                     value={newAccBalance}

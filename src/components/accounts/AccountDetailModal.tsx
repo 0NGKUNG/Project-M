@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, CreditCard, TrendingUp, TrendingDown, Edit2, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
+import { CurrencyInput } from '../common/CurrencyInput';
 import type { Account, Transaction } from '../../types/finance';
 import { EditTransactionModal } from '../transactions/EditTransactionModal';
 import { useBackButton } from '../../hooks/useBackButton';
@@ -489,7 +490,8 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                 <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                   Initial Balance
                 </label>
-                <input
+                <CurrencyInput
+                  currencySymbol={state.settings.currencySymbol}
                   type="number"
                   step="any"
                   value={editBalance}

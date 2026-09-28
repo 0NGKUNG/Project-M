@@ -9,6 +9,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
+import { CurrencyInput } from '../common/CurrencyInput';
 import type { RecurringItem } from '../../types/finance';
 import { useBackButton } from '../../hooks/useBackButton';
 
@@ -269,7 +270,8 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                   </div>
                   <div>
                     <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Amount</label>
-                    <input
+                    <CurrencyInput
+                      currencySymbol={state.settings.currencySymbol}
                       type="number"
                       placeholder="0.00"
                       value={amount}

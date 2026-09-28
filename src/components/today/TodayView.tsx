@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
+import { CurrencyInput } from '../common/CurrencyInput';
 import { EditTransactionModal } from '../transactions/EditTransactionModal';
 import type { Transaction } from '../../types/finance';
 
@@ -174,7 +175,8 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
 
         {isEditingGoal ? (
           <form onSubmit={handleSaveGoal} className="flex gap-2 pt-1">
-            <input
+            <CurrencyInput
+              currencySymbol={state.settings.currencySymbol}
               type="number"
               placeholder="e.g. 500"
               value={goalInput}
