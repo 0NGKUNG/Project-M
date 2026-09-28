@@ -28,62 +28,20 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   const [editBalance, setEditBalance] = useState('0');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  if (!account) return null;
 
-  const currentBalance = accountBalances[account.id] ?? account.initialBalance;
-
-  const handleStartEdit = () => {
-    setEditName(account.name);
-    setEditType(account.type);
-    setEditBalance(account.initialBalance.toString());
-    setIsEditingAccount(true);
-  };
-
-  const handleSaveAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editName.trim()) return;
-
-    await updateAccount({
-      ...account,
-      name: editName.trim(),
-      type: editType,
-      initialBalance: parseFloat(editBalance) || 0,
-      icon: editType === 'cash' ? 'Wallet' : 'CreditCard',
-    });
-
-    setIsEditingAccount(false);
-  };
-
-  const handleDeleteAccount = async () => {
-    if (window.confirm(`Are you sure you want to permanently delete account "${account.name}" and all its transactions? This will also remove them from Supabase.`)) {
-      setIsDeleting(true);
-      await deleteAccount(account.id);
-      setIsDeleting(false);
-      onClose();
-    }
-  };
-
-  // Transactions belonging to this account
-  const accountTransactions = state.transactions.filter(
-    (t) => t.accountId === account.id || t.toAccountId === account.id
-  );
-
-  // Calculate total in & out for this account
-  let totalIn = 0;
-  let totalOut = 0;
-  accountTransactions.forEach((t) => {
-    if (t.accountId === account.id && t.type === 'expense') totalOut += t.amount;
-    if (t.accountId === account.id && t.type === 'income') totalIn += t.amount;
-    if (t.type === 'transfer') {
-      if (t.accountId === account.id) totalOut += t.amount;
-      if (t.toAccountId === account.id) totalIn += t.amount;
-    }
-  });
-
-  const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
+  // All hooks must be above any conditional early return.
+  // accountTransactions and currentBalance used inside useMemo — compute them here with safe guards.
+  const currentBalance = account ? (accountBalances[account.id] ?? account.initialBalance) : 0;
+  const accountTransactions = React.useMemo(() => {
+    if (!account) return [];
+    return state.transactions.filter(
+      (t) => t.accountId === account.id || t.toAccountId === account.id
+    );
+  }, [account, state.transactions]);
 
   // Compute 14-day chronological net balance trend for this specific account
   const accountBalanceHistory = React.useMemo(() => {
+    if (!account) return [];
     const points: { date: string; label: string; netChange: number; balance: number }[] = [];
     const now = new Date();
     const days = 14;
@@ -118,7 +76,56 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     }
 
     return points;
-  }, [account.id, currentBalance, accountTransactions]);
+  }, [account, currentBalance, accountTransactions]);
+
+  // Guard: nothing to render if no account selected
+  if (!account) return null;
+
+  const handleStartEdit = () => {
+    setEditName(account.name);
+    setEditType(account.type);
+    setEditBalance(account.initialBalance.toString());
+    setIsEditingAccount(true);
+  };
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim()) return;
+
+    await updateAccount({
+      ...account,
+      name: editName.trim(),
+      type: editType,
+      initialBalance: parseFloat(editBalance) || 0,
+      icon: editType === 'cash' ? 'Wallet' : 'CreditCard',
+    });
+
+    setIsEditingAccount(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (window.confirm(`Are you sure you want to permanently delete account "${account.name}" and all its transactions? This will also remove them from Supabase.`)) {
+      setIsDeleting(true);
+      await deleteAccount(account.id);
+      setIsDeleting(false);
+      onClose();
+    }
+  };
+
+  // Calculate total in & out for this account (accountTransactions from useMemo above)
+  let totalIn = 0;
+  let totalOut = 0;
+  accountTransactions.forEach((t) => {
+    if (t.accountId === account.id && t.type === 'expense') totalOut += t.amount;
+    if (t.accountId === account.id && t.type === 'income') totalIn += t.amount;
+    if (t.type === 'transfer') {
+      if (t.accountId === account.id) totalOut += t.amount;
+      if (t.toAccountId === account.id) totalIn += t.amount;
+    }
+  });
+
+
+  const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
 
   return (
     <div 
@@ -343,11 +350,14 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
           )}
         </div>
 
-        {/* Edit / Delete Transaction Modal */}
-        <EditTransactionModal
-          transaction={editingTransaction}
-          onClose={() => setEditingTransaction(null)}
-        />
+        {/* Edit / Delete Transaction Modal — conditionally mounted so transaction is always non-null inside */}
+        {editingTransaction && (
+          <EditTransactionModal
+            key={editingTransaction.id}
+            transaction={editingTransaction}
+            onClose={() => setEditingTransaction(null)}
+          />
+        )}
 
         {/* Edit Account Modal */}
         {isEditingAccount && (

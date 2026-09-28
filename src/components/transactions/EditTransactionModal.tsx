@@ -7,7 +7,8 @@ import { CustomSelect } from '../common/CustomSelect';
 import { useBackButton } from '../../hooks/useBackButton';
 
 interface EditTransactionModalProps {
-  transaction: Transaction | null;
+  // transaction is always non-null: parent uses conditional rendering `{tx && <EditTransactionModal transaction={tx} />}`
+  transaction: Transaction;
   onClose: () => void;
 }
 
@@ -22,11 +23,12 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   transaction,
   onClose,
 }) => {
-  useBackButton(Boolean(transaction), onClose);
+  // All hooks must be at the top level — no hooks after a conditional return.
+  // The parent guarantees transaction is non-null by conditionally mounting this component.
+  useBackButton(true, onClose);
   const { state, updateTransaction, deleteTransaction, triggerHaptic } = useFinance();
 
-  if (!transaction) return null;
-
+  // useState hooks always called — no conditional early return before them
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [amountStr, setAmountStr] = useState<string>(String(transaction.amount));
   const [categoryId, setCategoryId] = useState<string>(transaction.categoryId);
