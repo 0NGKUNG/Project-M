@@ -1062,8 +1062,8 @@ export const SettingsView: React.FC = () => {
 
   // ── Main Settings ──
   return (
-    <div className="pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none space-y-1">
-      <div className="flex items-center justify-between pt-1 pb-3">
+    <div className="pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none space-y-3">
+      <div className="h-8 flex items-center justify-between pt-1">
         <h2 className="text-xl font-bold tracking-tight text-white font-mono">SETTINGS</h2>
       </div>
 
@@ -1074,7 +1074,6 @@ export const SettingsView: React.FC = () => {
       )}
 
       {/* ── Preferences ── */}
-      <SectionLabel>Preferences</SectionLabel>
       <Card>
         {/* Currency Symbol + Code inline */}
         <div className="flex items-center gap-3 py-3.5 px-4 min-h-[58px]">
