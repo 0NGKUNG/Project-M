@@ -215,22 +215,23 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const activePoint = hoveredIndex !== null && chartData[hoveredIndex] ? chartData[hoveredIndex] : null;
   const activeX = hoveredIndex !== null ? getX(hoveredIndex) : 0;
 
-  // Keep labels legible on small screens, while using every available column on wider charts.
-  // The labels themselves are positioned from the same x-scale as the SVG paths.
+  // Ensure X-axis labels are evenly spaced and legible across all screen sizes
   const axisIndices = useMemo(() => {
-    if (chartData.length <= 1) return chartData.length ? [0] : [];
+    const totalPoints = chartData.length;
+    if (totalPoints <= 1) return totalPoints ? [0] : [];
 
-    const minimumLabelWidth = timeRange === 'year' || timeRange === 'day' ? 44 : 52;
     const availableWidth = chartWidth || 280;
-    const labelCount = Math.min(
-      chartData.length,
-      Math.max(2, Math.floor(availableWidth / minimumLabelWidth) + 1),
-    );
+    // On mobile (<400px), show 5 clean evenly-spaced points; on wider screens up to 7-8
+    const maxLabels = availableWidth < 380 ? 5 : availableWidth < 600 ? 6 : 7;
+    const count = Math.min(totalPoints, maxLabels);
 
-    return Array.from({ length: labelCount }, (_, index) =>
-      Math.round((index * (chartData.length - 1)) / (labelCount - 1)),
-    );
-  }, [chartData.length, chartWidth, timeRange]);
+    const indices: number[] = [];
+    for (let i = 0; i < count; i++) {
+      indices.push(Math.round((i * (totalPoints - 1)) / (count - 1)));
+    }
+    // Deduplicate in case of small datasets
+    return Array.from(new Set(indices));
+  }, [chartData.length, chartWidth]);
 
   // Support touch gestures on mobile for scrubber
   const handleTouch = (e: React.TouchEvent<SVGSVGElement>) => {
@@ -457,14 +458,14 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           )}
         </div>
 
-        {/* Date labels share the chart's x-scale, preventing marker/label drift. */}
-        <div className="relative h-4 mt-2 text-[11px] font-mono text-zinc-500 select-none">
-          {axisIndices.map((idx) => {
+        {/* Date labels positioned with exact center alignment to match points evenly */}
+        <div className="relative h-4 mt-2 text-[10px] sm:text-[11px] font-mono text-zinc-500 select-none">
+          {axisIndices.map((idx, indexOrder) => {
             const d = chartData[idx];
             if (!d) return null;
             const isHovered = hoveredIndex === idx;
-            const isFirst = idx === 0;
-            const isLast = idx === chartData.length - 1;
+            const isFirst = indexOrder === 0;
+            const isLast = indexOrder === axisIndices.length - 1;
             const xPercent = (getX(idx) / width) * 100;
 
             return (
@@ -473,7 +474,11 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                 className={`absolute whitespace-nowrap transition-colors leading-none ${isHovered ? 'text-white font-bold' : 'text-zinc-500'}`}
                 style={{
                   left: `${xPercent}%`,
-                  transform: isFirst ? 'translateX(0)' : isLast ? 'translateX(-100%)' : 'translateX(-50%)',
+                  transform: isFirst 
+                    ? 'translateX(0%)' 
+                    : isLast 
+                    ? 'translateX(-100%)' 
+                    : 'translateX(-50%)',
                 }}
               >
                 {d.label}
