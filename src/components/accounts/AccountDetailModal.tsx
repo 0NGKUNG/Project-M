@@ -192,7 +192,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
               <div className="relative h-28 w-full bg-[#0d0d12] rounded-xl p-2 border border-zinc-800/60 overflow-hidden">
                 {/* SVG Line Chart */}
-                {accountBalanceHistory.length > 1 ? (
+                {accountBalanceHistory && accountBalanceHistory.length > 1 ? (
                   <svg className="w-full h-full overflow-visible" viewBox="0 0 320 80" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id={`grad-${account.id}`} x1="0" y1="0" x2="0" y2="1">
@@ -203,12 +203,16 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
                     {/* Gradient area fill */}
                     {(() => {
-                      const minBal = Math.min(...accountBalanceHistory.map((p) => p.balance));
-                      const maxBal = Math.max(...accountBalanceHistory.map((p) => p.balance));
-                      const range = maxBal - minBal || 1;
+                      const balances = accountBalanceHistory.map((p) => (Number.isFinite(p.balance) ? p.balance : 0));
+                      const minBal = balances.length > 0 ? Math.min(...balances) : 0;
+                      const maxBal = balances.length > 0 ? Math.max(...balances) : 0;
+                      const diff = maxBal - minBal;
+                      const range = diff > 0 ? diff : 1;
+
                       const coords = accountBalanceHistory.map((p, idx) => {
-                        const x = (idx / (accountBalanceHistory.length - 1)) * 320;
-                        const y = 72 - ((p.balance - minBal) / range) * 60;
+                        const safeBal = Number.isFinite(p.balance) ? p.balance : minBal;
+                        const x = (idx / Math.max(1, accountBalanceHistory.length - 1)) * 320;
+                        const y = diff === 0 ? 40 : 72 - ((safeBal - minBal) / range) * 60;
                         return { x, y, ...p };
                       });
 

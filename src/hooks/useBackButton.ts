@@ -24,15 +24,16 @@ export function useBackButton(isOpen: boolean, onClose: () => void) {
       }
 
       const handlePopState = () => {
-        isPushedRef.current = false;
-        onCloseRef.current();
+        if (isPushedRef.current) {
+          isPushedRef.current = false;
+          onCloseRef.current();
+        }
       };
 
       window.addEventListener('popstate', handlePopState);
 
       return () => {
         window.removeEventListener('popstate', handlePopState);
-        // If unmounting or closed from UI while our state is still on the stack, clean it up
         if (isPushedRef.current) {
           isPushedRef.current = false;
           window.history.back();
