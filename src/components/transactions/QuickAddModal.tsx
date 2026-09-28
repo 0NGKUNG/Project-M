@@ -229,7 +229,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         {/* Category Pill Grid (Reference Top Section) */}
         {type !== 'transfer' ? (
           <div className="px-4 py-3 flex-1 min-h-0 overflow-y-auto">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               {parentCategories.map((cat) => {
                 const isSelected = selectedCategoryId === cat.id;
                 const subs = getSubcategories(cat.id);
@@ -243,27 +243,31 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                       setSelectedCategoryId(cat.id);
                       setSelectedSubcategoryId(undefined);
                     }}
-                    className={`relative p-2.5 rounded-2xl flex items-center gap-2 cursor-pointer transition-all border ${
+                    className={`relative p-3 rounded-2xl flex items-center gap-2.5 cursor-pointer transition-all border ${
                       isSelected
                         ? 'bg-zinc-200 text-black border-white shadow-md'
                         : 'bg-[#14141a] text-zinc-300 border-zinc-900 hover:border-zinc-800'
                     }`}
                   >
                     <div
-                      className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                         isSelected ? 'bg-black text-white' : 'bg-zinc-900 text-zinc-300'
                       }`}
                     >
-                      <CategoryIcon name={cat.icon || 'Tag'} size={14} />
+                      <CategoryIcon name={cat.icon || 'Tag'} size={15} />
                     </div>
 
-                    <div className="truncate flex-1">
-                      <div className="text-[11px] font-bold truncate leading-tight">{cat.name}</div>
-                      {isSelected && selectedSub && (
-                        <div className="text-[9px] text-zinc-600 truncate leading-none mt-0.5">
+                    <div className="truncate flex-1 min-w-0">
+                      <div className="text-xs font-bold truncate leading-tight">{cat.name}</div>
+                      {isSelected && selectedSub ? (
+                        <div className="text-[10px] text-zinc-700 truncate leading-tight font-medium mt-0.5">
                           {selectedSub.name}
                         </div>
-                      )}
+                      ) : hasSubs ? (
+                        <div className={`text-[10px] truncate leading-tight mt-0.5 ${isSelected ? 'text-zinc-600' : 'text-zinc-500 font-mono'}`}>
+                          {subs.length} sub
+                        </div>
+                      ) : null}
                     </div>
 
                     {/* Small dropdown arrow pill if it has subcategories */}
@@ -276,12 +280,12 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                           setSelectedCategoryId(cat.id);
                           setActiveDropdownCatId(activeDropdownCatId === cat.id ? null : cat.id);
                         }}
-                        className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 ${
-                          isSelected ? 'bg-black/10 text-black' : 'bg-zinc-800/80 text-zinc-400'
+                        className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
+                          isSelected ? 'bg-black/10 text-black hover:bg-black/20' : 'bg-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-800'
                         }`}
                         title="Pick Subcategory"
                       >
-                        <ChevronDown size={10} />
+                        <ChevronDown size={11} />
                       </button>
                     )}
                   </div>
@@ -291,8 +295,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
             {/* Inline Subcategory Bar if active category has subcategories */}
             {selectedCategory && getSubcategories(selectedCategory.id).length > 0 && (
-              <div className="mt-2.5 p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <span className="text-[9px] font-mono uppercase text-zinc-500 font-bold px-1 shrink-0">
+              <div className="mt-3 p-2.5 rounded-2xl bg-[#14141a] border border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold px-1 shrink-0">
                   Sub:
                 </span>
                 <button
@@ -301,9 +305,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                     triggerHaptic();
                     setSelectedSubcategoryId(undefined);
                   }}
-                  className={`px-2.5 py-1 rounded-xl text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-mono whitespace-nowrap transition-all cursor-pointer ${
                     selectedSubcategoryId === undefined
-                      ? 'bg-white text-black font-bold'
+                      ? 'bg-white text-black font-bold shadow-xs'
                       : 'bg-zinc-900 text-zinc-400 hover:text-white'
                   }`}
                 >
@@ -319,8 +323,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                         triggerHaptic();
                         setSelectedSubcategoryId(sub.id);
                       }}
-                      className={`px-2.5 py-1 rounded-xl text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer ${
-                        isSub ? 'bg-white text-black font-bold' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-mono whitespace-nowrap transition-all cursor-pointer ${
+                        isSub ? 'bg-white text-black font-bold shadow-xs' : 'bg-zinc-900 text-zinc-400 hover:text-white'
                       }`}
                     >
                       {sub.name}
