@@ -750,8 +750,8 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ))}
       </div>
 
-      {/* Grid of Categories (Matching 2-column Reference Style) */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Grid of Categories (1 col mobile, 2 col sm, 3 col md, 4 col lg) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {parentCategories.map((cat) => {
           const subs = getSubcategories(cat.id);
 
