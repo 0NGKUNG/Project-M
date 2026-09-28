@@ -238,7 +238,19 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5 sm:p-6 md:p-8 space-y-5">
-              <h3 className="text-base sm:text-lg font-bold text-white font-mono">New Recurring Item</h3>
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-900">
+                <div className="flex items-center gap-2">
+                  <RefreshCw size={18} className="text-zinc-400" />
+                  <h3 className="text-base sm:text-lg font-bold text-white font-mono">New Recurring Item</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
 
               <form onSubmit={handleCreate} className="space-y-4">
                 {/* 2-Column Grid on md+ */}

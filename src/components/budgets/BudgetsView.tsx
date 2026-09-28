@@ -53,60 +53,80 @@ export const BudgetsView: React.FC = () => {
         </button>
       </div>
 
-      {/* Add Budget Form Card */}
+      {/* Add Budget Form Modal */}
       {showAddForm && (
-        <form
-          onSubmit={handleCreateBudget}
-          className="bg-[#101014] rounded-2xl p-6 space-y-4 animate-fade-in max-w-2xl shadow-xl"
+        <div 
+          className="fixed inset-0 z-60 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in cursor-pointer"
+          onClick={() => setShowAddForm(false)}
         >
-          <div className="text-sm font-bold text-white">Set Monthly Category Limit</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1.5">
-                Category
-              </label>
-              <CustomSelect
-                value={selectedCatId}
-                onChange={(val) => setSelectedCatId(val)}
-                options={expenseCategories.map((c) => ({
-                  value: c.id,
-                  label: c.name,
-                }))}
-              />
+          <div 
+            className="w-full max-w-md sm:max-w-lg bg-[#101014] rounded-2xl md:rounded-3xl p-6 sm:p-8 border border-zinc-800 shadow-2xl space-y-5 cursor-default transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-900">
+              <div className="flex items-center gap-2">
+                <Target size={18} className="text-zinc-400" />
+                <h3 className="text-base sm:text-lg font-bold text-white font-mono">Set Monthly Budget Limit</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
 
-            <div>
-              <label className="text-[10px] text-zinc-400 uppercase font-bold block mb-1.5">
-                Limit Amount
-              </label>
-              <CurrencyInput
-                currencySymbol={state.settings.currencySymbol}
-                type="number"
-                step="0.01"
-                placeholder="e.g. 350.00"
-                value={limitAmount}
-                onChange={(e) => setLimitAmount(e.target.value)}
-                className="w-full bg-[#16161d] rounded-2xl px-4 py-3 text-xs text-white focus:outline-none font-mono"
-              />
-            </div>
-          </div>
+            <form onSubmit={handleCreateBudget} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                    Category
+                  </label>
+                  <CustomSelect
+                    value={selectedCatId}
+                    onChange={(val) => setSelectedCatId(val)}
+                    options={expenseCategories.map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                    }))}
+                  />
+                </div>
 
-          <div className="flex justify-end gap-2.5 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 rounded-xl text-xs text-zinc-400 hover:text-white cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-xl text-xs bg-white text-black font-bold hover:bg-zinc-100 cursor-pointer shadow-md"
-            >
-              Save Budget
-            </button>
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                    Limit Amount
+                  </label>
+                  <CurrencyInput
+                    currencySymbol={state.settings.currencySymbol}
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 350.00"
+                    value={limitAmount}
+                    onChange={(e) => setLimitAmount(e.target.value)}
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none font-mono border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-mono text-zinc-400 hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl text-xs bg-white text-black font-mono font-bold hover:bg-zinc-200 cursor-pointer shadow-md transition-all active:scale-95"
+                >
+                  Save Budget
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       )}
 
       {/* Budgets List (Grid filling width) */}

@@ -225,7 +225,19 @@ export const DebtManager: React.FC = () => {
             className="w-full max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#101014] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-8 border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base sm:text-lg font-bold text-white font-mono">Track Borrow or Loan</h3>
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-900">
+              <div className="flex items-center gap-2">
+                <Users size={18} className="text-zinc-400" />
+                <h3 className="text-base sm:text-lg font-bold text-white font-mono">Track Borrow or Loan</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
