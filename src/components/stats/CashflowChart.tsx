@@ -226,9 +226,9 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
       <div className="w-full relative select-none">
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${width} ${height}`}
+          viewBox={`0 0 ${width} ${height - 28}`}
           preserveAspectRatio="none"
-          className="w-full h-52 sm:h-60 overflow-visible cursor-crosshair"
+          className="w-full h-44 sm:h-52 overflow-visible cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoveredIndex(null)}
         >
@@ -391,29 +391,36 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
               )}
             </g>
           )}
-
-          {/* X Axis Labels */}
-          {chartData.map((d, idx) => {
-            const step = Math.max(1, Math.floor(chartData.length / 6));
-            const isEdgeOrStep = idx === 0 || idx === chartData.length - 1 || idx % step === 0;
-            if (!isEdgeOrStep) return null;
-
-            return (
-              <text
-                key={d.date}
-                x={getX(idx)}
-                y={height - 10}
-                textAnchor="middle"
-                fill={hoveredIndex === idx ? '#ffffff' : '#52525b'}
-                fontSize="10"
-                fontFamily="monospace"
-                fontWeight={hoveredIndex === idx ? 'bold' : 'normal'}
-              >
-                {d.label}
-              </text>
-            );
-          })}
         </svg>
+
+        {/* Clean, Non-Stretched HTML Date Axis Row */}
+        <div className="flex justify-between items-center mt-2 px-1 text-[11px] font-mono text-zinc-500 select-none">
+          {(() => {
+            const step = Math.max(1, Math.floor(chartData.length / 5));
+            const indices = [0];
+            for (let i = step; i < chartData.length - step / 2; i += step) {
+              indices.push(i);
+            }
+            if (!indices.includes(chartData.length - 1) && chartData.length > 1) {
+              indices.push(chartData.length - 1);
+            }
+
+            return indices.map((idx) => {
+              const d = chartData[idx];
+              if (!d) return null;
+              const isHovered = hoveredIndex === idx;
+
+              return (
+                <span
+                  key={d.date}
+                  className={`transition-colors leading-none ${isHovered ? 'text-white font-bold' : 'text-zinc-500'}`}
+                >
+                  {d.label}
+                </span>
+              );
+            });
+          })()}
+        </div>
       </div>
     </div>
   );

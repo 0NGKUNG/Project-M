@@ -97,30 +97,38 @@ export const StatsView: React.FC = () => {
       <div className="space-y-3">
         {/* Summary Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Total Inflow</div>
-            <div className="text-lg font-bold font-mono text-emerald-400 mt-1">
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
+              Total Inflow
+            </div>
+            <div className="text-lg font-bold font-mono text-emerald-400 truncate leading-none">
               +{formatCurrency(totalIncome, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Total Outflow</div>
-            <div className="text-lg font-bold font-mono text-rose-400 mt-1">
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
+              Total Outflow
+            </div>
+            <div className="text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(totalExpense, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Net Saved</div>
-            <div className={`text-lg font-bold font-mono mt-1 ${netSavings >= 0 ? 'text-white' : 'text-rose-400'}`}>
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
+              Net Saved
+            </div>
+            <div className={`text-lg font-bold font-mono truncate leading-none ${netSavings >= 0 ? 'text-white' : 'text-rose-400'}`}>
               {netSavings >= 0 ? '+' : ''}{formatCurrency(netSavings, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold">Savings Rate</div>
-            <div className="text-lg font-bold font-mono text-white mt-1">
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
+              Savings Rate
+            </div>
+            <div className="text-lg font-bold font-mono text-white truncate leading-none">
               {savingsRate}%
             </div>
           </div>

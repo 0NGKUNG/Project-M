@@ -124,31 +124,32 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
       <div className="space-y-3">
         {/* Daily Cashflow Hero Summary */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
-            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
-              <ArrowDownLeft size={13} className="text-emerald-400" />
-              <span>Income</span>
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
+              <ArrowDownLeft size={13} className="text-emerald-400 shrink-0" />
+              <span className="truncate">Income</span>
             </div>
-            <div className="text-base sm:text-lg font-bold font-mono text-emerald-400 mt-2 truncate">
+            <div className="text-base sm:text-lg font-bold font-mono text-emerald-400 truncate leading-none">
               +{formatCurrency(dayIncome, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
-            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
-              <ArrowUpRight size={13} className="text-rose-400" />
-              <span>Outflow</span>
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
+              <ArrowUpRight size={13} className="text-rose-400 shrink-0" />
+              <span className="truncate">Outflow</span>
             </div>
-            <div className="text-base sm:text-lg font-bold font-mono text-rose-400 mt-2 truncate">
+            <div className="text-base sm:text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(dayExpense, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between min-h-[92px]">
-            <div className="text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
-              Net Flow
+          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
+              <span className="w-3.5 h-3.5 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-[9px] font-bold shrink-0">≈</span>
+              <span className="truncate">Net Flow</span>
             </div>
-            <div className={`text-base sm:text-lg font-bold font-mono mt-2 truncate ${
+            <div className={`text-base sm:text-lg font-bold font-mono truncate leading-none ${
               dayNet >= 0 ? 'text-white' : 'text-rose-400'
             }`}>
               {dayNet >= 0 ? '+' : ''}{formatCurrency(dayNet, state.settings.currencySymbol)}
