@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
 
@@ -9,7 +9,21 @@ interface CashflowChartProps {
 export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month' }) => {
   const { state, totalNetWorth } = useFinance();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [chartWidth, setChartWidth] = useState(0);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const chartFrameRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const frame = chartFrameRef.current;
+    if (!frame) return;
+
+    const updateWidth = () => setChartWidth(frame.clientWidth);
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
 
   // Build sequential data points based on timeRange
   const chartData = useMemo(() => {
@@ -172,6 +186,23 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const activePoint = hoveredIndex !== null && chartData[hoveredIndex] ? chartData[hoveredIndex] : null;
   const activeX = hoveredIndex !== null ? getX(hoveredIndex) : 0;
 
+  // Keep labels legible on small screens, while using every available column on wider charts.
+  // The labels themselves are positioned from the same x-scale as the SVG paths.
+  const axisIndices = useMemo(() => {
+    if (chartData.length <= 1) return chartData.length ? [0] : [];
+
+    const minimumLabelWidth = timeRange === 'year' ? 44 : 52;
+    const availableWidth = chartWidth || 280;
+    const labelCount = Math.min(
+      chartData.length,
+      Math.max(2, Math.floor(availableWidth / minimumLabelWidth) + 1),
+    );
+
+    return Array.from({ length: labelCount }, (_, index) =>
+      Math.round((index * (chartData.length - 1)) / (labelCount - 1)),
+    );
+  }, [chartData.length, chartWidth, timeRange]);
+
   return (
     <div className="h-[300px] sm:h-[338px] bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm flex flex-col space-y-4 overflow-hidden">
       {/* Chart Header */}
@@ -223,7 +254,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
       </div>
 
       {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
-      <div className="w-full flex-1 min-h-0 relative select-none">
+      <div ref={chartFrameRef} className="w-full flex-1 min-h-0 relative select-none">
         <div className="relative w-full h-44 sm:h-52">
           <svg
             ref={svgRef}
@@ -375,33 +406,29 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           )}
         </div>
 
-        {/* Clean, Non-Stretched HTML Date Axis Row */}
-        <div className="flex justify-between items-center mt-2 px-1 text-[11px] font-mono text-zinc-500 select-none">
-          {(() => {
-            const step = Math.max(1, Math.floor(chartData.length / 5));
-            const indices = [0];
-            for (let i = step; i < chartData.length - step / 2; i += step) {
-              indices.push(i);
-            }
-            if (!indices.includes(chartData.length - 1) && chartData.length > 1) {
-              indices.push(chartData.length - 1);
-            }
+        {/* Date labels share the chart's x-scale, preventing marker/label drift. */}
+        <div className="relative h-4 mt-2 text-[11px] font-mono text-zinc-500 select-none">
+          {axisIndices.map((idx) => {
+            const d = chartData[idx];
+            if (!d) return null;
+            const isHovered = hoveredIndex === idx;
+            const isFirst = idx === 0;
+            const isLast = idx === chartData.length - 1;
+            const xPercent = (getX(idx) / width) * 100;
 
-            return indices.map((idx) => {
-              const d = chartData[idx];
-              if (!d) return null;
-              const isHovered = hoveredIndex === idx;
-
-              return (
-                <span
-                  key={d.date}
-                  className={`transition-colors leading-none ${isHovered ? 'text-white font-bold' : 'text-zinc-500'}`}
-                >
-                  {d.label}
-                </span>
-              );
-            });
-          })()}
+            return (
+              <span
+                key={d.date}
+                className={`absolute whitespace-nowrap transition-colors leading-none ${isHovered ? 'text-white font-bold' : 'text-zinc-500'}`}
+                style={{
+                  left: `${xPercent}%`,
+                  transform: isFirst ? 'translateX(0)' : isLast ? 'translateX(-100%)' : 'translateX(-50%)',
+                }}
+              >
+                {d.label}
+              </span>
+            );
+          })}
         </div>
       </div>
     </div>
