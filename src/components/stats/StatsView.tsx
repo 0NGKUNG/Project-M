@@ -356,22 +356,19 @@ export const StatsView: React.FC = () => {
                     stroke="#161620"
                     strokeWidth="5"
                   />
-                  {/* Category Arcs - Dynamic Ring for All Categories */}
+                  {/* Category Arcs - Clean Simple Slices with Uniform Gaps */}
                   {(() => {
                     const radius = 40;
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = categoryOutflows.length;
-                    // Dynamically scale gapArc based on total category count so gaps stay visible without overlapping
-                    const gapArc = count > 1 ? Math.min(6, Math.max(1.5, 25 / count)) : 0;
-                    const totalGaps = count > 1 ? count * gapArc : 0;
-                    const availableCircumference = Math.max(0, circumference - totalGaps);
-
+                    const gapArc = count > 1 ? 5 : 0;
                     const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
-                    let currentOffset = 0;
+                    let accumulatedPercent = 0;
 
                     return categoryOutflows.map((item, idx) => {
                       const pct = totalExpense > 0 ? item.amount / totalExpense : 0;
+                      const rawArc = pct * circumference;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
 
@@ -379,13 +376,11 @@ export const StatsView: React.FC = () => {
                         strokeDash = circumference;
                         strokeDashoffset = 0;
                       } else {
-                        // Scale slice length relative to available circumference after accounting for gaps
-                        strokeDash = Math.max(1.5, pct * availableCircumference);
-                        strokeDashoffset = -(currentOffset + gapArc / 2);
-                        // Move offset forward by slice arc length + gap arc length
-                        currentOffset += strokeDash + gapArc;
+                        // Subtract a clean fixed gap from each slice's natural percentage length
+                        strokeDash = Math.max(1, rawArc - gapArc);
+                        strokeDashoffset = -(accumulatedPercent * circumference + gapArc / 2);
                       }
-
+                      accumulatedPercent += pct;
                       const strokeColor = EXPENSE_PALETTE[idx % EXPENSE_PALETTE.length];
 
                       return (
@@ -483,22 +478,19 @@ export const StatsView: React.FC = () => {
                     stroke="#161620"
                     strokeWidth="5"
                   />
-                  {/* Category Arcs - Dynamic Ring for All Categories */}
+                  {/* Category Arcs - Clean Simple Slices with Uniform Gaps */}
                   {(() => {
                     const radius = 40;
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = categoryInflows.length;
-                    // Dynamically scale gapArc based on total category count so gaps stay visible without overlapping
-                    const gapArc = count > 1 ? Math.min(6, Math.max(1.5, 25 / count)) : 0;
-                    const totalGaps = count > 1 ? count * gapArc : 0;
-                    const availableCircumference = Math.max(0, circumference - totalGaps);
-
+                    const gapArc = count > 1 ? 5 : 0;
                     const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
-                    let currentOffset = 0;
+                    let accumulatedPercent = 0;
 
                     return categoryInflows.map((item, idx) => {
                       const pct = totalIncome > 0 ? item.amount / totalIncome : 0;
+                      const rawArc = pct * circumference;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
 
@@ -506,13 +498,11 @@ export const StatsView: React.FC = () => {
                         strokeDash = circumference;
                         strokeDashoffset = 0;
                       } else {
-                        // Scale slice length relative to available circumference after accounting for gaps
-                        strokeDash = Math.max(1.5, pct * availableCircumference);
-                        strokeDashoffset = -(currentOffset + gapArc / 2);
-                        // Move offset forward by slice arc length + gap arc length
-                        currentOffset += strokeDash + gapArc;
+                        // Subtract a clean fixed gap from each slice's natural percentage length
+                        strokeDash = Math.max(1, rawArc - gapArc);
+                        strokeDashoffset = -(accumulatedPercent * circumference + gapArc / 2);
                       }
-
+                      accumulatedPercent += pct;
                       const strokeColor = INCOME_PALETTE[idx % INCOME_PALETTE.length];
 
                       return (
