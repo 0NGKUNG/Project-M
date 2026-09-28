@@ -211,17 +211,17 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
       className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* Modal shell — narrow on mobile (sheet), wide on desktop */}
+      {/* Modal shell — larger on desktop */}
       <div
-        className="w-full max-w-4xl bg-[#0e0e12] border-t lg:border border-zinc-800 rounded-t-2xl lg:rounded-2xl flex flex-col lg:flex-row overflow-hidden shadow-2xl max-h-[94vh] lg:max-h-[88vh] cursor-default"
+        className="w-full max-w-5xl 2xl:max-w-6xl bg-[#0e0e12] border-t lg:border border-zinc-800 rounded-t-2xl lg:rounded-2xl flex flex-col lg:flex-row overflow-hidden shadow-2xl max-h-[94vh] lg:max-h-[90vh] cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ═══════════════════════════════════════════════════════════════════
             LEFT COLUMN — header + cards (always visible, scrollable on mobile)
         ═══════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col lg:w-[420px] lg:shrink-0 overflow-y-auto lg:overflow-y-auto lg:border-r border-zinc-800/70">
+        <div className="flex flex-col lg:w-[460px] 2xl:w-[500px] lg:shrink-0 overflow-y-auto lg:overflow-y-auto lg:border-r border-zinc-800/70">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+          <div className="flex items-center justify-between px-6 pt-5 pb-3 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
                 <CreditCard size={18} />
@@ -258,7 +258,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             </div>
           </div>
 
-          <div className="px-5 space-y-3 pb-5">
+          <div className="px-6 space-y-3 pb-6">
             {/* ── Card 1 · Balance + Income / Expenses ── */}
             <div className="bg-[#141418] rounded-2xl p-5 space-y-4 border border-zinc-800/50">
               <div>
@@ -299,33 +299,23 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
               </div>
             </div>
 
-            {/* ── Card 2 · All-time Balance Chart ── */}
-            <div className="bg-[#141418] rounded-2xl p-5 border border-zinc-800/50 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold tracking-wider">
-                  All-time Balance Trend
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400 tabular-nums">
-                  {formatCurrency(currentBalance, state.settings.currencySymbol)}
-                </span>
-              </div>
-
-              <div className="relative h-32 w-full bg-[#0d0d12] rounded-xl p-2 border border-zinc-800/60 overflow-hidden">
+            {/* ── Card 2 · Clean Chart Only in Grey Card ── */}
+            <div className="bg-[#141418] rounded-2xl p-4 border border-zinc-800/50 flex flex-col justify-between">
+              <div className="relative h-44 w-full rounded-xl overflow-hidden">
                 {renderChart(allTimeChart, `alltime-${account.id}`)}
               </div>
 
-              {/* Month labels — show a few evenly-spaced */}
+              {/* Month labels at bottom of the chart card */}
               {allTimeChart.length >= 2 && (
-                <div className="flex justify-between px-1">
+                <div className="flex justify-between px-2 pt-2 border-t border-zinc-800/40 mt-1">
                   {(() => {
                     const total = allTimeChart.length;
-                    // Pick at most 5 labels: first, ~25%, ~50%, ~75%, last
                     const idxs = total <= 5
                       ? allTimeChart.map((_, i) => i)
                       : [0, Math.floor(total * 0.25), Math.floor(total * 0.5), Math.floor(total * 0.75), total - 1];
                     const unique = [...new Set(idxs)];
                     return unique.map((i) => (
-                      <span key={i} className="text-[9px] font-mono text-zinc-600">
+                      <span key={i} className="text-[9px] font-mono text-zinc-500">
                         {allTimeChart[i].label}
                       </span>
                     ));
