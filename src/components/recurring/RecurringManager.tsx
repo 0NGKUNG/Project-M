@@ -10,6 +10,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
 import type { RecurringItem } from '../../types/finance';
+import { useBackButton } from '../../hooks/useBackButton';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -69,6 +70,7 @@ export interface RecurringManagerProps {
 export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) => {
   const { state, addRecurring, updateRecurring, deleteRecurring } = useFinance();
   const [showAddModal, setShowAddModal] = useState(false);
+  useBackButton(showAddModal, () => setShowAddModal(false));
   const [name, setName] = useState('');
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');

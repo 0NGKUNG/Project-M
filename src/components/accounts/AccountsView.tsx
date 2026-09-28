@@ -12,6 +12,7 @@ import { CustomSelect } from '../common/CustomSelect';
 import type { Account } from '../../types/finance';
 import { RecurringManager } from '../recurring/RecurringManager';
 import { DebtManager } from '../debts/DebtManager';
+import { useBackButton } from '../../hooks/useBackButton';
 
 type AccountsSubTab = 'wallets' | 'recurring' | 'debts';
 
@@ -26,6 +27,12 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   const { state, totalNetWorth, accountBalances, addAccount } = useFinance();
   const [currentSubTab, setCurrentSubTab] = useState<AccountsSubTab>('wallets');
   const [showAddModal, setShowAddModal] = useState(false);
+
+  useBackButton(Boolean(showAddModal || currentSubTab !== 'wallets'), () => {
+    if (showAddModal) setShowAddModal(false);
+    else if (currentSubTab !== 'wallets') setCurrentSubTab('wallets');
+  });
+
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<Account['type']>('bank');
   const [newAccBalance, setNewAccBalance] = useState('0');

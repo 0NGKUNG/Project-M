@@ -13,6 +13,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import type { TransactionType } from '../../types/finance';
 import { CategoryIcon } from '../common/Icons';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface QuickAddModalProps {
 }
 
 export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, defaultAccountId }) => {
+  useBackButton(isOpen, onClose);
   const { state, addTransaction, triggerHaptic } = useFinance();
   const [type, setType] = useState<TransactionType>('expense');
   const [amountStr, setAmountStr] = useState<string>('0');

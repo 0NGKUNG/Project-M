@@ -4,6 +4,7 @@ import { useFinance } from '../../context/FinanceContext';
 import type { Transaction, TransactionType } from '../../types/finance';
 import { CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface EditTransactionModalProps {
   transaction: Transaction | null;
@@ -21,6 +22,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   transaction,
   onClose,
 }) => {
+  useBackButton(Boolean(transaction), onClose);
   const { state, updateTransaction, deleteTransaction, triggerHaptic } = useFinance();
 
   if (!transaction) return null;

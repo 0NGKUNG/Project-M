@@ -4,6 +4,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import type { Account, Transaction } from '../../types/finance';
 import { EditTransactionModal } from '../transactions/EditTransactionModal';
+import { useBackButton } from '../../hooks/useBackButton';
 
 interface AccountDetailModalProps {
   account: Account | null;
@@ -16,6 +17,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   onClose,
   onOpenQuickAddWithAccount,
 }) => {
+  useBackButton(Boolean(account), onClose);
   const { state, accountBalances, updateAccount, deleteAccount } = useFinance();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   

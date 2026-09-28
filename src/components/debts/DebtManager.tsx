@@ -9,17 +9,23 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
 import type { DebtItem } from '../../types/finance';
+import { useBackButton } from '../../hooks/useBackButton';
 
 export const DebtManager: React.FC = () => {
   const { state, addDebt, updateDebt, deleteDebt } = useFinance();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [settleDebtId, setSettleDebtId] = useState<string | null>(null);
+
+  useBackButton(Boolean(showAddModal || settleDebtId), () => {
+    if (showAddModal) setShowAddModal(false);
+    else if (settleDebtId) setSettleDebtId(null);
+  });
+
   const [personName, setPersonName] = useState('');
   const [type, setType] = useState<'lend' | 'borrow'>('lend');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [note, setNote] = useState('');
-
-  const [settleDebtId, setSettleDebtId] = useState<string | null>(null);
   const [settleAmount, setSettleAmount] = useState('');
 
   const debtList = state.debts || [];

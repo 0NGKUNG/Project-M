@@ -24,6 +24,7 @@ import { CustomSelect } from '../common/CustomSelect';
 import { CategoryIcon, formatCurrency } from '../common/Icons';
 import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
 import { RecurringManager } from '../recurring/RecurringManager';
+import { useBackButton } from '../../hooks/useBackButton';
 
 type SettingsSubPage = null | 'goals' | 'categories' | 'recurring';
 
@@ -80,6 +81,11 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { state, addBudget, updateBudget, deleteBudget } = useFinance();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Budget | null>(null);
+
+  useBackButton(Boolean(showCreateModal || selectedGoal), () => {
+    if (showCreateModal) setShowCreateModal(false);
+    else if (selectedGoal) setSelectedGoal(null);
+  });
 
   // Form state
   const [name, setName] = useState('');
@@ -636,6 +642,15 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('Tag');
 
+  useBackButton(
+    Boolean(selectedParentCat || showAddParentModal || showAddSubModal),
+    () => {
+      if (showAddSubModal) setShowAddSubModal(false);
+      else if (showAddParentModal) setShowAddParentModal(false);
+      else if (selectedParentCat) setSelectedParentCat(null);
+    }
+  );
+
   // Filter top-level parents and their subcategories
   const parentCategories = useMemo(
     () => state.categories.filter((c) => c.type === tab && !c.parentId),
@@ -986,6 +1001,7 @@ export const SettingsView: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [subPage, setSubPage] = useState<SettingsSubPage>(null);
+  useBackButton(Boolean(subPage), () => setSubPage(null));
   const [showWallets, setShowWallets] = useState(false);
   const [showAddAcc, setShowAddAcc] = useState(false);
   const [newAccName, setNewAccName] = useState('');
