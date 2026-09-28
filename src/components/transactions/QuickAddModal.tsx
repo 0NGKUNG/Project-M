@@ -230,7 +230,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         {/* Category Pill Grid (Reference Top Section) */}
         {type !== 'transfer' ? (
           <div className="px-4 sm:px-6 py-3 sm:py-4 flex-1 min-h-0 overflow-y-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3">
+            <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
               {parentCategories.map((cat) => {
                 const isSelected = selectedCategoryId === cat.id;
                 const subs = getSubcategories(cat.id);
@@ -244,28 +244,28 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                       setSelectedCategoryId(cat.id);
                       setSelectedSubcategoryId(undefined);
                     }}
-                    className={`relative p-3 rounded-2xl flex items-center gap-2.5 cursor-pointer transition-all border ${
+                    className={`relative p-2.5 sm:p-3 rounded-2xl flex items-center gap-2 cursor-pointer transition-all border ${
                       isSelected
                         ? 'bg-zinc-200 text-black border-white shadow-md'
                         : 'bg-[#14141a] text-zinc-300 border-zinc-900 hover:border-zinc-800'
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 ${
                         isSelected ? 'bg-black text-white' : 'bg-zinc-900 text-zinc-300'
                       }`}
                     >
-                      <CategoryIcon name={cat.icon || 'Tag'} size={15} />
+                      <CategoryIcon name={cat.icon || 'Tag'} size={14} />
                     </div>
 
                     <div className="truncate flex-1 min-w-0">
-                      <div className="text-xs font-bold truncate leading-tight">{cat.name}</div>
+                      <div className="text-[11px] sm:text-xs font-bold truncate leading-snug" title={cat.name}>{cat.name}</div>
                       {isSelected && selectedSub ? (
-                        <div className="text-[10px] text-zinc-700 truncate leading-tight font-medium mt-0.5">
+                        <div className="text-[9px] sm:text-[10px] text-zinc-700 truncate leading-tight font-medium mt-0.5" title={selectedSub.name}>
                           {selectedSub.name}
                         </div>
                       ) : hasSubs ? (
-                        <div className={`text-[10px] truncate leading-tight mt-0.5 ${isSelected ? 'text-zinc-600' : 'text-zinc-500 font-mono'}`}>
+                        <div className={`text-[9px] sm:text-[10px] truncate leading-tight mt-0.5 ${isSelected ? 'text-zinc-600' : 'text-zinc-500 font-mono'}`}>
                           {subs.length} sub
                         </div>
                       ) : null}
@@ -281,7 +281,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                           setSelectedCategoryId(cat.id);
                           setActiveDropdownCatId(activeDropdownCatId === cat.id ? null : cat.id);
                         }}
-                        className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
+                        className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-lg flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
                           isSelected ? 'bg-black/10 text-black hover:bg-black/20' : 'bg-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-800'
                         }`}
                         title="Pick Subcategory"
