@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { 
   Wallet, 
   Plus, 
-  PieChart, 
   RefreshCw,
-  Users,
-  CreditCard
+  Users
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
@@ -136,137 +134,67 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               {formatCurrency(totalNetWorth, state.settings.currencySymbol)}
             </div>
 
-            {/* Portfolio Distribution Segmented Bar & Individual Account Progress Bars */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center text-xs font-mono text-zinc-400">
-                <span className="flex items-center gap-1.5">
-                  <PieChart size={13} className="text-zinc-400" />
-                  <span>Asset Distribution</span>
-                </span>
-                <span className="text-[10px] text-zinc-500 font-mono">100% Total</span>
-              </div>
-
-              {/* Combined Segmented Visual Bar with distinct monochrome shades */}
-              <div className="w-full h-3 rounded-full bg-zinc-900 flex overflow-hidden gap-1 p-0.5 border border-zinc-800/80">
-                {accountStats.map((acc, idx) => {
-                  if (acc.percentage <= 0) return null;
-                  // Distinct, clearly discernible monochrome tones: White, Silver/Light Grey, Mid Grey, Dark Slate, Deep Charcoal
-                  const shades = [
-                    'bg-white',
-                    'bg-zinc-300',
-                    'bg-zinc-500',
-                    'bg-zinc-600',
-                    'bg-zinc-700',
-                    'bg-zinc-800',
-                  ];
-                  const bg = shades[idx % shades.length];
-                  return (
-                    <div
-                      key={acc.id}
-                      title={`${acc.name}: ${acc.percentage}%`}
-                      className={`h-full rounded-xs transition-all ${bg}`}
-                      style={{ width: `${acc.percentage}%` }}
-                    />
-                  );
-                })}
-              </div>
-
-              {/* Individual Account Progress Bars List: a ----- 50%, b ---- 30% */}
-              <div className="space-y-2.5 pt-2 border-t border-zinc-900/90">
-                {accountStats.map((acc, idx) => {
-                  const dotColors = [
-                    'bg-white',
-                    'bg-zinc-300',
-                    'bg-zinc-500',
-                    'bg-zinc-600',
-                    'bg-zinc-700',
-                    'bg-zinc-800',
-                  ];
-                  const barBg = dotColors[idx % dotColors.length];
-
-                  return (
-                    <div key={acc.id} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs font-mono">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${barBg} shrink-0`} />
-                          <span className="text-zinc-300 font-semibold truncate">{acc.name}</span>
-                          <span className="text-[10px] text-zinc-600 uppercase font-mono">({acc.type})</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[11px] text-zinc-500 font-mono">
-                            {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
-                          </span>
-                          <span className="text-xs font-bold text-white font-mono w-10 text-right">
-                            {acc.percentage}%
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Horizontal progress track */}
-                      <div className="w-full h-1.5 rounded-full bg-zinc-900 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${barBg}`}
-                          style={{ width: `${Math.max(2, acc.percentage)}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Account Cards List with Percentage Breakdown */}
-          <div className="space-y-3">
-            <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block px-1">
-              Account Ledger ({accountStats.length})
-            </span>
-
-            {/* Compact 2-per-row card grid on mobile and desktop */}
-            {/* Bank Card / Folder Style 2-per-row grid on mobile and desktop */}
+            {/* Clean Real Folder Shape 2-per-row grid ordered strictly by value */}
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {accountStats.map((acc, index) => {
                 const isNegative = (acc.currentBalance ?? 0) < 0;
-                // Subtle gradient accent variations for realistic card/folder look
-                const cardGradients = [
-                  'from-[#191924] via-[#14141c] to-[#0e0e14] border-zinc-800/90',
-                  'from-[#1a1c24] via-[#14161c] to-[#0e0e14] border-zinc-800/90',
-                  'from-[#1e1a24] via-[#16141c] to-[#0e0e14] border-zinc-800/90',
-                  'from-[#181a20] via-[#13151a] to-[#0e0e14] border-zinc-800/90',
+
+                // Distinct aesthetic folder palette (matching chart palette order)
+                const folderColors = [
+                  {
+                    tab: 'bg-[#7c3aed] text-white', // Violet folder
+                    body: 'from-[#6d28d9] to-[#5b21b6] border-[#8b5cf6]/40 text-white',
+                    subtext: 'text-violet-200',
+                  },
+                  {
+                    tab: 'bg-[#ea580c] text-white', // Orange folder
+                    body: 'from-[#c2410c] to-[#9a3412] border-[#f97316]/40 text-white',
+                    subtext: 'text-orange-200',
+                  },
+                  {
+                    tab: 'bg-[#0284c7] text-white', // Sky blue folder
+                    body: 'from-[#0369a1] to-[#075985] border-[#38bdf8]/40 text-white',
+                    subtext: 'text-sky-200',
+                  },
+                  {
+                    tab: 'bg-[#db2777] text-white', // Pink/Magenta folder
+                    body: 'from-[#be185d] to-[#9d174d] border-[#f472b6]/40 text-white',
+                    subtext: 'text-pink-200',
+                  },
+                  {
+                    tab: 'bg-[#059669] text-white', // Emerald folder
+                    body: 'from-[#047857] to-[#065f46] border-[#34d399]/40 text-white',
+                    subtext: 'text-emerald-200',
+                  },
+                  {
+                    tab: 'bg-[#d97706] text-white', // Amber folder
+                    body: 'from-[#b45309] to-[#92400e] border-[#fbbf24]/40 text-white',
+                    subtext: 'text-amber-200',
+                  },
                 ];
-                const gradientClass = cardGradients[index % cardGradients.length];
+
+                const color = folderColors[index % folderColors.length];
 
                 return (
                   <div
                     key={acc.id}
                     onClick={() => onSelectAccount(acc)}
-                    className={`relative p-4 rounded-2xl bg-linear-to-br ${gradientClass} border hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] active:scale-[0.98] shadow-lg group overflow-hidden`}
+                    className="relative cursor-pointer transition-transform active:scale-[0.97] group pt-3"
                   >
-                    {/* Folder / Card subtle top sheen accent */}
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.025] rounded-full blur-xl pointer-events-none -mr-6 -mt-6" />
-
-                    {/* Top Row: Icon + Type Badge */}
-                    <div className="flex items-center justify-between gap-1.5 relative z-10">
-                      <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
-                        {acc.type === 'cash' ? (
-                          <Wallet size={13} />
-                        ) : acc.type === 'savings' ? (
-                          <PieChart size={13} />
-                        ) : (
-                          <CreditCard size={13} />
-                        )}
-                      </div>
-                      <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 bg-black/40 px-2 py-0.5 rounded-md border border-white/5 font-bold">
-                        {acc.type}
-                      </span>
-                    </div>
-
-                    {/* Bottom Row: Name + Balance */}
-                    <div className="mt-3 relative z-10">
-                      <div className="text-[11px] font-bold text-zinc-300 group-hover:text-white transition-colors truncate">
+                    {/* Folder Tab (Raised Top-Left Tab) */}
+                    <div className="flex items-center">
+                      <div className={`px-4 py-1.5 rounded-t-xl text-[11px] font-bold tracking-tight truncate max-w-[75%] shadow-sm ${color.tab}`}>
                         {acc.name}
                       </div>
-                      <div className={`text-sm sm:text-base font-extrabold font-mono tracking-tight truncate mt-0.5 ${isNegative ? 'text-rose-400' : 'text-white'}`}>
+                      <div className="flex-1" />
+                    </div>
+
+                    {/* Folder Main Body */}
+                    <div className={`p-4 rounded-b-2xl rounded-tr-2xl bg-linear-to-b ${color.body} border shadow-lg flex flex-col justify-end min-h-[82px] -mt-px`}>
+                      <div className={`text-[11px] font-mono tracking-wider uppercase font-semibold ${color.subtext}`}>
+                        Balance
+                      </div>
+                      <div className={`text-base sm:text-lg font-extrabold font-mono tracking-tight truncate mt-0.5 ${isNegative ? 'text-rose-200' : 'text-white'}`}>
                         {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
                       </div>
                     </div>
