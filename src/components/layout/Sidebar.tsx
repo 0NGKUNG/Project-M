@@ -41,7 +41,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         onClick={onToggleCollapse}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="absolute top-5 -right-3 z-20 w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-400 hover:text-white transition-all cursor-pointer shadow-lg"
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        className="absolute top-5 right-3 z-20 w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-lg"
       >
         {collapsed ? <ChevronRight size={12} strokeWidth={2.5} /> : <ChevronLeft size={12} strokeWidth={2.5} />}
       </button>
@@ -70,7 +71,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={onOpenQuickAdd}
               title={`New Transaction (${keybind})`}
-              className="w-full flex items-center justify-center p-3 rounded-2xl bg-white hover:bg-zinc-100 active:scale-95 text-black transition-all cursor-pointer shadow-[0_4px_24px_rgba(255,255,255,0.15)]"
+              aria-label={`New Transaction (${keybind})`}
+              className="w-full aspect-square max-h-12 flex items-center justify-center rounded-2xl bg-white hover:bg-zinc-100 active:scale-95 text-black transition-all cursor-pointer shadow-[0_4px_24px_rgba(255,255,255,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               <Plus size={18} strokeWidth={2.8} />
             </button>
