@@ -78,13 +78,13 @@ export const StatsView: React.FC = () => {
           <h2 className="text-xl font-bold tracking-tight text-white font-mono">STATS</h2>
         </div>
 
-        <div className="flex bg-[#101014] p-1 rounded-xl border border-zinc-900">
+        <div className="flex bg-[#0d0d10] p-1 rounded-xl border border-zinc-800/80 shadow-sm">
           {(['week', 'month', 'year', 'all'] as TimeRange[]).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-3 py-1 rounded-lg text-xs font-mono font-medium capitalize transition-colors cursor-pointer ${
-                timeRange === range ? 'bg-white text-black font-bold' : 'text-zinc-500 hover:text-white'
+              className={`px-3 py-1 rounded-lg text-xs font-mono font-medium capitalize transition-all cursor-pointer ${
+                timeRange === range ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
               }`}
             >
               {range === 'all' ? 'All' : range}

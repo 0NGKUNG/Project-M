@@ -72,8 +72,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Top Hero Cards: Net Worth & Savings */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div className="lg:col-span-8 bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-7 shadow-xl flex flex-col justify-between relative overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-8 bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-5 sm:p-6 border border-zinc-800/70 shadow-sm flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
 
           <div>
@@ -92,7 +92,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-zinc-800/40">
-            <div className="bg-[#181820]/70 rounded-2xl p-3.5 flex items-center gap-3.5">
+            <div className="bg-[#181820]/70 rounded-xl p-3.5 flex items-center gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
                 <TrendingUp size={20} />
               </div>
@@ -104,7 +104,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            <div className="bg-[#181820]/70 rounded-2xl p-3.5 flex items-center gap-3.5">
+            <div className="bg-[#181820]/70 rounded-xl p-3.5 flex items-center gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-400 shrink-0">
                 <TrendingDown size={20} />
               </div>
@@ -118,7 +118,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-[#101014] rounded-2xl p-7 flex flex-col justify-between shadow-xl">
+        <div className="lg:col-span-4 bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-800/70 flex flex-col justify-between shadow-sm">
           <div>
             <div className="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
               Monthly Retention Rate
@@ -160,7 +160,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 key={acc.id}
                 onClick={() => onSelectAccount(acc)}
-                className="bg-[#101014] hover:bg-[#15151c] active:scale-98 rounded-2xl p-5 flex flex-col justify-between transition-all group text-left cursor-pointer shadow-sm relative"
+                className="bg-[#101014] hover:bg-[#15151c] active:scale-98 rounded-2xl p-5 border border-zinc-800/70 hover:border-zinc-700 flex flex-col justify-between transition-all group text-left cursor-pointer shadow-sm relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               >
                 <div className="flex items-center justify-between mb-4 w-full">
                   <span className="text-xs text-zinc-300 font-semibold truncate group-hover:text-white transition-colors">
@@ -188,7 +188,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <SpendingChart />
 
-        <div className="bg-[#101014] rounded-2xl p-6 flex flex-col justify-between space-y-4 shadow-sm">
+        <div className="bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-800/70 flex flex-col justify-between space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase font-semibold tracking-wider text-zinc-400">
               Recent Vault Activity

@@ -33,14 +33,14 @@ export const SpendingChart: React.FC = () => {
 
   if (totalSpending === 0) {
     return (
-      <div className="bg-[#101014] rounded-2xl p-6 text-center h-full flex flex-col justify-center">
+      <div className="bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-800/70 text-center h-full flex flex-col justify-center">
         <p className="text-xs text-zinc-500">No expenses logged this month yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#101014] rounded-2xl p-6 space-y-4 h-full flex flex-col justify-between shadow-sm">
+    <div className="bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-800/70 space-y-4 h-full flex flex-col justify-between shadow-sm">
       <div>
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs uppercase font-mono font-semibold tracking-wider text-zinc-400">

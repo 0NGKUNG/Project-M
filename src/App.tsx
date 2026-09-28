@@ -124,7 +124,7 @@ export const AppContent: React.FC = () => {
         {/* Dynamic Main View Area with Mobile Swipe Navigation */}
         <div className="flex-1 flex flex-col h-full h-[100dvh] overflow-hidden bg-[#060608] relative">
           {/* Desktop display: static view without carousel overhead */}
-          <main className="hidden lg:block flex-1 w-full py-8 px-6 overflow-y-auto">
+          <main className="hidden lg:block flex-1 w-full py-6 px-0 overflow-y-auto">
             {currentTab === 'today' && (
               <TodayView
                 onOpenQuickAdd={handleOpenQuickAdd}
