@@ -173,9 +173,9 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const activeX = hoveredIndex !== null ? getX(hoveredIndex) : 0;
 
   return (
-    <div className="bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm space-y-4">
+    <div className="h-[300px] sm:h-[338px] bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm flex flex-col space-y-4 overflow-hidden">
       {/* Chart Header */}
-      <div className="flex items-center justify-between min-h-[38px]">
+      <div className="h-11 shrink-0 flex items-center justify-between gap-3">
         <div>
           <span className="text-[11px] font-mono font-bold tracking-wider text-zinc-400 uppercase block">
             Cashflow &amp; Balance
@@ -197,7 +197,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
         </div>
 
         {/* Hover info badge */}
-        <div className={`font-mono px-3 py-1.5 rounded-xl border border-zinc-800 bg-[#16161d] transition-opacity duration-150 text-right ${
+        <div className={`w-[190px] h-11 shrink-0 font-mono px-3 py-1.5 rounded-xl border border-zinc-800 bg-[#16161d] transition-opacity duration-150 text-right flex flex-col justify-center overflow-hidden ${
           activePoint ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
           <div className="text-[10px] text-zinc-400">
@@ -223,7 +223,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
       </div>
 
       {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
-      <div className="w-full relative select-none">
+      <div className="w-full flex-1 min-h-0 relative select-none">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height - 28}`}
