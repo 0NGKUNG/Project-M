@@ -4,7 +4,7 @@ import { useFinance } from '../../context/FinanceContext';
 import type { Transaction, TransactionType } from '../../types/finance';
 import { CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
-import { CurrencyInput } from '../common/CurrencyInput';
+import { CurrencyInput, parseFormattedNumber, formatNumberWithCommas } from '../common/CurrencyInput';
 import { useBackButton } from '../../hooks/useBackButton';
 
 interface EditTransactionModalProps {
@@ -31,7 +31,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
   // useState hooks always called — no conditional early return before them
   const [type, setType] = useState<TransactionType>(transaction.type);
-  const [amountStr, setAmountStr] = useState<string>(String(transaction.amount));
+  const [amountStr, setAmountStr] = useState<string>(() => formatNumberWithCommas(transaction.amount));
   const [categoryId, setCategoryId] = useState<string>(transaction.categoryId);
   const [subcategoryId, setSubcategoryId] = useState<string | undefined>(transaction.subcategoryId);
   const [accountId, setAccountId] = useState<string>(transaction.accountId);
@@ -50,7 +50,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsedAmount = parseFloat(amountStr);
+    const parsedAmount = parseFormattedNumber(amountStr);
     if (!parsedAmount || parsedAmount <= 0) return;
 
     updateTransaction({
@@ -78,11 +78,11 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+      className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-md bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto cursor-default"
+        className="w-full max-w-md sm:max-w-lg md:max-w-xl bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto cursor-default transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between pb-2 border-b border-zinc-900">

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
-import { CurrencyInput } from '../common/CurrencyInput';
+import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import { CustomSelect } from '../common/CustomSelect';
 import type { Account } from '../../types/finance';
 import { RecurringManager } from '../recurring/RecurringManager';
@@ -59,7 +59,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     addAccount({
       name: newAccName.trim(),
       type: newAccType,
-      initialBalance: parseFloat(newAccBalance) || 0,
+      initialBalance: parseFormattedNumber(newAccBalance),
       icon: newAccType === 'cash' ? 'Wallet' : 'CreditCard',
     });
 
@@ -193,7 +193,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               Account Ledger ({accountStats.length})
             </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {accountStats.map((acc, index) => {
                 const isNegative = (acc.currentBalance ?? 0) < 0;
 

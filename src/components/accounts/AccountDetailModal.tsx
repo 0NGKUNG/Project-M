@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, CreditCard, TrendingUp, TrendingDown, Edit2, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
-import { CurrencyInput } from '../common/CurrencyInput';
+import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import type { Account, Transaction } from '../../types/finance';
 import { EditTransactionModal } from '../transactions/EditTransactionModal';
 import { useBackButton } from '../../hooks/useBackButton';
@@ -126,7 +126,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
       ...account,
       name: editName.trim(),
       type: editType,
-      initialBalance: parseFloat(editBalance) || 0,
+      initialBalance: parseFormattedNumber(editBalance),
       icon: editType === 'cash' ? 'Wallet' : 'CreditCard',
     });
     setIsEditingAccount(false);

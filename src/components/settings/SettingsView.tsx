@@ -21,7 +21,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { supabase } from '../../db/supabaseClient';
 import { CustomSelect } from '../common/CustomSelect';
-import { CurrencyInput } from '../common/CurrencyInput';
+import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import { CategoryIcon, formatCurrency } from '../common/Icons';
 import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
 import { RecurringManager } from '../recurring/RecurringManager';
@@ -161,7 +161,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleAddCategoryAllocation = () => {
-    const amt = parseFloat(tempCatAmount);
+    const amt = parseFormattedNumber(tempCatAmount);
     if (!tempCatId || !amt || amt <= 0) return;
     setCategoryAllocations((prev) => {
       const existing = prev.filter((a) => a.categoryId !== tempCatId);
@@ -176,7 +176,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleSaveGoal = (e: React.FormEvent) => {
     e.preventDefault();
-    const totalAmount = parseFloat(amount);
+    const totalAmount = parseFormattedNumber(amount);
     if (!totalAmount || totalAmount <= 0) return;
 
     if (editingBudgetId) {
@@ -1034,7 +1034,7 @@ export const SettingsView: React.FC = () => {
     addAccount({
       name: newAccName.trim(),
       type: newAccType,
-      initialBalance: parseFloat(newAccBalance) || 0,
+      initialBalance: parseFormattedNumber(newAccBalance),
       icon: newAccType === 'cash' ? 'Wallet' : 'CreditCard',
     });
     setNewAccName('');

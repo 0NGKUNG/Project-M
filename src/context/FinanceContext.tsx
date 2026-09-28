@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import type { Account, Budget, Category, DebtItem, FinanceSettings, FinanceState, RecurringItem, Transaction } from '../types/finance';
-import { loadFinanceData, saveFinanceData, DEFAULT_ACCOUNTS, DEFAULT_CATEGORIES } from '../db/storage';
+import { 
+  loadFinanceData, 
+  saveFinanceData, 
+  DEFAULT_ACCOUNTS, 
+  DEFAULT_CATEGORIES,
+  getCategoryParentMap,
+  saveCategoryParentMap 
+} from '../db/storage';
 import { supabase, isSupabaseConfigured } from '../db/supabaseClient';
 
 interface FinanceContextType {
@@ -126,13 +133,37 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           initialBalance: Number(a.initial_balance),
           icon: a.icon,
         })) : prev.accounts,
-        categories: catRes.data && catRes.data.length > 0 ? catRes.data.map((c) => ({
-          id: c.id,
-          name: c.name,
-          type: c.type,
-          icon: c.icon,
-          parentId: c.parent_id || c.parentId || undefined,
-        })) : prev.categories,
+        categories: catRes.data && catRes.data.length > 0 ? (() => {
+          const localParentMap = getCategoryParentMap();
+          // Known default subcategory relationships
+          const defaultParentMap: Record<string, string> = {
+            sub_coffee: 'cat_food',
+            sub_groceries: 'cat_food',
+            sub_restaurant: 'cat_food',
+            cat_coffee: 'cat_food',
+            cat_groceries: 'cat_food',
+            cat_restaurant: 'cat_food',
+            sub_fuel: 'cat_transport',
+            sub_rideshare: 'cat_transport',
+            cat_fuel: 'cat_transport',
+            cat_rideshare: 'cat_transport',
+          };
+          return catRes.data.map((c) => {
+            const rawParent = c.parent_id || c.parentId;
+            const parentId = rawParent 
+              || localParentMap[c.id] 
+              || defaultParentMap[c.id] 
+              || prev.categories.find((pc) => pc.id === c.id)?.parentId 
+              || undefined;
+            return {
+              id: c.id,
+              name: c.name,
+              type: c.type,
+              icon: c.icon,
+              parentId,
+            };
+          });
+        })() : prev.categories,
         budgets: bgRes.data && bgRes.data.length > 0 ? bgRes.data.map((b) => ({
           id: b.id,
           name: b.name || undefined,
@@ -461,6 +492,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       ...catData,
       id: 'cat_' + Date.now(),
     };
+    if (newCategory.parentId) {
+      const currentMap = getCategoryParentMap();
+      currentMap[newCategory.id] = newCategory.parentId;
+      saveCategoryParentMap(currentMap);
+    }
     setState((prev) => ({
       ...prev,
       categories: [...prev.categories, newCategory],
@@ -492,6 +528,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateCategory = async (updatedCat: Category) => {
     triggerHaptic();
+    const currentMap = getCategoryParentMap();
+    if (updatedCat.parentId) {
+      currentMap[updatedCat.id] = updatedCat.parentId;
+    } else {
+      delete currentMap[updatedCat.id];
+    }
+    saveCategoryParentMap(currentMap);
+
     setState((prev) => ({
       ...prev,
       categories: prev.categories.map((c) => (c.id === updatedCat.id ? updatedCat : c)),
@@ -514,6 +558,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteCategory = async (id: string) => {
     triggerHaptic();
+    const currentMap = getCategoryParentMap();
+    delete currentMap[id];
+    saveCategoryParentMap(currentMap);
+
     setState((prev) => ({
       ...prev,
       categories: prev.categories.filter((c) => c.id !== id && c.parentId !== id),

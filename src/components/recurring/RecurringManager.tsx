@@ -9,7 +9,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
-import { CurrencyInput } from '../common/CurrencyInput';
+import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import type { RecurringItem } from '../../types/finance';
 import { useBackButton } from '../../hooks/useBackButton';
 
@@ -100,7 +100,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = parseFormattedNumber(amount);
     if (!name.trim() || !parsedAmount || parsedAmount <= 0) return;
 
     const nextDueDate = computeNextDue(frequency, repeatEvery, dayOfWeek, dayOfMonth, monthOfYear);
@@ -166,7 +166,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
           <p className="text-[10px] text-zinc-600">Track rent, Spotify, Netflix, gym memberships, or routine income.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {recurringList.map((item) => {
             const cat = getCategory(item.categoryId);
             const acc = getAccount(item.accountId);

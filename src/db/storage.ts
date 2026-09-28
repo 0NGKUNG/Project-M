@@ -65,9 +65,36 @@ export function loadFinanceData(): FinanceState {
   }
 }
 
+const CATEGORY_PARENT_MAP_KEY = 'monodark_category_parents_v1';
+
+export function getCategoryParentMap(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(CATEGORY_PARENT_MAP_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveCategoryParentMap(map: Record<string, string>) {
+  try {
+    localStorage.setItem(CATEGORY_PARENT_MAP_KEY, JSON.stringify(map));
+  } catch (e) {
+    console.error('Failed to save category parent map:', e);
+  }
+}
+
 export function saveFinanceData(state: FinanceState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // Also persist parentId mapping into dedicated resilient cache
+    const parentMap: Record<string, string> = {};
+    state.categories.forEach((c) => {
+      if (c.parentId) {
+        parentMap[c.id] = c.parentId;
+      }
+    });
+    saveCategoryParentMap(parentMap);
   } catch (e) {
     console.error('Failed to save to local finance storage:', e);
   }

@@ -146,7 +146,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
   const height = 240;
   const paddingX = 14;
   const paddingTop = 32;
-  const paddingBottom = 36;
+  const paddingBottom = 8;
   const innerWidth = width - paddingX * 2;
   const innerHeight = height - paddingTop - paddingBottom;
 
@@ -166,25 +166,51 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
     return paddingTop + innerHeight - norm * innerHeight;
   };
 
-  // Generate smooth cubic bezier SVG path (Catmull-Rom to cubic Bezier)
+  // Generate smooth monotone cubic bezier SVG path (avoids Catmull-Rom overshoot / dip before rise)
   const generateSmoothPath = (values: number[]) => {
     if (values.length === 0) return '';
-    if (values.length === 1) return `M ${getX(0)},${getY(values[0])}`;
+    if (values.length === 1) return `M ${getX(0).toFixed(1)},${getY(values[0]).toFixed(1)}`;
 
     const pts = values.map((v, i) => ({ x: getX(i), y: getY(v) }));
-    let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    const n = pts.length;
 
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i === 0 ? 0 : i - 1];
+    const dxs: number[] = [];
+    const slopes: number[] = [];
+    for (let i = 0; i < n - 1; i++) {
+      const dx = pts[i + 1].x - pts[i].x;
+      const dy = pts[i + 1].y - pts[i].y;
+      dxs.push(dx);
+      slopes.push(dx === 0 ? 0 : dy / dx);
+    }
+
+    // Monotone tangents computation (Steffen / Fritsch-Carlson)
+    const m = new Array<number>(n);
+    m[0] = slopes[0];
+    m[n - 1] = slopes[n - 2];
+
+    for (let i = 1; i < n - 1; i++) {
+      const s0 = slopes[i - 1];
+      const s1 = slopes[i];
+      if (s0 * s1 <= 0) {
+        // Local extremum or flat: horizontal tangent prevents any overshoot or undershoot dip
+        m[i] = 0;
+      } else {
+        const dx0 = dxs[i - 1];
+        const dx1 = dxs[i];
+        const weighted = (s0 * dx1 + s1 * dx0) / (dx0 + dx1);
+        m[i] = Math.sign(s0) * Math.min(Math.abs(weighted), 2 * Math.abs(s0), 2 * Math.abs(s1));
+      }
+    }
+
+    let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < n - 1; i++) {
       const p1 = pts[i];
       const p2 = pts[i + 1];
-      const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
-
-      // Catmull-Rom tension 0.5 converted to Bezier control points
-      const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
-      const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      const dx = dxs[i];
+      const cp1x = p1.x + dx / 3;
+      const cp1y = p1.y + (m[i] * dx) / 3;
+      const cp2x = p2.x - dx / 3;
+      const cp2y = p2.y - (m[i + 1] * dx) / 3;
 
       d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
     }
@@ -231,13 +257,12 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
     if (totalPoints <= 1) return totalPoints ? [0] : [];
 
     const availableWidth = chartWidth || 280;
-    // On mobile (<400px), show 5 clean evenly-spaced points; on wider screens up to 7-8
-    const maxLabels = availableWidth < 380 ? 5 : availableWidth < 600 ? 6 : 7;
-    const count = Math.min(totalPoints, maxLabels);
+    // ~85px per label — enough room for "28 Sep" style text at all sizes; min 2
+    const maxLabels = Math.max(2, Math.min(totalPoints, Math.floor(availableWidth / 85)));
 
     const indices: number[] = [];
-    for (let i = 0; i < count; i++) {
-      indices.push(Math.round((i * (totalPoints - 1)) / (count - 1)));
+    for (let i = 0; i < maxLabels; i++) {
+      indices.push(Math.round((i * (totalPoints - 1)) / (maxLabels - 1)));
     }
     // Deduplicate in case of small datasets
     return Array.from(new Set(indices));
@@ -418,19 +443,13 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
             opacity="0.9"
           />
 
-          {/* X-Axis Grid Tick Marks & Date Labels (Rendered inside SVG for 100% exact alignment and equal spacing) */}
-          {axisIndices.map((idx, indexOrder) => {
+          {/* X-Axis Grid Tick Marks only (no text — labels rendered as HTML below) */}
+          {axisIndices.map((idx) => {
             const d = chartData[idx];
             if (!d) return null;
-            const isHovered = hoveredIndex === idx;
-            const isFirst = indexOrder === 0;
-            const isLast = indexOrder === axisIndices.length - 1;
             const posX = getX(idx);
-            const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
-
             return (
               <g key={d.date}>
-                {/* Subtle vertical tick mark */}
                 <line
                   x1={posX}
                   y1={paddingTop + innerHeight}
@@ -439,23 +458,12 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
                   stroke="#3f3f46"
                   strokeWidth="1"
                 />
-                <text
-                  x={posX}
-                  y={paddingTop + innerHeight + 18}
-                  textAnchor={anchor}
-                  fill={isHovered ? '#ffffff' : '#71717a'}
-                  fontWeight={isHovered ? '700' : '500'}
-                  fontSize="12"
-                  fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-                  className="transition-colors select-none"
-                >
-                  {d.label}
-                </text>
               </g>
             );
           })}
 
           </svg>
+
 
           {/* Fixed-size HTML markers and Floating Tooltip Overlay */}
           {hoveredIndex !== null && activePoint && (() => {
@@ -529,6 +537,31 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
               </div>
             );
           })()}
+        </div>
+
+        {/* X-Axis date labels — below chart, above legend, immune to SVG stretch */}
+        <div className="relative w-full py-1" style={{ height: '20px' }}>
+          {axisIndices.map((idx, indexOrder) => {
+            const d = chartData[idx];
+            if (!d) return null;
+            const isFirst = indexOrder === 0;
+            const isLast = indexOrder === axisIndices.length - 1;
+            const isHovered = hoveredIndex === idx;
+            const pct = axisIndices.length <= 1 ? 50 : (indexOrder / (axisIndices.length - 1)) * 100;
+            return (
+              <span
+                key={d.date}
+                className={`absolute text-[10px] font-mono whitespace-nowrap select-none transition-colors ${isHovered ? 'text-white font-bold' : 'text-zinc-500'}`}
+                style={{
+                  left: isLast ? 'auto' : isFirst ? '0' : `${pct}%`,
+                  right: isLast ? '0' : 'auto',
+                  transform: (!isFirst && !isLast) ? 'translateX(-50%)' : 'none',
+                }}
+              >
+                {d.label}
+              </span>
+            );
+          })}
         </div>
 
         {/* Legend and totals under the chart in the same card - centered together */}

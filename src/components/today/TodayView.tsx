@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
-import { CurrencyInput } from '../common/CurrencyInput';
+import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import { EditTransactionModal } from '../transactions/EditTransactionModal';
 import type { Transaction } from '../../types/finance';
 
@@ -62,7 +62,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
 
   const handleSaveGoal = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(goalInput) || undefined;
+    const val = parseFormattedNumber(goalInput) || undefined;
     updateSettings({
       goals: {
         ...state.settings.goals,
@@ -125,7 +125,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
       {/* Summary Cards & Spending Goal Section */}
       <div className="space-y-3">
         {/* Daily Cashflow Hero Summary */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <div className="bg-[#101014] rounded-2xl p-3 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[72px] sm:h-[80px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <ArrowDownLeft size={13} className="text-emerald-400 shrink-0" />
@@ -143,18 +143,6 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
             </div>
             <div className="text-sm sm:text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(dayExpense, state.settings.currencySymbol)}
-            </div>
-          </div>
-
-          <div className="bg-[#101014] rounded-2xl p-3 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[72px] sm:h-[80px]">
-            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
-              <Equal size={13} className="text-blue-400 shrink-0" />
-              <span className="truncate">Net</span>
-            </div>
-            <div className={`text-sm sm:text-lg font-bold font-mono truncate leading-none ${
-              dayNet >= 0 ? 'text-white' : 'text-rose-400'
-            }`}>
-              {dayNet >= 0 ? '+' : ''}{formatCurrency(dayNet, state.settings.currencySymbol)}
             </div>
           </div>
         </div>
@@ -283,7 +271,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
 
                   <div className="text-right">
                     <div className={`text-xs font-bold font-mono ${
-                      isExpense ? 'text-white' : isIncome ? 'text-emerald-400' : 'text-blue-400'
+                      isExpense ? 'text-rose-400' : isIncome ? 'text-emerald-400' : 'text-blue-400'
                     }`}>
                       {isExpense ? '-' : isIncome ? '+' : ''}
                       {formatCurrency(tx.amount, state.settings.currencySymbol)}

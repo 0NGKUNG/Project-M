@@ -3,10 +3,12 @@ import { Search, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
-import type { TransactionType } from '../../types/finance';
+import type { Transaction, TransactionType } from '../../types/finance';
+import { EditTransactionModal } from './EditTransactionModal';
 
 export const TransactionListView: React.FC = () => {
   const { state, deleteTransaction } = useFinance();
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType>('all');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
@@ -139,7 +141,8 @@ export const TransactionListView: React.FC = () => {
                     return (
                       <div
                         key={tx.id}
-                        className="p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors group"
+                        onClick={() => setEditingTransaction(tx)}
+                        className="p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors group cursor-pointer active:scale-[0.99]"
                       >
                         <div className="flex items-center gap-3.5">
                           <div
@@ -187,7 +190,10 @@ export const TransactionListView: React.FC = () => {
                           </div>
 
                           <button
-                            onClick={() => deleteTransaction(tx.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTransaction(tx.id);
+                            }}
                             className="p-2 text-zinc-600 hover:text-rose-400 active:scale-95 transition-colors cursor-pointer"
                             aria-label="Delete entry"
                           >
@@ -202,6 +208,15 @@ export const TransactionListView: React.FC = () => {
             );
           })}
         </div>
+      )}
+
+      {/* Edit Transaction Modal */}
+      {editingTransaction && (
+        <EditTransactionModal
+          key={editingTransaction.id}
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+        />
       )}
     </div>
   );

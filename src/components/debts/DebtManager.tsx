@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
-import { CurrencyInput } from '../common/CurrencyInput';
+import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import type { DebtItem } from '../../types/finance';
 import { useBackButton } from '../../hooks/useBackButton';
 
@@ -33,7 +33,7 @@ export const DebtManager: React.FC = () => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = parseFormattedNumber(amount);
     if (!personName.trim() || !parsedAmount || parsedAmount <= 0) return;
 
     addDebt({
@@ -55,7 +55,7 @@ export const DebtManager: React.FC = () => {
 
   // Settle or record partial repayment
   const handleRepayment = (debt: DebtItem) => {
-    const pay = parseFloat(settleAmount);
+    const pay = parseFormattedNumber(settleAmount);
     if (!pay || pay <= 0) return;
 
     const newRemaining = Math.max(0, debt.remainingAmount - pay);
@@ -97,7 +97,7 @@ export const DebtManager: React.FC = () => {
           <p className="text-[10px] text-zinc-600">Track money lent to friends or borrowed amounts with due dates.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {debtList.map((debt) => {
             const isLend = debt.type === 'lend';
             const isSettled = debt.status === 'settled';

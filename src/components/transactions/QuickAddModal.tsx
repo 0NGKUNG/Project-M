@@ -13,6 +13,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import type { TransactionType } from '../../types/finance';
 import { CategoryIcon } from '../common/Icons';
+import { formatNumberWithCommas, parseFormattedNumber } from '../common/CurrencyInput';
 import { useBackButton } from '../../hooks/useBackButton';
 
 interface QuickAddModalProps {
@@ -149,7 +150,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
   };
 
   const executeSubmit = () => {
-    const parsedAmount = parseFloat(amountStr);
+    const parsedAmount = parseFormattedNumber(amountStr);
     if (!parsedAmount || parsedAmount <= 0) return;
 
     addTransaction({
@@ -189,7 +190,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       />
 
       <div 
-        className="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-md bg-[#0c0c10] sm:border border-zinc-900 sm:rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl safe-top safe-bottom select-none"
+        className="w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-[460px] bg-[#0c0c10] sm:border border-zinc-900 sm:rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl safe-top safe-bottom select-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top App Bar: Back icon + Type Switcher Pills */}
@@ -213,7 +214,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                     triggerHaptic();
                     setType(t);
                   }}
-                  className={`py-1.5 px-3 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer ${
+                  className={`py-1.5 px-3 sm:px-4 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer ${
                     isAct ? 'bg-white text-black shadow-xs' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
@@ -376,7 +377,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             <div className="flex items-baseline gap-1 font-mono">
               <span className="text-xl text-zinc-500 font-medium">{state.settings.currencySymbol}</span>
               <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight truncate">
-                {amountStr}
+                {formatNumberWithCommas(amountStr)}
               </span>
             </div>
           </div>
@@ -503,7 +504,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             <button
               type="button"
               onClick={executeSubmit}
-              disabled={parseFloat(amountStr) <= 0}
+              disabled={parseFormattedNumber(amountStr) <= 0}
               className="py-3 bg-white hover:bg-zinc-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none text-black font-bold rounded-2xl flex items-center justify-center shadow-lg cursor-pointer transition-all"
             >
               <Check size={20} strokeWidth={3} />

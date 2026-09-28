@@ -3,7 +3,7 @@ import { Target, Plus, AlertCircle, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CustomSelect } from '../common/CustomSelect';
-import { CurrencyInput } from '../common/CurrencyInput';
+import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 
 export const BudgetsView: React.FC = () => {
   const { state, addBudget, deleteBudget } = useFinance();
@@ -23,7 +23,7 @@ export const BudgetsView: React.FC = () => {
 
   const handleCreateBudget = (e: React.FormEvent) => {
     e.preventDefault();
-    const val = parseFloat(limitAmount);
+    const val = parseFormattedNumber(limitAmount);
     if (!val || val <= 0) return;
 
     addBudget({
