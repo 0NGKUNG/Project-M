@@ -4,14 +4,24 @@ import { formatCurrency } from '../common/Icons';
 
 interface CashflowChartProps {
   timeRange?: 'day' | 'week' | 'month' | 'year' | 'all';
+  netSavings?: number;
+  savingsRate?: number;
 }
 
-export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month' }) => {
+export const CashflowChart: React.FC<CashflowChartProps> = ({ 
+  timeRange = 'month',
+  netSavings,
+  savingsRate
+}) => {
   const { state, totalNetWorth } = useFinance();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [chartWidth, setChartWidth] = useState(0);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const chartFrameRef = useRef<HTMLDivElement | null>(null);
+
+  // Fallbacks if not passed directly
+  const displayNetWorth = netSavings !== undefined ? netSavings : totalNetWorth;
+  const displaySavingsRate = savingsRate !== undefined ? savingsRate : 0;
 
   useEffect(() => {
     const frame = chartFrameRef.current;
@@ -254,21 +264,30 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   };
 
   return (
-    <div className="bg-[#101014] rounded-2xl p-4 sm:p-5 border border-zinc-900/60 shadow-sm flex flex-col space-y-2.5 overflow-hidden">
-      {/* Chart Header - Minimalist Legend and Totals */}
-      <div className="flex items-center justify-end gap-3 text-[10px] sm:text-[11px] font-mono text-zinc-500">
-        <span className="flex items-center gap-1.5 shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-          <span className="text-zinc-400">Net Worth</span>
-        </span>
-        <span className="flex items-center gap-1.5 text-emerald-400 shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
-        </span>
-        <span className="flex items-center gap-1.5 text-rose-400 shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-          <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
-        </span>
+    <div className="bg-[#101014] rounded-2xl p-4 sm:p-5 border border-zinc-900/60 shadow-sm flex flex-col space-y-3 overflow-hidden">
+      {/* Chart Header - Net Worth and Savings Rate displayed over the chart */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+            <span>Net Worth</span>
+          </div>
+          <div className={`text-lg sm:text-xl font-bold font-mono tracking-tight mt-0.5 leading-none ${
+            displayNetWorth >= 0 ? 'text-white' : 'text-rose-400'
+          }`}>
+            {displayNetWorth >= 0 ? '+' : ''}{formatCurrency(displayNetWorth, state.settings.currencySymbol)}
+          </div>
+        </div>
+
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+            <span>Savings Rate</span>
+          </div>
+          <div className="text-lg sm:text-xl font-bold font-mono tracking-tight text-white mt-0.5 leading-none">
+            {displaySavingsRate}%
+          </div>
+        </div>
       </div>
 
       {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
@@ -510,6 +529,24 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
               </div>
             );
           })()}
+        </div>
+
+        {/* Legend and totals under the chart in the same card */}
+        <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-zinc-500 pt-2 border-t border-zinc-900/80">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+            <span className="text-zinc-400">Net Worth</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-emerald-400 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-rose-400 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+              <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>
