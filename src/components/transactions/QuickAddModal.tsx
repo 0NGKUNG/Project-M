@@ -8,7 +8,9 @@ import {
   ChevronDown, 
   X,
   Plus,
-  Minus
+  Minus,
+  Calculator,
+  Clock
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import type { TransactionType } from '../../types/finance';
@@ -42,6 +44,14 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
   // Hidden account picker & note quick prompt
   const [showAccountPicker, setShowAccountPicker] = useState<boolean>(false);
   const [showNoteInput, setShowNoteInput] = useState<boolean>(false);
+
+  // Numpad toggle for desktop & Date/Time modal toggle
+  const [showNumpad, setShowNumpad] = useState<boolean>(true);
+  const [time, setTime] = useState<string>(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
+  const [showDateTimePicker, setShowDateTimePicker] = useState<boolean>(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -161,6 +171,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       accountId: selectedAccountId,
       toAccountId: type === 'transfer' ? toAccountId : undefined,
       date,
+      time: time || undefined,
       note: note.trim() || undefined,
     });
 
@@ -224,7 +235,17 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             })}
           </div>
 
-          <div className="w-8" /> {/* Balance spacer */}
+          {/* Keypad toggle for PC/Laptop */}
+          <button
+            type="button"
+            onClick={() => setShowNumpad(!showNumpad)}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+              showNumpad ? 'bg-zinc-800 text-white' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'
+            }`}
+            title={showNumpad ? 'Hide Keypad (Keyboard mode)' : 'Show Keypad'}
+          >
+            <Calculator size={15} />
+          </button>
         </div>
 
         {/* Category Pill Grid (Reference Top Section) */}
@@ -369,25 +390,50 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         )}
 
         {/* Amount Display & Quick Note Strip (Center) */}
-        <div className="px-6 py-2 flex items-center justify-between border-t border-zinc-900/60 bg-[#0e0e13]">
-          <div className="flex-1 truncate pr-2">
+        <div className="px-6 py-2.5 flex items-center justify-between border-t border-zinc-900/60 bg-[#0e0e13] gap-3">
+          <div className="flex-1 truncate">
             <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
               {type === 'expense' ? 'Amount' : type === 'income' ? 'Received' : 'Transfer'}
             </div>
             <div className="flex items-baseline gap-1 font-mono">
               <span className="text-xl text-zinc-500 font-medium">{state.settings.currencySymbol}</span>
-              <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight truncate">
-                {formatNumberWithCommas(amountStr)}
-              </span>
+              {!showNumpad ? (
+                <input
+                  type="text"
+                  value={amountStr}
+                  onChange={(e) => {
+                    const clean = e.target.value.replace(/[^0-9.]/g, '');
+                    setAmountStr(clean || '0');
+                  }}
+                  className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight bg-transparent border-b border-dashed border-zinc-700 focus:border-white focus:outline-none w-48"
+                  placeholder="0"
+                  autoFocus
+                />
+              ) : (
+                <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight truncate">
+                  {formatNumberWithCommas(amountStr)}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Quick Note Badge */}
-          <div className="text-right">
+          {/* Quick Note Badge under/beside value */}
+          <div className="flex items-center gap-2">
+            {!showNumpad && (
+              <button
+                type="button"
+                onClick={executeSubmit}
+                disabled={parseFormattedNumber(amountStr) <= 0}
+                className="px-4 py-2 bg-white hover:bg-zinc-200 text-black font-mono text-xs font-bold rounded-xl cursor-pointer shadow-md transition-all flex items-center gap-1.5 disabled:opacity-30"
+              >
+                <Check size={15} strokeWidth={3} />
+                <span>Save</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowNoteInput(!showNoteInput)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-mono transition-colors cursor-pointer max-w-[140px] truncate"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-mono transition-colors cursor-pointer max-w-[160px] truncate"
             >
               <FileText size={12} className="text-zinc-500 shrink-0" />
               <span className="truncate">{note ? note : 'Add Note'}</span>
@@ -395,16 +441,16 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
           </div>
         </div>
 
-        {/* Note input popup drawer if clicked */}
+        {/* Note input inline prompt directly under amount */}
         {showNoteInput && (
-          <div className="px-4 py-2 bg-[#121218] border-t border-zinc-900 flex items-center gap-2 animate-fade-in">
+          <div className="px-6 py-2 bg-[#121218] border-t border-zinc-900 flex items-center gap-2 animate-fade-in">
             <input
               type="text"
               placeholder="Add memo/note..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
               autoFocus
-              className="flex-1 bg-[#181822] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none border border-zinc-800"
+              className="flex-1 bg-[#181822] rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none border border-zinc-800 font-mono"
             />
             <button
               type="button"
@@ -418,114 +464,124 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
         {/* ─── Bottom Reference Layout: Keypad (Left) + Quick Attributes (Right) ─── */}
         <div className="p-3 bg-[#0a0a0d] border-t border-zinc-900 flex gap-2">
-          {/* Keypad 3 cols (1-9, ., 0, backspace) + Operator col (+, -, etc.) */}
-          <div className="flex-[3] grid grid-cols-4 gap-1.5">
-            {['1', '2', '3'].map((k) => (
+          {/* Keypad (Hideable on PC/Laptop) */}
+          {showNumpad ? (
+            <div className="flex-[3] grid grid-cols-4 gap-1.5">
+              {['1', '2', '3'].map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => handleKeypadPress(k)}
+                  className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
+                >
+                  {k}
+                </button>
+              ))}
               <button
-                key={k}
                 type="button"
-                onClick={() => handleKeypadPress(k)}
+                onClick={() => handleKeypadPress('+')}
+                className="py-3 bg-[#181822] hover:bg-zinc-800 text-zinc-300 font-mono text-base font-bold rounded-2xl cursor-pointer flex items-center justify-center"
+                title="+100"
+              >
+                <Plus size={16} />
+              </button>
+
+              {['4', '5', '6'].map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => handleKeypadPress(k)}
+                  className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
+                >
+                  {k}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleKeypadPress('-')}
+                className="py-3 bg-[#181822] hover:bg-zinc-800 text-zinc-300 font-mono text-base font-bold rounded-2xl cursor-pointer flex items-center justify-center"
+                title="-100"
+              >
+                <Minus size={16} />
+              </button>
+
+              {['7', '8', '9'].map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => handleKeypadPress(k)}
+                  className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
+                >
+                  {k}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleKeypadPress('back')}
+                className="py-3 bg-[#1a1416] hover:bg-rose-950/40 text-rose-400 font-mono text-base font-bold rounded-2xl cursor-pointer"
+              >
+                ⌫
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleKeypadPress('.')}
                 className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
               >
-                {k}
+                .
               </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => handleKeypadPress('+')}
-              className="py-3 bg-[#181822] hover:bg-zinc-800 text-zinc-300 font-mono text-base font-bold rounded-2xl cursor-pointer flex items-center justify-center"
-              title="+100"
-            >
-              <Plus size={16} />
-            </button>
 
-            {['4', '5', '6'].map((k) => (
               <button
-                key={k}
                 type="button"
-                onClick={() => handleKeypadPress(k)}
+                onClick={() => handleKeypadPress('0')}
                 className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
               >
-                {k}
+                0
               </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => handleKeypadPress('-')}
-              className="py-3 bg-[#181822] hover:bg-zinc-800 text-zinc-300 font-mono text-base font-bold rounded-2xl cursor-pointer flex items-center justify-center"
-              title="-100"
-            >
-              <Minus size={16} />
-            </button>
 
-            {['7', '8', '9'].map((k) => (
               <button
-                key={k}
                 type="button"
-                onClick={() => handleKeypadPress(k)}
-                className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
+                onClick={() => handleKeypadPress('C')}
+                className="py-3 bg-[#14141a] hover:bg-zinc-800 text-zinc-500 hover:text-white font-mono text-xs font-bold rounded-2xl cursor-pointer"
               >
-                {k}
+                CLR
               </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => handleKeypadPress('back')}
-              className="py-3 bg-[#1a1416] hover:bg-rose-950/40 text-rose-400 font-mono text-base font-bold rounded-2xl cursor-pointer"
-            >
-              ⌫
-            </button>
 
-            <button
-              type="button"
-              onClick={() => handleKeypadPress('.')}
-              className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
-            >
-              .
-            </button>
+              {/* Checkmark submit button */}
+              <button
+                type="button"
+                onClick={executeSubmit}
+                disabled={parseFormattedNumber(amountStr) <= 0}
+                className="py-3 bg-white hover:bg-zinc-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none text-black font-bold rounded-2xl flex items-center justify-center shadow-lg cursor-pointer transition-all"
+              >
+                <Check size={20} strokeWidth={3} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex-[3] bg-[#121218] rounded-2xl p-4 border border-zinc-800 flex flex-col justify-center gap-2">
+              <div className="text-xs font-mono text-zinc-400">
+                Keyboard Mode Active (Type amount on keyboard & press Enter)
+              </div>
+              <div className="text-[11px] font-mono text-zinc-500">
+                Date: <span className="text-white font-bold">{date}</span> | Time: <span className="text-white font-bold">{time}</span> | Wallet: <span className="text-white font-bold">{selectedAccount?.name}</span>
+              </div>
+            </div>
+          )}
 
-            <button
-              type="button"
-              onClick={() => handleKeypadPress('0')}
-              className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
-            >
-              0
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleKeypadPress('C')}
-              className="py-3 bg-[#14141a] hover:bg-zinc-800 text-zinc-500 hover:text-white font-mono text-xs font-bold rounded-2xl cursor-pointer"
-            >
-              CLR
-            </button>
-
-            {/* Checkmark submit button */}
-            <button
-              type="button"
-              onClick={executeSubmit}
-              disabled={parseFormattedNumber(amountStr) <= 0}
-              className="py-3 bg-white hover:bg-zinc-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none text-black font-bold rounded-2xl flex items-center justify-center shadow-lg cursor-pointer transition-all"
-            >
-              <Check size={20} strokeWidth={3} />
-            </button>
-          </div>
-
-          {/* Quick Attribute Tiles (Right Column matching reference) */}
+          {/* Quick Attribute Tiles (Right Column) */}
           <div className="flex-1 flex flex-col gap-1.5">
-            {/* 1. Date Pill */}
-            <label className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 hover:border-zinc-700 transition-colors cursor-pointer text-center relative overflow-hidden flex-1">
+            {/* 1. Date & Time Pill with Custom Selector Modal */}
+            <button
+              type="button"
+              onClick={() => setShowDateTimePicker(true)}
+              className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 hover:border-zinc-700 transition-colors cursor-pointer text-center flex-1"
+            >
               <CalendarIcon size={14} className="text-zinc-400 mb-0.5" />
               <span className="text-[10px] font-mono font-bold text-white truncate max-w-full">
                 {isToday ? 'Today' : date.slice(5)}
               </span>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="opacity-0 absolute inset-0 cursor-pointer"
-              />
-            </label>
+              <span className="text-[8px] font-mono text-zinc-500">{time}</span>
+            </button>
 
             {/* 2. Target Wallet Pill */}
             <button
@@ -680,6 +736,112 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Custom Date & Time Selector Modal */}
+        {showDateTimePicker && (
+          <div 
+            className="fixed inset-0 z-60 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+            onClick={() => setShowDateTimePicker(false)}
+          >
+            <div 
+              className="w-full max-w-xs bg-[#101014] border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-4 font-mono"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
+                <div className="flex items-center gap-2 text-white">
+                  <CalendarIcon size={14} className="text-zinc-400" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Date & Time</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDateTimePicker(false)}
+                  className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {/* Date Input */}
+                <div>
+                  <label className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">
+                    Select Date
+                  </label>
+                  <div className="flex items-center gap-2 bg-[#14141a] rounded-xl px-3 py-2 border border-zinc-800">
+                    <CalendarIcon size={14} className="text-zinc-400 shrink-0" />
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="bg-transparent text-xs text-white focus:outline-none w-full font-mono cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Time Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] uppercase text-zinc-500 font-bold">
+                      Select Time
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const now = new Date();
+                        setTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+                      }}
+                      className="text-[9px] text-zinc-400 hover:text-white font-mono cursor-pointer"
+                    >
+                      Set to Now
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 bg-[#14141a] rounded-xl px-3 py-2 border border-zinc-800">
+                    <Clock size={14} className="text-zinc-400 shrink-0" />
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      className="bg-transparent text-xs text-white focus:outline-none w-full font-mono cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Preset Date Quick Pills */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDate(new Date().toISOString().split('T')[0]);
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                      isToday ? 'bg-white text-black' : 'bg-[#14141a] text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const y = new Date(Date.now() - 86400000);
+                      setDate(y.toISOString().split('T')[0]);
+                    }}
+                    className="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-[#14141a] text-zinc-400 hover:text-white transition-all cursor-pointer"
+                  >
+                    Yesterday
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowDateTimePicker(false)}
+                className="w-full py-2.5 bg-white text-black font-bold text-xs rounded-xl cursor-pointer hover:bg-zinc-200 transition-colors"
+              >
+                Done
+              </button>
             </div>
           </div>
         )}
