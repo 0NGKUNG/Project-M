@@ -759,22 +759,21 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div
               key={cat.id}
               onClick={() => setSelectedParentCat(cat)}
-              className="p-3.5 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between group active:scale-98 shadow-sm min-h-[92px]"
+              className="p-3 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer flex items-center justify-between gap-3 group active:scale-98 shadow-sm"
             >
-              <div className="flex items-start justify-between">
-                <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
-                  <CategoryIcon name={cat.icon || 'Tag'} size={15} />
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
+                  <CategoryIcon name={cat.icon || 'Tag'} size={16} />
                 </div>
-                <div className="text-[10px] text-zinc-600 font-mono group-hover:text-zinc-400 transition-colors">
-                  ☰
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white truncate">{cat.name}</div>
+                  <div className="text-[10px] text-zinc-500 font-mono leading-tight truncate">
+                    {subs.length > 0 ? `${subs.length} subcategories` : 'No subcategories'}
+                  </div>
                 </div>
               </div>
-
-              <div className="mt-2">
-                <div className="text-xs font-bold text-white truncate">{cat.name}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                  {subs.length > 0 ? `${subs.length} subcategories` : 'No subcategories'}
-                </div>
+              <div className="text-[10px] text-zinc-600 font-mono group-hover:text-zinc-400 transition-colors shrink-0 px-1">
+                ☰
               </div>
             </div>
           );
