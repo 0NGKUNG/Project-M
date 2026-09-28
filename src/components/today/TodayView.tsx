@@ -74,9 +74,9 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
   const getAccount = (accId: string) => state.accounts.find((a) => a.id === accId);
 
   return (
-    <div className="space-y-6 pb-24 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+    <div className="space-y-3 pb-24 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
       {/* Top Day Switcher */}
-      <div className="flex items-center justify-between pt-1">
+      <div className="h-8 flex items-center justify-between pt-1">
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleShiftDay(-1)}
@@ -219,7 +219,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
       </div>
 
       {/* Day Transaction Timeline Feed */}
-      <div className="space-y-3 pt-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase">
             Day Activity ({dayTransactions.length})
