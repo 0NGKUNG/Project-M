@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={onToggleCollapse}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="absolute top-5 -right-4 z-30 w-8 h-8 rounded-full bg-[#18181d] border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-lg"
+        className="absolute top-6 -right-4 z-30 w-8 h-8 rounded-full bg-[#18181d] border border-zinc-700 shadow-[0_4px_16px_rgba(0,0,0,0.55)] hover:bg-zinc-700 hover:border-zinc-500 hover:scale-105 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer"
       >
         {collapsed ? <ChevronRight size={16} strokeWidth={2.5} /> : <ChevronLeft size={16} strokeWidth={2.5} />}
       </button>
@@ -51,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col p-6">
 
         {/* Brand */}
-        <div className="mb-8 flex h-8 items-center overflow-hidden">
+        <div className={`mb-8 flex h-8 items-center overflow-hidden ${collapsed ? 'justify-center' : ''}`}>
           <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">
             {collapsed ? 'N' : 'NØVA'}
           </h1>
