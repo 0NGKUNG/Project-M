@@ -239,43 +239,43 @@ export const StatsView: React.FC = () => {
       {/* Top Cards & Chart Section with unified gap-3 */}
       <div className="space-y-3">
         {/* Summary Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[72px] sm:h-[80px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <ArrowDownLeft size={13} className="text-emerald-400 shrink-0" />
               <span className="truncate">Income</span>
             </div>
-            <div className="text-lg font-bold font-mono text-emerald-400 truncate leading-none">
+            <div className="text-base sm:text-lg font-bold font-mono text-emerald-400 truncate leading-none">
               +{formatCurrency(totalIncome, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[72px] sm:h-[80px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <ArrowUpRight size={13} className="text-rose-400 shrink-0" />
               <span className="truncate">Expenses</span>
             </div>
-            <div className="text-lg font-bold font-mono text-rose-400 truncate leading-none">
+            <div className="text-base sm:text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(totalExpense, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[72px] sm:h-[80px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <Equal size={13} className="text-blue-400 shrink-0" />
               <span className="truncate">Net</span>
             </div>
-            <div className={`text-lg font-bold font-mono truncate leading-none ${netSavings >= 0 ? 'text-white' : 'text-rose-400'}`}>
+            <div className={`text-base sm:text-lg font-bold font-mono truncate leading-none ${netSavings >= 0 ? 'text-white' : 'text-rose-400'}`}>
               {netSavings >= 0 ? '+' : ''}{formatCurrency(netSavings, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[72px] sm:h-[80px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <Percent size={13} className="text-purple-400 shrink-0" />
               <span className="truncate">Savings Rate</span>
             </div>
-            <div className="text-lg font-bold font-mono text-white truncate leading-none">
+            <div className="text-base sm:text-lg font-bold font-mono text-white truncate leading-none">
               {savingsRate}%
             </div>
           </div>
