@@ -164,7 +164,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             };
           });
         })() : prev.categories,
-        budgets: bgRes.data && bgRes.data.length > 0 ? bgRes.data.map((b) => ({
+        budgets: bgRes.data ? bgRes.data.map((b) => ({
           id: b.id,
           name: b.name || undefined,
           categoryId: b.category_id || undefined,
@@ -448,6 +448,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateBudget = async (updatedBudget: Budget) => {
+    triggerHaptic();
     setState((prev) => ({
       ...prev,
       budgets: prev.budgets.map((b) => (b.id === updatedBudget.id ? updatedBudget : b)),
@@ -455,7 +456,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('budgets').update({
+        const { error } = await supabase.from('budgets').update({
           name: updatedBudget.name || null,
           category_id: updatedBudget.categoryId || null,
           amount: updatedBudget.amount,
@@ -464,6 +465,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           end_date: updatedBudget.endDate || null,
           categories: updatedBudget.categories || null,
         }).eq('id', updatedBudget.id);
+        if (error) console.error('Supabase budget update error:', error);
       } catch (err) {
         console.error('Supabase budget update error:', err);
       }
@@ -471,6 +473,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteBudget = async (id: string) => {
+    triggerHaptic();
     setState((prev) => ({
       ...prev,
       budgets: prev.budgets.filter((b) => b.id !== id),

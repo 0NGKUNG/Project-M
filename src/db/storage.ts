@@ -139,11 +139,7 @@ function getInitialState(): FinanceState {
     transactions: initialTransactions,
     categories: DEFAULT_CATEGORIES,
     accounts: DEFAULT_ACCOUNTS,
-    budgets: [
-      { id: 'b_food', categoryId: 'cat_food', amount: 450, period: 'monthly' },
-      { id: 'b_groceries', categoryId: 'cat_groceries', amount: 350, period: 'monthly' },
-      { id: 'b_coffee', categoryId: 'cat_coffee', amount: 80, period: 'monthly' },
-    ],
+    budgets: [],
     recurring: [],
     debts: [],
     settings: DEFAULT_SETTINGS,
