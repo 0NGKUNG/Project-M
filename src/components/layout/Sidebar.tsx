@@ -51,37 +51,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col p-6">
 
         {/* Brand */}
-        <div className={`mb-8 flex h-8 items-center overflow-hidden ${collapsed ? 'justify-center' : ''}`}>
-          <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">
-            {collapsed ? 'N' : 'NØVA'}
+        <div className="relative mb-8 flex h-8 items-center overflow-hidden">
+          <h1 className={`text-2xl font-extrabold text-white leading-tight font-display tracking-wider transition-transform duration-300 ease-in-out ${collapsed ? 'translate-x-3.5' : 'translate-x-0'}`}>
+            N<span className={`inline-block overflow-hidden align-bottom transition-[max-width,opacity] duration-300 ease-in-out ${collapsed ? 'max-w-0 opacity-0' : 'max-w-20 opacity-100'}`}>ØVA</span>
           </h1>
         </div>
 
         {/* Quick Add */}
         <div className="mb-8">
-          {collapsed ? (
-            <button
-              onClick={onOpenQuickAdd}
-              title={`New Transaction (${keybind})`}
-              aria-label={`New Transaction (${keybind})`}
-              className="w-full h-12 flex items-center justify-center rounded-2xl bg-white hover:bg-zinc-100 active:scale-95 text-black transition-all cursor-pointer shadow-[0_4px_24px_rgba(255,255,255,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-            >
-              <Plus size={18} strokeWidth={2.8} />
-            </button>
-          ) : (
-            <button
-              onClick={onOpenQuickAdd}
-              className="w-full h-12 px-4 rounded-2xl bg-white hover:bg-zinc-100 active:scale-98 text-black text-xs font-bold flex items-center justify-between shadow-[0_4px_24px_rgba(255,255,255,0.12)] transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-            >
-              <div className="flex items-center gap-2">
-                <Plus size={18} strokeWidth={2.8} />
-                <span>New Transaction</span>
-              </div>
-              <kbd className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-zinc-100 border border-zinc-300/80 text-[10px] font-mono font-semibold text-zinc-600 shadow-[0_1px_1px_rgba(0,0,0,0.06)] group-hover:border-zinc-400/80 transition-colors uppercase">
-                {keybind}
-              </kbd>
-            </button>
-          )}
+          <button
+            onClick={onOpenQuickAdd}
+            title={`New Transaction (${keybind})`}
+            aria-label={`New Transaction (${keybind})`}
+            className="relative w-full h-12 px-4 rounded-2xl bg-white hover:bg-zinc-100 active:scale-[0.98] text-black text-xs font-bold flex items-center justify-start shadow-[0_4px_24px_rgba(255,255,255,0.12)] transition-[background-color,transform] cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            <Plus size={18} strokeWidth={2.8} className="shrink-0" />
+            <span className={`ml-2 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-in-out ${collapsed ? 'max-w-0 opacity-0' : 'max-w-40 opacity-100'}`}>
+              New Transaction
+            </span>
+            <kbd className={`absolute right-4 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-zinc-100 border border-zinc-300/80 text-[10px] font-mono font-semibold text-zinc-600 shadow-[0_1px_1px_rgba(0,0,0,0.06)] transition-opacity duration-200 uppercase ${collapsed ? 'opacity-0' : 'opacity-100 group-hover:border-zinc-400/80'}`}>
+              {keybind}
+            </kbd>
+          </button>
         </div>
 
         {/* Nav items */}
@@ -97,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`
                   w-full flex items-center gap-3.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer
                   h-11
-                  ${collapsed ? 'justify-center px-2' : 'px-4'}
+                  px-1
                   ${isActive
                     ? 'bg-zinc-800 text-white font-bold shadow-inner'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
@@ -107,9 +98,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Icon
                   size={19}
                   strokeWidth={isActive ? 2.5 : 2}
-                  className={isActive ? 'text-white shrink-0' : 'text-zinc-500 shrink-0'}
+                  className={`shrink-0 transition-[margin] duration-300 ease-in-out ${collapsed ? 'ml-[10px]' : 'ml-0'} ${isActive ? 'text-white' : 'text-zinc-500'}`}
                 />
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                <span className={`overflow-hidden whitespace-nowrap truncate transition-[max-width,opacity] duration-200 ease-in-out ${collapsed ? 'max-w-0 opacity-0' : 'max-w-40 opacity-100'}`}>
+                  {item.label}
+                </span>
               </button>
             );
           })}
