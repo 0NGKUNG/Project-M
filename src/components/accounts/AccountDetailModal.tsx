@@ -43,53 +43,90 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     });
   }, [account, state.transactions]);
 
-  // All-time monthly balance chart: one point per month from earliest tx → today
+  // Filter state for history list (All | Income | Expenses)
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'income' | 'expense'>('all');
+
+  // Daily balance chart: 30-day (or date range) daily points
   const allTimeChart = React.useMemo(() => {
     if (!account) return [];
 
-    // Collect all unique months covered by transactions + the current month
-    const monthSet = new Set<string>();
+    const today = new Date();
+    let startDate = new Date();
+    startDate.setDate(today.getDate() - 30);
+
+    if (accountTransactions.length > 0) {
+      const earliest = new Date(`${accountTransactions[accountTransactions.length - 1].date}T00:00:00`);
+      if (!isNaN(earliest.getTime()) && earliest < startDate) {
+        startDate = earliest;
+      }
+    }
+
+    const dates: string[] = [];
+    const cur = new Date(startDate);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(today);
+    end.setHours(0, 0, 0, 0);
+
+    while (cur <= end) {
+      dates.push(cur.toISOString().split('T')[0]);
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    if (dates.length < 2) {
+      dates.length = 0;
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+      }
+    }
+
+    const netByDay: Record<string, number> = {};
     accountTransactions.forEach((tx) => {
-      monthSet.add(tx.date.slice(0, 7)); // "YYYY-MM"
-    });
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    monthSet.add(currentMonth);
-
-    if (monthSet.size === 0) return [];
-
-    const months = [...monthSet].sort();
-
-    // Net change per month
-    const netByMonth: Record<string, number> = {};
-    months.forEach((m) => (netByMonth[m] = 0));
-    accountTransactions.forEach((tx) => {
-      const m = tx.date.slice(0, 7);
-      if (!(m in netByMonth)) return;
+      const d = tx.date;
+      netByDay[d] = netByDay[d] || 0;
       if (tx.accountId === account.id) {
-        if (tx.type === 'income') netByMonth[m] += tx.amount;
-        else if (tx.type === 'expense') netByMonth[m] -= tx.amount;
-        else if (tx.type === 'transfer') netByMonth[m] -= tx.amount;
+        if (tx.type === 'income') netByDay[d] += tx.amount;
+        else if (tx.type === 'expense' || tx.type === 'transfer') netByDay[d] -= tx.amount;
       }
       if (tx.toAccountId === account.id && tx.type === 'transfer') {
-        netByMonth[m] += tx.amount;
+        netByDay[d] += tx.amount;
       }
     });
 
-    // Build points backward from currentBalance
-    const points: { label: string; balance: number }[] = months.map((m) => ({
-      label: new Date(`${m}-01`).toLocaleString('default', { month: 'short', year: '2-digit' }),
-      balance: 0,
-    }));
+    const points: { label: string; balance: number; date: string }[] = dates.map((d) => {
+      const parts = d.split('-');
+      const dObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return {
+        date: d,
+        label: `${dObj.getDate()} ${dObj.toLocaleString('default', { month: 'short' })}`,
+        balance: 0,
+      };
+    });
 
     let rolling = currentBalance;
     for (let i = points.length - 1; i >= 0; i--) {
       points[i].balance = rolling;
-      rolling -= netByMonth[months[i]];
+      rolling -= (netByDay[points[i].date] || 0);
     }
 
     return points;
   }, [account, currentBalance, accountTransactions]);
+
+  const filteredTransactions = React.useMemo(() => {
+    if (!account) return [];
+    if (historyFilter === 'income') {
+      return accountTransactions.filter(
+        (t) => t.type === 'income' || (t.type === 'transfer' && t.toAccountId === account.id)
+      );
+    }
+    if (historyFilter === 'expense') {
+      return accountTransactions.filter(
+        (t) => t.type === 'expense' || (t.type === 'transfer' && t.accountId === account.id)
+      );
+    }
+    return accountTransactions;
+  }, [accountTransactions, historyFilter, account]);
 
   // ─── Income / Expenses totals ─────────────────────────────────────────────
   const { totalIncome, totalExpenses } = React.useMemo(() => {
@@ -342,40 +379,52 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             RIGHT COLUMN — Transactions (right on desktop, below on mobile)
         ═══════════════════════════════════════════════════════════════════ */}
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          {/* Desktop: sticky add button at top of right panel */}
-          <div className="hidden lg:block px-5 pt-5 pb-3 shrink-0 border-b border-zinc-800/60">
-            <div className="flex items-center justify-between mb-3">
+          {/* Header & View Filter Tabs */}
+          <div className="px-5 pt-4 pb-3 shrink-0 border-b border-zinc-800/60 space-y-3">
+            <div className="flex items-center justify-between">
               <span className="text-xs font-mono uppercase font-semibold tracking-wider text-zinc-400">
-                Account History ({accountTransactions.length})
+                Account History ({filteredTransactions.length})
               </span>
               <button
                 onClick={() => {
                   onClose();
                   onOpenQuickAddWithAccount(account.id);
                 }}
-                className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-100 text-black text-xs font-bold shadow cursor-pointer transition-all"
+                className="hidden lg:block px-4 py-2 rounded-xl bg-white hover:bg-zinc-100 text-black text-xs font-bold shadow cursor-pointer transition-all"
               >
                 + Add Transaction
               </button>
             </div>
-          </div>
 
-          {/* Mobile: section label */}
-          <div className="lg:hidden px-5 pt-1 pb-2 shrink-0">
-            <span className="text-xs font-mono uppercase font-semibold tracking-wider text-zinc-400">
-              Account History ({accountTransactions.length})
-            </span>
+            {/* Filter Tabs: All | Income | Expenses */}
+            <div className="flex items-center gap-1.5 bg-[#141418] p-1 rounded-xl border border-zinc-800/70">
+              {(['all', 'income', 'expense'] as const).map((f) => {
+                const isAct = historyFilter === f;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setHistoryFilter(f)}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer text-center ${
+                      isAct ? 'bg-white text-black shadow-xs font-bold' : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {f === 'all' ? 'All' : f === 'income' ? 'Income' : 'Expenses'}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Transaction list — scrollable */}
-          <div className="flex-1 overflow-y-auto px-5 pb-5 pt-0 lg:pt-2 space-y-1">
-            {accountTransactions.length === 0 ? (
-              <div className="bg-[#121216] rounded-2xl p-8 text-center text-xs text-zinc-500 mt-2">
-                No transactions recorded for this account yet.
+          <div className="flex-1 overflow-y-auto px-5 pb-5 pt-3 space-y-1">
+            {filteredTransactions.length === 0 ? (
+              <div className="bg-[#121216] rounded-2xl p-8 text-center text-xs text-zinc-500 mt-2 font-mono">
+                No {historyFilter === 'all' ? '' : historyFilter} transactions found.
               </div>
             ) : (
               <div className="bg-[#121216] rounded-2xl divide-y divide-zinc-900 overflow-hidden">
-                {accountTransactions.map((tx) => {
+                {filteredTransactions.map((tx) => {
                   const isIncoming =
                     tx.type === 'income' ||
                     (tx.type === 'transfer' && tx.toAccountId === account.id);
