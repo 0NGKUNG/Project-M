@@ -176,7 +176,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
       <input
@@ -187,11 +187,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       />
 
       <div 
-        className="w-full sm:max-w-md bg-[#0c0c10] border-t sm:border border-zinc-900 sm:rounded-2xl rounded-t-2xl max-h-[96vh] flex flex-col overflow-hidden shadow-2xl safe-bottom select-none"
+        className="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-md bg-[#0c0c10] sm:border border-zinc-900 sm:rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl safe-top safe-bottom select-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top App Bar: Back icon + Type Switcher Pills */}
-        <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
+        <div className="flex items-center justify-between px-4 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 hover:text-white transition-colors cursor-pointer"
@@ -226,7 +226,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
         {/* Category Pill Grid (Reference Top Section) */}
         {type !== 'transfer' ? (
-          <div className="px-4 py-2 overflow-y-auto max-h-40 sm:max-h-48">
+          <div className="px-4 py-3 flex-1 min-h-0 overflow-y-auto">
             <div className="grid grid-cols-3 gap-2">
               {parentCategories.map((cat) => {
                 const isSelected = selectedCategoryId === cat.id;
@@ -542,37 +542,137 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
           </div>
         </div>
 
-        {/* Quick Wallet Selector Popover */}
-        {showAccountPicker && (
-          <div className="p-3 bg-[#121218] border-t border-zinc-900 space-y-2 animate-fade-in">
-            <div className="flex items-center justify-between text-[10px] font-mono uppercase text-zinc-400 font-bold">
-              <span>Choose Account</span>
-              <button onClick={() => setShowAccountPicker(false)} className="text-zinc-500 hover:text-white">
-                <X size={12} />
-              </button>
+        {/* Popups & Modals */}
+        {/* 1. Subcategory Picker Modal (Reference screenshot 2) */}
+        {activeDropdownCatId && (
+          <div 
+            className="fixed inset-0 z-60 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+            onClick={() => setActiveDropdownCatId(null)}
+          >
+            <div 
+              className="w-full max-w-xs bg-[#101014] border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center text-white">
+                    <CategoryIcon name={state.categories.find(c => c.id === activeDropdownCatId)?.icon || 'Tag'} size={13} />
+                  </div>
+                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                    {state.categories.find(c => c.id === activeDropdownCatId)?.name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveDropdownCatId(null)}
+                  className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="space-y-1 max-h-60 overflow-y-auto">
+                {/* General / No subcategory option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setSelectedCategoryId(activeDropdownCatId);
+                    setSelectedSubcategoryId(undefined);
+                    setActiveDropdownCatId(null);
+                  }}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between text-xs font-mono transition-all cursor-pointer ${
+                    selectedCategoryId === activeDropdownCatId && selectedSubcategoryId === undefined
+                      ? 'bg-white text-black font-bold'
+                      : 'bg-[#14141a] text-zinc-300 hover:bg-zinc-800'
+                  }`}
+                >
+                  <span>All / General</span>
+                  {selectedCategoryId === activeDropdownCatId && selectedSubcategoryId === undefined && (
+                    <Check size={14} strokeWidth={3} />
+                  )}
+                </button>
+
+                {/* Subcategories list */}
+                {getSubcategories(activeDropdownCatId).map((sub) => {
+                  const isSelected = selectedCategoryId === activeDropdownCatId && selectedSubcategoryId === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        setSelectedCategoryId(activeDropdownCatId);
+                        setSelectedSubcategoryId(sub.id);
+                        setActiveDropdownCatId(null);
+                      }}
+                      className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between text-xs font-mono transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-white text-black font-bold'
+                          : 'bg-[#14141a] text-zinc-300 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <CategoryIcon name={sub.icon || 'Tag'} size={13} className="text-zinc-400" />
+                        <span className="truncate">{sub.name}</span>
+                      </div>
+                      {isSelected && <Check size={14} strokeWidth={3} />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {state.accounts.map((acc) => {
-                const isSelected = selectedAccountId === acc.id;
-                return (
-                  <button
-                    key={acc.id}
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic();
-                      setSelectedAccountId(acc.id);
-                      setShowAccountPicker(false);
-                    }}
-                    className={`py-2 px-3 rounded-xl text-left text-xs font-mono transition-all cursor-pointer truncate ${
-                      isSelected
-                        ? 'bg-white text-black font-bold'
-                        : 'bg-[#181822] text-zinc-300 hover:bg-zinc-800'
-                    }`}
-                  >
-                    {acc.name}
-                  </button>
-                );
-              })}
+          </div>
+        )}
+
+        {/* 2. Quick Wallet Selector Modal (Reference screenshot 4) */}
+        {showAccountPicker && (
+          <div 
+            className="fixed inset-0 z-60 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+            onClick={() => setShowAccountPicker(false)}
+          >
+            <div 
+              className="w-full max-w-xs bg-[#101014] border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
+                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">Select Wallet</span>
+                <button
+                  type="button"
+                  onClick={() => setShowAccountPicker(false)}
+                  className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                {state.accounts.map((acc) => {
+                  const isSelected = selectedAccountId === acc.id;
+                  return (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        setSelectedAccountId(acc.id);
+                        setShowAccountPicker(false);
+                      }}
+                      className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between text-xs font-mono transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-white text-black font-bold'
+                          : 'bg-[#14141a] text-zinc-300 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <WalletIcon size={14} className={isSelected ? 'text-black' : 'text-zinc-400'} />
+                        <span className="font-bold">{acc.name}</span>
+                      </div>
+                      {isSelected && <Check size={14} strokeWidth={3} />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
