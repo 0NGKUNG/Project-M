@@ -766,21 +766,6 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="text-center text-xs text-zinc-600 py-12">No {tab} categories yet</div>
       )}
 
-      {/* Floating Action Button (matching bottom right in reference) */}
-      <div className="fixed bottom-6 right-6 lg:hidden">
-        <button
-          onClick={() => {
-            setNewCatName('');
-            setNewCatIcon('Tag');
-            setShowAddParentModal(true);
-          }}
-          className="w-13 h-13 rounded-full bg-white text-black flex items-center justify-center shadow-2xl active:scale-95 transition-all cursor-pointer"
-          aria-label="Add Category"
-        >
-          <Plus size={26} strokeWidth={2.8} />
-        </button>
-      </div>
-
       {/* Parent Category Action Modal (Matching 3rd reference screenshot) */}
       {selectedParentCat && (
         <div
