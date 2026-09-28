@@ -344,8 +344,8 @@ export const StatsView: React.FC = () => {
             <p className="text-xs text-zinc-600 font-mono py-8 text-center">No expense data in this period</p>
           ) : (
             <div className="flex flex-row items-center gap-4 sm:gap-6 pt-1">
-              {/* Left Column: Multi-segment Circular Ring Donut Chart (Always on the left) */}
-              <div className="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center">
+              {/* Left Column: Multi-segment Circular Ring Donut Chart (Sized to match ~5 category rows height) */}
+              <div className="relative w-44 h-44 sm:w-56 sm:h-56 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   {/* Subtle Background Track Circle */}
                   <circle
@@ -408,11 +408,11 @@ export const StatsView: React.FC = () => {
                 </svg>
 
                 {/* Center Label and Amount matching modern reference */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1.5">
-                  <span className="text-[9px] sm:text-[10px] text-zinc-400 font-medium tracking-tight leading-tight">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-2">
+                  <span className="text-[10px] sm:text-xs text-zinc-400 font-medium tracking-tight leading-tight">
                     Spent this period
                   </span>
-                  <span className="text-xs sm:text-sm font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[85px] sm:max-w-[100px]">
+                  <span className="text-sm sm:text-base font-mono font-extrabold text-white mt-1 leading-tight tracking-tight truncate max-w-[120px] sm:max-w-[150px]">
                     {formatCurrency(totalExpense, state.settings.currencySymbol)}
                   </span>
                 </div>
@@ -471,8 +471,8 @@ export const StatsView: React.FC = () => {
             <p className="text-xs text-zinc-600 font-mono py-8 text-center">No income data in this period</p>
           ) : (
             <div className="flex flex-row items-center gap-4 sm:gap-6 pt-1">
-              {/* Left Column: Multi-segment Circular Ring Donut Chart (Always on the left) */}
-              <div className="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center">
+              {/* Left Column: Multi-segment Circular Ring Donut Chart (Sized to match ~5 category rows height) */}
+              <div className="relative w-44 h-44 sm:w-56 sm:h-56 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   {/* Subtle Background Track Circle */}
                   <circle
@@ -535,11 +535,11 @@ export const StatsView: React.FC = () => {
                 </svg>
 
                 {/* Center Label and Amount matching modern reference */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1.5">
-                  <span className="text-[9px] sm:text-[10px] text-zinc-400 font-medium tracking-tight leading-tight">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-2">
+                  <span className="text-[10px] sm:text-xs text-zinc-400 font-medium tracking-tight leading-tight">
                     Earned this period
                   </span>
-                  <span className="text-xs sm:text-sm font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[85px] sm:max-w-[100px]">
+                  <span className="text-sm sm:text-base font-mono font-extrabold text-white mt-1 leading-tight tracking-tight truncate max-w-[120px] sm:max-w-[150px]">
                     +{formatCurrency(totalIncome, state.settings.currencySymbol)}
                   </span>
                 </div>
