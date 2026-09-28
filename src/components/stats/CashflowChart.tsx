@@ -539,23 +539,30 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
           })()}
         </div>
 
-        {/* X-Axis date labels — below chart, above legend, immune to SVG stretch */}
+        {/* X-Axis date labels — exact position matching getX tick coordinates */}
         <div className="relative w-full py-1" style={{ height: '20px' }}>
-          {axisIndices.map((idx, indexOrder) => {
+          {axisIndices.map((idx) => {
             const d = chartData[idx];
             if (!d) return null;
-            const isFirst = indexOrder === 0;
-            const isLast = indexOrder === axisIndices.length - 1;
             const isHovered = hoveredIndex === idx;
-            const pct = axisIndices.length <= 1 ? 50 : (indexOrder / (axisIndices.length - 1)) * 100;
+            // Calculate exact percentage in SVG coordinate system (getX(idx) relative to total viewBox width)
+            const posXPercent = (getX(idx) / width) * 100;
+
+            // Adjust transform/alignment based on horizontal position to prevent label clipping at edges
+            let transform = 'translateX(-50%)';
+            if (posXPercent < 5) {
+              transform = 'translateX(0%)';
+            } else if (posXPercent > 95) {
+              transform = 'translateX(-100%)';
+            }
+
             return (
               <span
                 key={d.date}
                 className={`absolute text-[10px] font-mono whitespace-nowrap select-none transition-colors ${isHovered ? 'text-white font-bold' : 'text-zinc-500'}`}
                 style={{
-                  left: isLast ? 'auto' : isFirst ? '0' : `${pct}%`,
-                  right: isLast ? '0' : 'auto',
-                  transform: (!isFirst && !isLast) ? 'translateX(-50%)' : 'none',
+                  left: `${posXPercent}%`,
+                  transform,
                 }}
               >
                 {d.label}
