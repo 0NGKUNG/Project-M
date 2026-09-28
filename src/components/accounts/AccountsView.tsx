@@ -4,7 +4,8 @@ import {
   Plus, 
   PieChart, 
   RefreshCw,
-  Users
+  Users,
+  CreditCard
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
@@ -222,19 +223,52 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </span>
 
             {/* Compact 2-per-row card grid on mobile and desktop */}
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-              {accountStats.map((acc) => {
+            {/* Bank Card / Folder Style 2-per-row grid on mobile and desktop */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {accountStats.map((acc, index) => {
                 const isNegative = (acc.currentBalance ?? 0) < 0;
+                // Subtle gradient accent variations for realistic card/folder look
+                const cardGradients = [
+                  'from-[#191924] via-[#14141c] to-[#0e0e14] border-zinc-800/90',
+                  'from-[#1a1c24] via-[#14161c] to-[#0e0e14] border-zinc-800/90',
+                  'from-[#1e1a24] via-[#16141c] to-[#0e0e14] border-zinc-800/90',
+                  'from-[#181a20] via-[#13151a] to-[#0e0e14] border-zinc-800/90',
+                ];
+                const gradientClass = cardGradients[index % cardGradients.length];
 
                 return (
                   <div
                     key={acc.id}
                     onClick={() => onSelectAccount(acc)}
-                    className="p-3.5 rounded-2xl bg-[#101014] border border-zinc-900/60 hover:border-zinc-700 transition-all cursor-pointer flex flex-col gap-1.5 active:scale-98 shadow-sm"
+                    className={`relative p-4 rounded-2xl bg-linear-to-br ${gradientClass} border hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] active:scale-[0.98] shadow-lg group overflow-hidden`}
                   >
-                    <div className="text-xs font-bold text-white truncate">{acc.name}</div>
-                    <div className={`text-sm font-extrabold font-mono truncate ${isNegative ? 'text-rose-400' : 'text-zinc-300'}`}>
-                      {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
+                    {/* Folder / Card subtle top sheen accent */}
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.025] rounded-full blur-xl pointer-events-none -mr-6 -mt-6" />
+
+                    {/* Top Row: Icon + Type Badge */}
+                    <div className="flex items-center justify-between gap-1.5 relative z-10">
+                      <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
+                        {acc.type === 'cash' ? (
+                          <Wallet size={13} />
+                        ) : acc.type === 'savings' ? (
+                          <PieChart size={13} />
+                        ) : (
+                          <CreditCard size={13} />
+                        )}
+                      </div>
+                      <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 bg-black/40 px-2 py-0.5 rounded-md border border-white/5 font-bold">
+                        {acc.type}
+                      </span>
+                    </div>
+
+                    {/* Bottom Row: Name + Balance */}
+                    <div className="mt-3 relative z-10">
+                      <div className="text-[11px] font-bold text-zinc-300 group-hover:text-white transition-colors truncate">
+                        {acc.name}
+                      </div>
+                      <div className={`text-sm sm:text-base font-extrabold font-mono tracking-tight truncate mt-0.5 ${isNegative ? 'text-rose-400' : 'text-white'}`}>
+                        {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
+                      </div>
                     </div>
                   </div>
                 );

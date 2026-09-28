@@ -82,6 +82,44 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
   const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
 
+  // Compute 14-day chronological net balance trend for this specific account
+  const accountBalanceHistory = React.useMemo(() => {
+    const points: { date: string; label: string; netChange: number; balance: number }[] = [];
+    const now = new Date();
+    const days = 14;
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      const dateStr = d.toISOString().split('T')[0];
+      const label = `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
+
+      let netChange = 0;
+      accountTransactions.forEach((tx) => {
+        if (tx.date === dateStr) {
+          if (tx.accountId === account.id) {
+            if (tx.type === 'income') netChange += tx.amount;
+            else if (tx.type === 'expense') netChange -= tx.amount;
+            else if (tx.type === 'transfer') netChange -= tx.amount;
+          }
+          if (tx.toAccountId === account.id && tx.type === 'transfer') {
+            netChange += tx.amount;
+          }
+        }
+      });
+
+      points.push({ date: dateStr, label, netChange, balance: 0 });
+    }
+
+    // Trace cumulative balance backward from current available balance
+    let rolling = currentBalance;
+    for (let i = points.length - 1; i >= 0; i--) {
+      points[i].balance = rolling;
+      rolling -= points[i].netChange;
+    }
+
+    return points;
+  }, [account.id, currentBalance, accountTransactions]);
+
   return (
     <div 
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
@@ -138,6 +176,75 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
               </div>
               <div className="text-3xl sm:text-4xl font-mono font-bold text-white mt-1 tabular-nums">
                 {formatCurrency(currentBalance, state.settings.currencySymbol)}
+              </div>
+            </div>
+
+            {/* Line Net Balance Chart */}
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold tracking-wider">
+                  Net Balance Trend (Last 14 Days)
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {formatCurrency(accountBalanceHistory[accountBalanceHistory.length - 1]?.balance ?? currentBalance, state.settings.currencySymbol)}
+                </span>
+              </div>
+
+              <div className="relative h-28 w-full bg-[#0d0d12] rounded-xl p-2 border border-zinc-800/60 overflow-hidden">
+                {/* SVG Line Chart */}
+                {accountBalanceHistory.length > 1 ? (
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 320 80" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={`grad-${account.id}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Gradient area fill */}
+                    {(() => {
+                      const minBal = Math.min(...accountBalanceHistory.map((p) => p.balance));
+                      const maxBal = Math.max(...accountBalanceHistory.map((p) => p.balance));
+                      const range = maxBal - minBal || 1;
+                      const coords = accountBalanceHistory.map((p, idx) => {
+                        const x = (idx / (accountBalanceHistory.length - 1)) * 320;
+                        const y = 72 - ((p.balance - minBal) / range) * 60;
+                        return { x, y, ...p };
+                      });
+
+                      const pointsStr = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+                      const areaStr = `0,76 ${pointsStr} 320,76`;
+
+                      return (
+                        <>
+                          <polygon points={areaStr} fill={`url(#grad-${account.id})`} />
+                          <polyline
+                            points={pointsStr}
+                            fill="none"
+                            stroke="#ffffff"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          {/* Endpoint dots */}
+                          {coords.map((c, i) => (
+                            <circle
+                              key={i}
+                              cx={c.x}
+                              cy={c.y}
+                              r={i === coords.length - 1 ? 3.5 : 2}
+                              className={i === coords.length - 1 ? 'fill-white stroke-[#0d0d12] stroke-2' : 'fill-zinc-500'}
+                            />
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </svg>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[11px] font-mono text-zinc-600">
+                    No historical changes yet
+                  </div>
+                )}
               </div>
             </div>
 
