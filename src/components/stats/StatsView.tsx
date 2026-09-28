@@ -362,13 +362,16 @@ export const StatsView: React.FC = () => {
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = Math.min(categoryOutflows.length, 5);
-                    const gap = count > 1 ? 3.5 : 0;
+                    // Fixed gap length in SVG arc units when there are multiple categories
+                    const gapArc = count > 1 ? 5 : 0;
+                    const totalGaps = count > 1 ? count * gapArc : 0;
+                    const availableCircumference = Math.max(0, circumference - totalGaps);
+
                     const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
-                    let accumulatedPercent = 0;
+                    let currentOffset = 0;
 
                     return categoryOutflows.slice(0, 5).map((item, idx) => {
                       const pct = totalExpense > 0 ? item.amount / totalExpense : 0;
-                      const rawArcLength = pct * circumference;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
 
@@ -376,12 +379,13 @@ export const StatsView: React.FC = () => {
                         strokeDash = circumference;
                         strokeDashoffset = 0;
                       } else {
-                        // Max deduction allowed so small percentages (like 1%) remain visible dots
-                        const deduction = Math.min(gap, Math.max(0, rawArcLength - 1.5));
-                        strokeDash = Math.max(1.5, rawArcLength - deduction);
-                        strokeDashoffset = -(accumulatedPercent * circumference + deduction / 2);
+                        // Scale slice length relative to available circumference after accounting for gaps
+                        strokeDash = Math.max(2, pct * availableCircumference);
+                        strokeDashoffset = -currentOffset;
+                        // Move offset forward by slice arc length + gap arc length
+                        currentOffset += strokeDash + gapArc;
                       }
-                      accumulatedPercent += pct;
+
                       const strokeColor = EXPENSE_PALETTE[idx % EXPENSE_PALETTE.length];
 
                       return (
@@ -485,13 +489,16 @@ export const StatsView: React.FC = () => {
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = Math.min(categoryInflows.length, 5);
-                    const gap = count > 1 ? 3.5 : 0;
+                    // Fixed gap length in SVG arc units when there are multiple categories
+                    const gapArc = count > 1 ? 5 : 0;
+                    const totalGaps = count > 1 ? count * gapArc : 0;
+                    const availableCircumference = Math.max(0, circumference - totalGaps);
+
                     const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
-                    let accumulatedPercent = 0;
+                    let currentOffset = 0;
 
                     return categoryInflows.slice(0, 5).map((item, idx) => {
                       const pct = totalIncome > 0 ? item.amount / totalIncome : 0;
-                      const rawArcLength = pct * circumference;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
 
@@ -499,12 +506,13 @@ export const StatsView: React.FC = () => {
                         strokeDash = circumference;
                         strokeDashoffset = 0;
                       } else {
-                        // Max deduction allowed so small percentages (like 1%) remain visible dots
-                        const deduction = Math.min(gap, Math.max(0, rawArcLength - 1.5));
-                        strokeDash = Math.max(1.5, rawArcLength - deduction);
-                        strokeDashoffset = -(accumulatedPercent * circumference + deduction / 2);
+                        // Scale slice length relative to available circumference after accounting for gaps
+                        strokeDash = Math.max(2, pct * availableCircumference);
+                        strokeDashoffset = -currentOffset;
+                        // Move offset forward by slice arc length + gap arc length
+                        currentOffset += strokeDash + gapArc;
                       }
-                      accumulatedPercent += pct;
+
                       const strokeColor = INCOME_PALETTE[idx % INCOME_PALETTE.length];
 
                       return (
