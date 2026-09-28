@@ -254,52 +254,25 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   };
 
   return (
-    <div className="bg-[#101014] rounded-2xl p-4 sm:p-6 border border-zinc-900/60 shadow-sm flex flex-col space-y-3 sm:space-y-4 overflow-hidden">
-      {/* Chart Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="min-w-0">
-          <span className="text-[11px] font-mono font-bold tracking-wider text-zinc-400 uppercase block truncate">
-            Income, Expenses &amp; Net Worth
+    <div className="bg-[#101014] rounded-2xl p-4 sm:p-5 border border-zinc-900/60 shadow-sm flex flex-col space-y-2.5 overflow-hidden">
+      {/* Chart Header - Clean, compact header without space-wasting badge */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-mono font-bold tracking-wider text-zinc-400 uppercase block truncate">
+          Income, Expenses &amp; Net Worth
+        </span>
+        <div className="flex items-center gap-3 text-[10px] sm:text-[11px] font-mono text-zinc-500 shrink-0">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <span className="hidden xs:inline">Net Worth</span>
           </span>
-          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[10px] sm:text-[11px] font-mono mt-1 text-zinc-500">
-            <span className="flex items-center gap-1.5 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              <span>Net Worth</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Hover info badge */}
-        <div className={`h-9 sm:h-11 font-mono px-2.5 sm:px-3 py-1 rounded-xl border border-zinc-800 bg-[#16161d] transition-opacity duration-150 text-left sm:text-right flex flex-col justify-center self-start sm:self-auto shrink-0 max-w-full overflow-hidden ${
-          activePoint ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
-          <div className="text-[10px] text-zinc-400 truncate">
-            {activePoint ? activePoint.label : ''}
-          </div>
-          <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap flex items-center gap-1.5 sm:gap-2">
-            {activePoint && (
-              <>
-                <span className="text-blue-400">
-                  {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
-                </span>
-                <span className="text-zinc-600 font-normal">|</span>
-                <span className="text-emerald-400 text-[10px] sm:text-[11px]">
-                  +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
-                </span>
-                <span className="text-rose-400 text-[10px] sm:text-[11px]">
-                  -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
-                </span>
-              </>
-            )}
-          </div>
+          <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
+          </span>
+          <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
+          </span>
         </div>
       </div>
 
@@ -470,29 +443,78 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
 
           </svg>
 
-          {/* Fixed-size HTML markers stay circular even though the SVG plot fills a wide card. */}
-          {hoveredIndex !== null && activePoint && (
-            <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-              <div
-                className="absolute w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-[#060608] flex items-center justify-center"
-                style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.balance) / height) * 100}%` }}
-              >
-                <span className="w-1 h-1 rounded-full bg-white" />
+          {/* Fixed-size HTML markers and Floating Tooltip Overlay */}
+          {hoveredIndex !== null && activePoint && (() => {
+            const posXPercent = (activeX / width) * 100;
+            const posYPercent = (getY(activePoint.balance) / height) * 100;
+            // Flip horizontal anchor when near the right edge (> 70%) to avoid overflowing the card
+            const isNearRight = posXPercent > 70;
+            const isNearLeft = posXPercent < 30;
+
+            return (
+              <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+                {/* Active circle marker on the net balance curve */}
+                <div
+                  className="absolute w-3.5 h-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-[#060608] flex items-center justify-center shadow-[0_0_8px_rgba(59,130,246,0.5)] z-20"
+                  style={{ left: `${posXPercent}%`, top: `${posYPercent}%` }}
+                >
+                  <span className="w-1 h-1 rounded-full bg-white" />
+                </div>
+
+                {activePoint.income > 0 && (
+                  <span
+                    className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-emerald-500 z-10"
+                    style={{ left: `${posXPercent}%`, top: `${(getY(activePoint.income) / height) * 100}%` }}
+                  />
+                )}
+                {activePoint.expense > 0 && (
+                  <span
+                    className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-rose-500 z-10"
+                    style={{ left: `${posXPercent}%`, top: `${(getY(activePoint.expense) / height) * 100}%` }}
+                  />
+                )}
+
+                {/* Floating Tooltip Box directly above / beside the active point */}
+                <div
+                  className={`absolute font-mono px-2.5 py-1.5 rounded-xl border border-zinc-700/80 bg-[#16161df2] backdrop-blur-md shadow-xl text-left pointer-events-none transition-all duration-75 z-30 ${
+                    isNearRight
+                      ? '-translate-x-full -ml-3'
+                      : isNearLeft
+                      ? 'ml-3'
+                      : '-translate-x-1/2'
+                  }`}
+                  style={{
+                    left: `${posXPercent}%`,
+                    top: Math.max(8, Math.min(posYPercent - 42, 60)) + '%',
+                  }}
+                >
+                  <div className="text-[10px] text-zinc-400 font-semibold mb-0.5">
+                    {activePoint.label}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-white whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                    <span className="text-blue-400">
+                      {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
+                    </span>
+                  </div>
+                  {(activePoint.income > 0 || activePoint.expense > 0) && (
+                    <div className="flex items-center gap-2 mt-0.5 text-[10px] whitespace-nowrap border-t border-zinc-800/80 pt-0.5">
+                      {activePoint.income > 0 && (
+                        <span className="text-emerald-400 font-semibold">
+                          +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
+                        </span>
+                      )}
+                      {activePoint.expense > 0 && (
+                        <span className="text-rose-400 font-semibold">
+                          -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-              {activePoint.income > 0 && (
-                <span
-                  className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-emerald-500"
-                  style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.income) / height) * 100}%` }}
-                />
-              )}
-              {activePoint.expense > 0 && (
-                <span
-                  className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-rose-500"
-                  style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.expense) / height) * 100}%` }}
-                />
-              )}
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>
