@@ -21,6 +21,18 @@ export const AppContent: React.FC = () => {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [preselectedAccountId, setPreselectedAccountId] = useState<string | undefined>(undefined);
 
+  // Sidebar collapsed state — persisted across sessions
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch { return false; }
+  });
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('sidebar-collapsed', String(next)); } catch {}
+      return next;
+    });
+  };
+
   // Swipe / Drag handling
   const containerRef = useRef<HTMLDivElement>(null);
   const isScrollingFromCode = useRef(false);
@@ -105,6 +117,8 @@ export const AppContent: React.FC = () => {
           currentTab={currentTab}
           onTabChange={handleTabChange}
           onOpenQuickAdd={() => handleOpenQuickAdd()}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={handleToggleSidebar}
         />
 
         {/* Dynamic Main View Area with Mobile Swipe Navigation */}
