@@ -282,7 +282,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
         <div className="text-right">
           <div className="flex items-center justify-end gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
-            <span>Savings Rate</span>
+            <span>Savings</span>
           </div>
           <div className="text-lg sm:text-xl font-bold font-mono tracking-tight text-white mt-0.5 leading-none">
             {displaySavingsRate}%
