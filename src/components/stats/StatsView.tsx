@@ -413,9 +413,9 @@ export const StatsView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column: Category List with Percentage Bars */}
-              <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
-                {categoryOutflows.map((item, idx) => {
+              {/* Right Column: Category List with Percentage Bars (Top 5) */}
+              <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5">
+                {categoryOutflows.slice(0, 5).map((item, idx) => {
                   const cat = getCategory(item.catId);
                   const pct = totalExpense > 0 ? Math.round((item.amount / totalExpense) * 100) : 0;
                   const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
@@ -535,9 +535,9 @@ export const StatsView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column: Category List with Percentage Bars */}
-              <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
-                {categoryInflows.map((item, idx) => {
+              {/* Right Column: Category List with Percentage Bars (Top 5) */}
+              <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5">
+                {categoryInflows.slice(0, 5).map((item, idx) => {
                   const cat = getCategory(item.catId);
                   const pct = totalIncome > 0 ? Math.round((item.amount / totalIncome) * 100) : 0;
                   const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
