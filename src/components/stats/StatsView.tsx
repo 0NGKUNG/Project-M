@@ -362,8 +362,8 @@ export const StatsView: React.FC = () => {
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = Math.min(categoryOutflows.length, 5);
-                    // Fixed gap length in SVG arc units when there are multiple categories
-                    const gapArc = count > 1 ? 5 : 0;
+                    // Increased gap length in SVG arc units for distinct section spacing
+                    const gapArc = count > 1 ? 14 : 0;
                     const totalGaps = count > 1 ? count * gapArc : 0;
                     const availableCircumference = Math.max(0, circumference - totalGaps);
 
@@ -380,8 +380,8 @@ export const StatsView: React.FC = () => {
                         strokeDashoffset = 0;
                       } else {
                         // Scale slice length relative to available circumference after accounting for gaps
-                        strokeDash = Math.max(2, pct * availableCircumference);
-                        strokeDashoffset = -currentOffset;
+                        strokeDash = Math.max(3, pct * availableCircumference);
+                        strokeDashoffset = -(currentOffset + gapArc / 2);
                         // Move offset forward by slice arc length + gap arc length
                         currentOffset += strokeDash + gapArc;
                       }
@@ -489,8 +489,8 @@ export const StatsView: React.FC = () => {
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = Math.min(categoryInflows.length, 5);
-                    // Fixed gap length in SVG arc units when there are multiple categories
-                    const gapArc = count > 1 ? 5 : 0;
+                    // Increased gap length in SVG arc units for distinct section spacing
+                    const gapArc = count > 1 ? 14 : 0;
                     const totalGaps = count > 1 ? count * gapArc : 0;
                     const availableCircumference = Math.max(0, circumference - totalGaps);
 
@@ -507,8 +507,8 @@ export const StatsView: React.FC = () => {
                         strokeDashoffset = 0;
                       } else {
                         // Scale slice length relative to available circumference after accounting for gaps
-                        strokeDash = Math.max(2, pct * availableCircumference);
-                        strokeDashoffset = -currentOffset;
+                        strokeDash = Math.max(3, pct * availableCircumference);
+                        strokeDashoffset = -(currentOffset + gapArc / 2);
                         // Move offset forward by slice arc length + gap arc length
                         currentOffset += strokeDash + gapArc;
                       }
