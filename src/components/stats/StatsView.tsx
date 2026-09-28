@@ -327,74 +327,219 @@ export const StatsView: React.FC = () => {
         />
       </div>
 
-      {/* Top Expenses & Income */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Top Expense Categories */}
-        <div className="bg-[#101014] rounded-2xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
-          <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Top Expenses ({categoryOutflows.length})
-          </span>
+      {/* Top Expenses & Income with Combined Donut Chart on Left and Percent Bars on Right */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        {/* Top Expense Categories Card */}
+        <div className="bg-[#101014] rounded-2xl p-4 sm:p-5 border border-zinc-900/60 shadow-sm space-y-3.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase">
+              Top Expenses ({categoryOutflows.length})
+            </span>
+            <span className="text-xs font-mono font-bold text-rose-400">
+              -{formatCurrency(totalExpense, state.settings.currencySymbol)}
+            </span>
+          </div>
 
           {categoryOutflows.length === 0 ? (
-            <p className="text-xs text-zinc-600 font-mono py-4 text-center">No expense data in this period</p>
+            <p className="text-xs text-zinc-600 font-mono py-8 text-center">No expense data in this period</p>
           ) : (
-            <div className="space-y-3">
-              {categoryOutflows.slice(0, 5).map((item) => {
-                const cat = getCategory(item.catId);
-                const pct = totalExpense > 0 ? Math.round((item.amount / totalExpense) * 100) : 0;
-                return (
-                  <div key={item.catId} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <CategoryIcon name={cat?.icon || 'Tag'} size={14} className="text-zinc-400" />
-                        <span className="text-white font-medium">{cat?.name || 'Category'}</span>
+            <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6 pt-1">
+              {/* Left Column: Multi-segment Circular Ring Donut Chart */}
+              <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  {/* Background Track Circle */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#1c1c24"
+                    strokeWidth="7"
+                  />
+                  {/* Category Arcs */}
+                  {(() => {
+                    const radius = 40;
+                    const circumference = 2 * Math.PI * radius;
+                    const EXPENSE_PALETTE = ['#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239', '#7f1d1d'];
+                    let accumulatedPercent = 0;
+
+                    return categoryOutflows.slice(0, 5).map((item, idx) => {
+                      const pct = totalExpense > 0 ? item.amount / totalExpense : 0;
+                      // Subtract small gap between segments
+                      const gap = categoryOutflows.length > 1 ? 2 : 0;
+                      const strokeDash = Math.max(0, pct * circumference - gap);
+                      const strokeDashoffset = -accumulatedPercent * circumference;
+                      accumulatedPercent += pct;
+                      const strokeColor = EXPENSE_PALETTE[idx % EXPENSE_PALETTE.length];
+
+                      return (
+                        <circle
+                          key={item.catId}
+                          cx="50"
+                          cy="50"
+                          r={radius}
+                          fill="none"
+                          stroke={strokeColor}
+                          strokeWidth="7"
+                          strokeDasharray={`${strokeDash} ${circumference}`}
+                          strokeDashoffset={strokeDashoffset}
+                          strokeLinecap="round"
+                          className="transition-all duration-500"
+                        />
+                      );
+                    });
+                  })()}
+                </svg>
+
+                {/* Center Label and Amount */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
+                  <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider leading-none">
+                    Expense
+                  </span>
+                  <span className="text-xs sm:text-[13px] font-mono font-bold text-white mt-1 leading-none truncate max-w-[85px]">
+                    {formatCurrency(totalExpense, state.settings.currencySymbol)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Column: Category List with Percentage Bars */}
+              <div className="flex-1 w-full space-y-2.5">
+                {categoryOutflows.slice(0, 5).map((item, idx) => {
+                  const cat = getCategory(item.catId);
+                  const pct = totalExpense > 0 ? Math.round((item.amount / totalExpense) * 100) : 0;
+                  const EXPENSE_PALETTE = ['#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239'];
+                  const color = EXPENSE_PALETTE[idx % EXPENSE_PALETTE.length];
+
+                  return (
+                    <div key={item.catId} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <CategoryIcon name={cat?.icon || 'Tag'} size={13} className="text-zinc-400 shrink-0" />
+                          <span className="text-white font-medium text-[11px] truncate">{cat?.name || 'Category'}</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-zinc-300 shrink-0">
+                          {formatCurrency(item.amount, state.settings.currencySymbol)}{' '}
+                          <span className="text-[10px] text-zinc-500">({pct}%)</span>
+                        </div>
                       </div>
-                      <div className="font-mono text-xs text-zinc-300">
-                        {formatCurrency(item.amount, state.settings.currencySymbol)}{' '}
-                        <span className="text-[10px] text-zinc-500">({pct}%)</span>
+                      <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, backgroundColor: color }}
+                        />
                       </div>
                     </div>
-                    <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                      <div className="h-full bg-rose-500/80 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Top Income Sources */}
-        <div className="bg-[#101014] rounded-2xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
-          <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Top Income ({categoryInflows.length})
-          </span>
+        {/* Top Income Sources Card */}
+        <div className="bg-[#101014] rounded-2xl p-4 sm:p-5 border border-zinc-900/60 shadow-sm space-y-3.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase">
+              Top Income ({categoryInflows.length})
+            </span>
+            <span className="text-xs font-mono font-bold text-emerald-400">
+              +{formatCurrency(totalIncome, state.settings.currencySymbol)}
+            </span>
+          </div>
 
           {categoryInflows.length === 0 ? (
-            <p className="text-xs text-zinc-600 font-mono py-4 text-center">No income data in this period</p>
+            <p className="text-xs text-zinc-600 font-mono py-8 text-center">No income data in this period</p>
           ) : (
-            <div className="space-y-3">
-              {categoryInflows.slice(0, 5).map((item) => {
-                const cat = getCategory(item.catId);
-                const pct = totalIncome > 0 ? Math.round((item.amount / totalIncome) * 100) : 0;
-                return (
-                  <div key={item.catId} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <CategoryIcon name={cat?.icon || 'Tag'} size={14} className="text-zinc-400" />
-                        <span className="text-white font-medium">{cat?.name || 'Income'}</span>
+            <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6 pt-1">
+              {/* Left Column: Multi-segment Circular Ring Donut Chart */}
+              <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  {/* Background Track Circle */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#1c1c24"
+                    strokeWidth="7"
+                  />
+                  {/* Category Arcs */}
+                  {(() => {
+                    const radius = 40;
+                    const circumference = 2 * Math.PI * radius;
+                    const INCOME_PALETTE = ['#34d399', '#10b981', '#059669', '#047857', '#065f46'];
+                    let accumulatedPercent = 0;
+
+                    return categoryInflows.slice(0, 5).map((item, idx) => {
+                      const pct = totalIncome > 0 ? item.amount / totalIncome : 0;
+                      const gap = categoryInflows.length > 1 ? 2 : 0;
+                      const strokeDash = Math.max(0, pct * circumference - gap);
+                      const strokeDashoffset = -accumulatedPercent * circumference;
+                      accumulatedPercent += pct;
+                      const strokeColor = INCOME_PALETTE[idx % INCOME_PALETTE.length];
+
+                      return (
+                        <circle
+                          key={item.catId}
+                          cx="50"
+                          cy="50"
+                          r={radius}
+                          fill="none"
+                          stroke={strokeColor}
+                          strokeWidth="7"
+                          strokeDasharray={`${strokeDash} ${circumference}`}
+                          strokeDashoffset={strokeDashoffset}
+                          strokeLinecap="round"
+                          className="transition-all duration-500"
+                        />
+                      );
+                    });
+                  })()}
+                </svg>
+
+                {/* Center Label and Amount */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
+                  <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider leading-none">
+                    Income
+                  </span>
+                  <span className="text-xs sm:text-[13px] font-mono font-bold text-white mt-1 leading-none truncate max-w-[85px]">
+                    +{formatCurrency(totalIncome, state.settings.currencySymbol)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Column: Category List with Percentage Bars */}
+              <div className="flex-1 w-full space-y-2.5">
+                {categoryInflows.slice(0, 5).map((item, idx) => {
+                  const cat = getCategory(item.catId);
+                  const pct = totalIncome > 0 ? Math.round((item.amount / totalIncome) * 100) : 0;
+                  const INCOME_PALETTE = ['#34d399', '#10b981', '#059669', '#047857', '#065f46'];
+                  const color = INCOME_PALETTE[idx % INCOME_PALETTE.length];
+
+                  return (
+                    <div key={item.catId} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <CategoryIcon name={cat?.icon || 'Tag'} size={13} className="text-zinc-400 shrink-0" />
+                          <span className="text-white font-medium text-[11px] truncate">{cat?.name || 'Income'}</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-emerald-400 shrink-0">
+                          +{formatCurrency(item.amount, state.settings.currencySymbol)}{' '}
+                          <span className="text-[10px] text-zinc-500">({pct}%)</span>
+                        </div>
                       </div>
-                      <div className="font-mono text-xs text-emerald-400">
-                        +{formatCurrency(item.amount, state.settings.currencySymbol)}{' '}
-                        <span className="text-[10px] text-zinc-500">({pct}%)</span>
+                      <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, backgroundColor: color }}
+                        />
                       </div>
                     </div>
-                    <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
