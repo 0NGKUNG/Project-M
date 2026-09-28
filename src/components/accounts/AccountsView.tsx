@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Wallet, 
   Plus, 
-  PieChart, 
+  PieChart,
   RefreshCw,
   Users,
   CreditCard
@@ -138,41 +138,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
             {/* Portfolio Distribution Segmented Bar & Individual Account Progress Bars */}
             <div className="space-y-4">
-              <div className="flex justify-between items-center text-xs font-mono text-zinc-400">
-                <span className="flex items-center gap-1.5">
-                  <PieChart size={13} className="text-zinc-400" />
-                  <span>Asset Distribution</span>
-                </span>
-                <span className="text-[10px] text-zinc-500 font-mono">100% Total</span>
-              </div>
-
-              {/* Combined Segmented Visual Bar with distinct monochrome shades */}
-              <div className="w-full h-3 rounded-full bg-zinc-900 flex overflow-hidden gap-1 p-0.5 border border-zinc-800/80">
-                {accountStats.map((acc, idx) => {
-                  if (acc.percentage <= 0) return null;
-                  // Distinct, clearly discernible monochrome tones: White, Silver/Light Grey, Mid Grey, Dark Slate, Deep Charcoal
-                  const shades = [
-                    'bg-white',
-                    'bg-zinc-300',
-                    'bg-zinc-500',
-                    'bg-zinc-600',
-                    'bg-zinc-700',
-                    'bg-zinc-800',
-                  ];
-                  const bg = shades[idx % shades.length];
-                  return (
-                    <div
-                      key={acc.id}
-                      title={`${acc.name}: ${acc.percentage}%`}
-                      className={`h-full rounded-xs transition-all ${bg}`}
-                      style={{ width: `${acc.percentage}%` }}
-                    />
-                  );
-                })}
-              </div>
-
               {/* Individual Account Progress Bars List: a ----- 50%, b ---- 30% */}
-              <div className="space-y-2.5 pt-2 border-t border-zinc-900/90">
+              <div className="space-y-2.5">
                 {accountStats.map((acc, idx) => {
                   const dotColors = [
                     'bg-white',
