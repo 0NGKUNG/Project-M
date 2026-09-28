@@ -37,26 +37,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ${collapsed ? 'w-[72px]' : 'w-72'}
       `}
     >
-      {/* ── Collapse / Expand toggle button ── */}
-      <button
-        onClick={onToggleCollapse}
-        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="absolute top-4 right-3 z-20 w-7 h-7 rounded-xl bg-zinc-800/90 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-md"
-      >
-        {collapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
-      </button>
-
       {/* ── Top section ── */}
       <div className={`flex flex-col ${collapsed ? 'px-3 pt-5' : 'p-6'}`}>
 
         {/* Brand */}
-        <div className={`mb-8 overflow-hidden ${collapsed ? 'px-1' : 'px-2'}`}>
+        <div className={`mb-8 flex h-7 items-center justify-between overflow-hidden ${collapsed ? 'px-1' : 'px-2'}`}>
           {collapsed ? (
             <div className="text-xl font-extrabold text-white font-display tracking-wider text-center">N</div>
           ) : (
             <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">NØVA</h1>
           )}
+          <button
+            onClick={onToggleCollapse}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className={`shrink-0 rounded-xl bg-zinc-800/90 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-md ${collapsed ? 'w-6 h-6' : 'w-7 h-7'}`}
+          >
+            {collapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
+          </button>
         </div>
 
         {/* Quick Add */}
