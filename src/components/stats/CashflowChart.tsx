@@ -224,14 +224,15 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
 
       {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
       <div className="w-full flex-1 min-h-0 relative select-none">
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${width} ${height - 28}`}
-          preserveAspectRatio="none"
-          className="w-full h-44 sm:h-52 overflow-visible cursor-crosshair"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHoveredIndex(null)}
-        >
+        <div className="relative w-full h-44 sm:h-52">
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${width} ${height - 28}`}
+            preserveAspectRatio="none"
+            className="w-full h-full overflow-visible cursor-crosshair"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => setHoveredIndex(null)}
+          >
           <defs>
             {/* Soft blue gradient fill for balance area */}
             <linearGradient id="balanceGlow" x1="0" y1={paddingTop} x2="0" y2={paddingTop + innerHeight} gradientUnits="userSpaceOnUse">
@@ -307,10 +308,10 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                 y1={paddingTop - 8}
                 x2={activeX}
                 y2={paddingTop + innerHeight}
-                stroke="#3b82f6"
+                stroke="#71717a"
                 strokeWidth="1.2"
                 strokeDasharray="3 3"
-                opacity="0.8"
+                opacity="0.9"
               />
             </g>
           )}
@@ -347,51 +348,32 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             opacity="0.9"
           />
 
-          {/* Highlight Nodes / Targets on the active hovered column */}
+          </svg>
+
+          {/* Fixed-size HTML markers stay circular even though the SVG plot fills a wide card. */}
           {hoveredIndex !== null && activePoint && (
-            <g>
-              {/* Clean Balance Point target */}
-              <circle
-                cx={activeX}
-                cy={getY(activePoint.balance)}
-                r={5.5}
-                fill="#000000"
-                stroke="#3b82f6"
-                strokeWidth={2}
-              />
-              <circle
-                cx={activeX}
-                cy={getY(activePoint.balance)}
-                r={2.5}
-                fill="#ffffff"
-              />
-
-              {/* Inflow point dot */}
+            <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+              <div
+                className="absolute w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-blue-500 bg-[#060608] flex items-center justify-center"
+                style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.balance) / (height - 28)) * 100}%` }}
+              >
+                <span className="w-1 h-1 rounded-full bg-white" />
+              </div>
               {activePoint.income > 0 && (
-                <circle
-                  cx={activeX}
-                  cy={getY(activePoint.income)}
-                  r={3.5}
-                  fill="#10b981"
-                  stroke="#000000"
-                  strokeWidth={1.5}
+                <span
+                  className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-emerald-500"
+                  style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.income) / (height - 28)) * 100}%` }}
                 />
               )}
-
-              {/* Outflow point dot */}
               {activePoint.expense > 0 && (
-                <circle
-                  cx={activeX}
-                  cy={getY(activePoint.expense)}
-                  r={3.5}
-                  fill="#f43f5e"
-                  stroke="#000000"
-                  strokeWidth={1.5}
+                <span
+                  className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-rose-500"
+                  style={{ left: `${(activeX / width) * 100}%`, top: `${(getY(activePoint.expense) / (height - 28)) * 100}%` }}
                 />
               )}
-            </g>
+            </div>
           )}
-        </svg>
+        </div>
 
         {/* Clean, Non-Stretched HTML Date Axis Row */}
         <div className="flex justify-between items-center mt-2 px-1 text-[11px] font-mono text-zinc-500 select-none">
