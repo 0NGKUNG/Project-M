@@ -531,21 +531,19 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
           })()}
         </div>
 
-        {/* Legend and totals under the chart in the same card */}
-        <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-zinc-500 pt-2 border-t border-zinc-900/80">
-          <div className="flex items-center gap-1.5">
+        {/* Legend and totals under the chart in the same card - centered together */}
+        <div className="flex items-center justify-center flex-wrap gap-4 text-[10px] sm:text-[11px] font-mono pt-2 border-t border-zinc-900/80">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
             <span className="text-zinc-400">Net Worth</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-emerald-400 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-rose-400 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-              <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
-            </span>
+          <div className="flex items-center gap-1.5 text-emerald-400 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-rose-400 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+            <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
           </div>
         </div>
       </div>
