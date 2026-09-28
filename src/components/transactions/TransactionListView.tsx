@@ -131,47 +131,52 @@ export const TransactionListView: React.FC = () => {
                 </div>
 
                 <div className="bg-[#101014] rounded-2xl divide-y divide-zinc-900 overflow-hidden shadow-sm">
-                  {txList.map((tx) => {
-                    const cat = getCategory(tx.categoryId);
-                    const acc = getAccount(tx.accountId);
-                    const toAcc = tx.toAccountId ? getAccount(tx.toAccountId) : null;
-                    const isIncome = tx.type === 'income';
-                    const isTransfer = tx.type === 'transfer';
+                    {txList.map((tx) => {
+                      const cat = getCategory(tx.categoryId);
+                      const acc = getAccount(tx.accountId);
+                      const toAcc = tx.toAccountId ? getAccount(tx.toAccountId) : null;
+                      const isIncome = tx.type === 'income';
+                      const isTransfer = tx.type === 'transfer';
 
-                    return (
-                      <div
-                        key={tx.id}
-                        onClick={() => setEditingTransaction(tx)}
-                        className="p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors group cursor-pointer active:scale-[0.99]"
-                      >
-                        <div className="flex items-center gap-3.5">
-                          <div
-                            className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                              isIncome
-                                ? 'bg-emerald-500/15 text-emerald-400'
-                                : isTransfer
-                                ? 'bg-blue-500/15 text-blue-400'
-                                : 'bg-zinc-800/80 text-zinc-200'
-                            }`}
-                          >
-                            <CategoryIcon name={cat?.icon || 'Receipt'} size={18} />
-                          </div>
+                      const timeDisplay = tx.time || (tx.createdAt ? (() => {
+                        const d = new Date(tx.createdAt);
+                        return !isNaN(d.getTime()) ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+                      })() : '');
 
-                          <div>
-                            <div className="text-xs font-semibold text-white flex items-center gap-2">
-                              <span>
-                                {isTransfer
-                                  ? `${acc?.name} → ${toAcc?.name}`
-                                  : cat?.name || 'Other'}
-                              </span>
+                      return (
+                        <div
+                          key={tx.id}
+                          onClick={() => setEditingTransaction(tx)}
+                          className="p-4 flex items-center justify-between hover:bg-white/[0.04] transition-colors group cursor-pointer active:scale-[0.99]"
+                        >
+                          <div className="flex items-center gap-3.5">
+                            <div
+                              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                                isIncome
+                                  ? 'bg-emerald-500/15 text-emerald-400'
+                                  : isTransfer
+                                  ? 'bg-blue-500/15 text-blue-400'
+                                  : 'bg-zinc-800/80 text-zinc-200'
+                              }`}
+                            >
+                              <CategoryIcon name={cat?.icon || 'Receipt'} size={18} />
                             </div>
-                            <div className="text-[11px] text-zinc-500 font-mono mt-0.5 flex items-center gap-1.5">
-                              {!isTransfer && <span>{acc?.name}</span>}
-                              {tx.time && <span>• {tx.time}</span>}
-                              {tx.note && <span>• {tx.note}</span>}
+
+                            <div>
+                              <div className="text-xs font-semibold text-white flex items-center gap-2">
+                                <span>
+                                  {isTransfer
+                                    ? `${acc?.name} → ${toAcc?.name}`
+                                    : cat?.name || 'Other'}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-zinc-500 font-mono mt-0.5 flex items-center gap-1.5">
+                                {timeDisplay && <span className="text-zinc-400 font-bold">{timeDisplay}</span>}
+                                {!isTransfer && <span>• {acc?.name}</span>}
+                                {tx.note && <span>• {tx.note}</span>}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
                         <div className="flex items-center gap-4">
                           <div className="text-right font-mono">

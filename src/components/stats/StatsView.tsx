@@ -675,6 +675,11 @@ export const StatsView: React.FC = () => {
                     const isExpense = tx.type === 'expense';
                     const isIncome = tx.type === 'income';
 
+                    const timeDisplay = tx.time || (tx.createdAt ? (() => {
+                      const d = new Date(tx.createdAt);
+                      return !isNaN(d.getTime()) ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+                    })() : '');
+
                     return (
                       <div
                         key={tx.id}
@@ -697,6 +702,12 @@ export const StatsView: React.FC = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono mt-0.5">
+                              {timeDisplay && (
+                                <>
+                                  <span className="text-zinc-400 font-bold">{timeDisplay}</span>
+                                  <span>•</span>
+                                </>
+                              )}
                               <span>{account?.name || 'Wallet'}</span>
                               {tx.note && (
                                 <>
@@ -717,8 +728,8 @@ export const StatsView: React.FC = () => {
                             {isExpense ? '-' : isIncome ? '+' : ''}
                             {formatCurrency(tx.amount, state.settings.currencySymbol)}
                           </div>
-                          {tx.time && (
-                            <div className="text-[10px] text-zinc-600 font-mono mt-0.5">{tx.time}</div>
+                          {timeDisplay && (
+                            <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{timeDisplay}</div>
                           )}
                         </div>
                       </div>
