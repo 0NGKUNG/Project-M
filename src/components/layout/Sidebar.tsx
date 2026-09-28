@@ -33,28 +33,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       className={`
         hidden lg:flex flex-col bg-[#09090c] shrink-0 select-none justify-between
-        transition-[width] duration-300 ease-in-out overflow-hidden relative
+        transition-[width] duration-300 ease-in-out overflow-visible relative
         ${collapsed ? 'w-[72px]' : 'w-72'}
       `}
     >
+      {/* Keep the toggle outside the content column so it never competes with the wordmark. */}
+      <button
+        onClick={onToggleCollapse}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        className="absolute top-5 -right-3.5 z-30 w-7 h-7 rounded-xl bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-lg"
+      >
+        {collapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
+      </button>
+
       {/* ── Top section ── */}
-      <div className={`flex flex-col ${collapsed ? 'px-3 pt-5' : 'p-6'}`}>
+      <div className={`flex flex-col ${collapsed ? 'px-3 pt-6' : 'p-6'}`}>
 
         {/* Brand */}
-        <div className={`mb-8 flex h-7 items-center justify-between overflow-hidden ${collapsed ? 'px-1' : 'px-2'}`}>
+        <div className={`mb-8 flex h-8 items-center overflow-hidden ${collapsed ? 'justify-center' : 'px-2'}`}>
           {collapsed ? (
             <div className="text-xl font-extrabold text-white font-display tracking-wider text-center">N</div>
           ) : (
             <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">NØVA</h1>
           )}
-          <button
-            onClick={onToggleCollapse}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className={`shrink-0 rounded-xl bg-zinc-800/90 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-md ${collapsed ? 'w-6 h-6' : 'w-7 h-7'}`}
-          >
-            {collapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
-          </button>
         </div>
 
         {/* Quick Add */}
@@ -64,14 +66,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={onOpenQuickAdd}
               title={`New Transaction (${keybind})`}
               aria-label={`New Transaction (${keybind})`}
-              className="w-full aspect-square max-h-12 flex items-center justify-center rounded-2xl bg-white hover:bg-zinc-100 active:scale-95 text-black transition-all cursor-pointer shadow-[0_4px_24px_rgba(255,255,255,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              className="w-full h-12 flex items-center justify-center rounded-2xl bg-white hover:bg-zinc-100 active:scale-95 text-black transition-all cursor-pointer shadow-[0_4px_24px_rgba(255,255,255,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               <Plus size={18} strokeWidth={2.8} />
             </button>
           ) : (
             <button
               onClick={onOpenQuickAdd}
-              className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-zinc-100 active:scale-98 text-black text-xs font-bold flex items-center justify-between shadow-[0_4px_24px_rgba(255,255,255,0.15)] transition-all cursor-pointer group"
+              className="w-full h-12 px-4 rounded-2xl bg-white hover:bg-zinc-100 active:scale-98 text-black text-xs font-bold flex items-center justify-between shadow-[0_4px_24px_rgba(255,255,255,0.12)] transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               <div className="flex items-center gap-2">
                 <Plus size={18} strokeWidth={2.8} />
@@ -96,7 +98,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={collapsed ? item.label : undefined}
                 className={`
                   w-full flex items-center gap-3.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer
-                  ${collapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'}
+                  h-11
+                  ${collapsed ? 'justify-center px-2' : 'px-4'}
                   ${isActive
                     ? 'bg-zinc-800 text-white font-bold shadow-inner'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
