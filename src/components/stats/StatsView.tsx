@@ -707,7 +707,7 @@ export const StatsView: React.FC = () => {
                         <div className="text-right">
                           <div
                             className={`text-xs font-bold font-mono ${
-                              isExpense ? 'text-white' : isIncome ? 'text-emerald-400' : 'text-blue-400'
+                              isExpense ? 'text-rose-400' : isIncome ? 'text-emerald-400' : 'text-blue-400'
                             }`}
                           >
                             {isExpense ? '-' : isIncome ? '+' : ''}

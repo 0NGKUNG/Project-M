@@ -197,7 +197,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                         </div>
                       </div>
                     </div>
-                    <div className={`text-sm font-bold font-mono ${isExpense ? 'text-white' : 'text-emerald-400'}`}>
+                    <div className={`text-sm font-bold font-mono ${isExpense ? 'text-rose-400' : 'text-emerald-400'}`}>
                       {isExpense ? '-' : '+'}{formatCurrency(item.amount, state.settings.currencySymbol)}
                     </div>
                   </div>
