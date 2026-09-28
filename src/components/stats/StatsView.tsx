@@ -345,7 +345,7 @@ export const StatsView: React.FC = () => {
           ) : (
             <div className="flex flex-row items-center gap-3 sm:gap-5 pt-1">
               {/* Left Column: Multi-segment Circular Ring Donut Chart */}
-              <div className="relative w-36 h-36 sm:w-44 sm:h-44 shrink-0 flex items-center justify-center">
+              <div className="relative w-44 h-44 sm:w-52 sm:h-52 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   {/* Subtle Background Track Circle */}
                   <circle
@@ -404,17 +404,17 @@ export const StatsView: React.FC = () => {
 
                 {/* Center Label and Amount matching modern reference */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
-                  <span className="text-[9px] sm:text-[10px] text-zinc-400 font-medium tracking-tight leading-tight">
+                  <span className="text-[10px] sm:text-xs text-zinc-400 font-medium tracking-tight leading-tight">
                     Spent this period
                   </span>
-                  <span className="text-xs sm:text-sm font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[90px] sm:max-w-[120px]">
+                  <span className="text-sm sm:text-base font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[110px] sm:max-w-[140px]">
                     {formatCurrency(totalExpense, state.settings.currencySymbol)}
                   </span>
                 </div>
               </div>
 
               {/* Right Column: Category List with Percentage Bars (Top 5) */}
-              <div className="flex-1 min-w-0 space-y-1 sm:space-y-1.5 flex flex-col justify-between h-36 sm:h-44 py-0.5">
+              <div className="flex-1 min-w-0 space-y-1.5 sm:space-y-2 flex flex-col justify-center h-44 sm:h-52 py-0.5">
                 {categoryOutflows.slice(0, 5).map((item, idx) => {
                   const cat = getCategory(item.catId);
                   const pct = totalExpense > 0 ? Math.round((item.amount / totalExpense) * 100) : 0;
@@ -467,7 +467,7 @@ export const StatsView: React.FC = () => {
           ) : (
             <div className="flex flex-row items-center gap-3 sm:gap-5 pt-1">
               {/* Left Column: Multi-segment Circular Ring Donut Chart */}
-              <div className="relative w-36 h-36 sm:w-44 sm:h-44 shrink-0 flex items-center justify-center">
+              <div className="relative w-44 h-44 sm:w-52 sm:h-52 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   {/* Subtle Background Track Circle */}
                   <circle
@@ -526,17 +526,17 @@ export const StatsView: React.FC = () => {
 
                 {/* Center Label and Amount matching modern reference */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
-                  <span className="text-[9px] sm:text-[10px] text-zinc-400 font-medium tracking-tight leading-tight">
+                  <span className="text-[10px] sm:text-xs text-zinc-400 font-medium tracking-tight leading-tight">
                     Earned this period
                   </span>
-                  <span className="text-xs sm:text-sm font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[90px] sm:max-w-[120px]">
+                  <span className="text-sm sm:text-base font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[110px] sm:max-w-[140px]">
                     +{formatCurrency(totalIncome, state.settings.currencySymbol)}
                   </span>
                 </div>
               </div>
 
               {/* Right Column: Category List with Percentage Bars (Top 5) */}
-              <div className="flex-1 min-w-0 space-y-1 sm:space-y-1.5 flex flex-col justify-between h-36 sm:h-44 py-0.5">
+              <div className="flex-1 min-w-0 space-y-1.5 sm:space-y-2 flex flex-col justify-center h-44 sm:h-52 py-0.5">
                 {categoryInflows.slice(0, 5).map((item, idx) => {
                   const cat = getCategory(item.catId);
                   const pct = totalIncome > 0 ? Math.round((item.amount / totalIncome) * 100) : 0;
