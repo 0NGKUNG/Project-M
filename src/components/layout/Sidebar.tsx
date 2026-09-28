@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, BarChart3, Wallet, Settings, Plus, Shield, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, BarChart3, Wallet, Settings, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 
 export type NavTab = 'today' | 'stats' | 'accounts' | 'settings';
@@ -116,27 +116,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* ── Footer ── */}
-      <div className="p-6">
-        {collapsed ? (
-          <div
-            title="Sovereign Vault — Zero leak • Local / Cloud"
-            className="w-full flex items-center justify-center p-2 rounded-xl bg-[#101014] border border-zinc-900/60"
-          >
-            <Shield size={16} className="text-zinc-400 shrink-0" />
-          </div>
-        ) : (
-          <div className="bg-[#101014] rounded-2xl p-4 flex items-center gap-3 border border-zinc-900/60">
-            <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-400 shrink-0">
-              <Shield size={16} />
-            </div>
-            <div className="text-[11px] overflow-hidden">
-              <div className="text-zinc-300 font-medium truncate">Sovereign Vault</div>
-              <div className="text-zinc-500 text-[10px] truncate">Zero leak • Local / Cloud</div>
-            </div>
-          </div>
-        )}
-      </div>
     </aside>
   );
 };
