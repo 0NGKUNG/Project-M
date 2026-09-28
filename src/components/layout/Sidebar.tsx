@@ -42,9 +42,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={onToggleCollapse}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="absolute top-5 right-3 z-20 w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-lg"
+        className="absolute top-4 right-3 z-20 w-7 h-7 rounded-xl bg-zinc-800/90 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-md"
       >
-        {collapsed ? <ChevronRight size={12} strokeWidth={2.5} /> : <ChevronLeft size={12} strokeWidth={2.5} />}
+        {collapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
       </button>
 
       {/* ── Top section ── */}
@@ -55,13 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {collapsed ? (
             <div className="text-xl font-extrabold text-white font-display tracking-wider text-center">N</div>
           ) : (
-            <>
-              <div className="flex items-baseline gap-2">
-                <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">NØVA</h1>
-                <span className="text-[11px] text-zinc-500 font-mono">v1.0</span>
-              </div>
-              <p className="text-[11px] text-zinc-500 font-mono tracking-wider mt-0.5">ongkung.me / vault</p>
-            </>
+            <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">NØVA</h1>
           )}
         </div>
 
