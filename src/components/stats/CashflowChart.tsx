@@ -232,24 +232,44 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
     );
   }, [chartData.length, chartWidth, timeRange]);
 
+  // Support touch gestures on mobile for scrubber
+  const handleTouch = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (!svgRef.current || chartData.length === 0 || !e.touches[0]) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const clientX = e.touches[0].clientX - rect.left;
+    const svgX = (clientX / rect.width) * width;
+
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    chartData.forEach((_, idx) => {
+      const diff = Math.abs(getX(idx) - svgX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    setHoveredIndex(closestIdx);
+  };
+
   return (
-    <div className="h-[300px] sm:h-[338px] bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm flex flex-col space-y-4 overflow-hidden">
+    <div className="bg-[#101014] rounded-2xl p-4 sm:p-6 border border-zinc-900/60 shadow-sm flex flex-col space-y-3 sm:space-y-4 overflow-hidden">
       {/* Chart Header */}
-      <div className="h-11 shrink-0 flex items-center justify-between gap-3">
-        <div>
-          <span className="text-[11px] font-mono font-bold tracking-wider text-zinc-400 uppercase block">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="min-w-0">
+          <span className="text-[11px] font-mono font-bold tracking-wider text-zinc-400 uppercase block truncate">
             Income, Expenses &amp; Net Worth
           </span>
-          <div className="flex items-center gap-3 text-[11px] font-mono mt-1 text-zinc-500">
-            <span className="flex items-center gap-1.5">
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[10px] sm:text-[11px] font-mono mt-1 text-zinc-500">
+            <span className="flex items-center gap-1.5 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
               <span>Net Worth</span>
             </span>
-            <span className="flex items-center gap-1.5 text-zinc-400">
+            <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
             </span>
-            <span className="flex items-center gap-1.5 text-zinc-400">
+            <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
               <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
             </span>
@@ -257,23 +277,23 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
         </div>
 
         {/* Hover info badge */}
-        <div className={`w-[190px] h-11 shrink-0 font-mono px-3 py-1.5 rounded-xl border border-zinc-800 bg-[#16161d] transition-opacity duration-150 text-right flex flex-col justify-center overflow-hidden ${
+        <div className={`h-9 sm:h-11 font-mono px-2.5 sm:px-3 py-1 rounded-xl border border-zinc-800 bg-[#16161d] transition-opacity duration-150 text-left sm:text-right flex flex-col justify-center self-start sm:self-auto shrink-0 max-w-full overflow-hidden ${
           activePoint ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
-          <div className="text-[10px] text-zinc-400">
+          <div className="text-[10px] text-zinc-400 truncate">
             {activePoint ? activePoint.label : ''}
           </div>
-          <div className="text-xs font-bold text-white whitespace-nowrap flex items-center gap-2">
+          <div className="text-[11px] sm:text-xs font-bold text-white whitespace-nowrap flex items-center gap-1.5 sm:gap-2">
             {activePoint && (
               <>
                 <span className="text-blue-400">
                   {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
                 </span>
                 <span className="text-zinc-600 font-normal">|</span>
-                <span className="text-emerald-400 text-[11px]">
+                <span className="text-emerald-400 text-[10px] sm:text-[11px]">
                   +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
                 </span>
-                <span className="text-rose-400 text-[11px]">
+                <span className="text-rose-400 text-[10px] sm:text-[11px]">
                   -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
                 </span>
               </>
@@ -289,9 +309,11 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             ref={svgRef}
             viewBox={`0 0 ${width} ${height - 28}`}
             preserveAspectRatio="none"
-            className="w-full h-full overflow-visible cursor-crosshair"
+            className="w-full h-full overflow-visible cursor-crosshair touch-none"
             onMouseMove={handleMouseMove}
             onMouseLeave={() => setHoveredIndex(null)}
+            onTouchStart={handleTouch}
+            onTouchMove={handleTouch}
           >
           <defs>
             {/* Soft blue gradient fill for balance area */}

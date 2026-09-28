@@ -125,33 +125,33 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
       {/* Summary Cards & Spending Goal Section */}
       <div className="space-y-3">
         {/* Daily Cashflow Hero Summary */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[86px] sm:h-[92px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <ArrowDownLeft size={13} className="text-emerald-400 shrink-0" />
               <span className="truncate">Income</span>
             </div>
-            <div className="text-base sm:text-lg font-bold font-mono text-emerald-400 truncate leading-none">
+            <div className="text-sm sm:text-lg font-bold font-mono text-emerald-400 truncate leading-none">
               +{formatCurrency(dayIncome, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[86px] sm:h-[92px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <ArrowUpRight size={13} className="text-rose-400 shrink-0" />
               <span className="truncate">Expenses</span>
             </div>
-            <div className="text-base sm:text-lg font-bold font-mono text-rose-400 truncate leading-none">
+            <div className="text-sm sm:text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(dayExpense, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[86px] sm:h-[92px]">
             <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <Equal size={13} className="text-blue-400 shrink-0" />
               <span className="truncate">Net</span>
             </div>
-            <div className={`text-base sm:text-lg font-bold font-mono truncate leading-none ${
+            <div className={`text-sm sm:text-lg font-bold font-mono truncate leading-none ${
               dayNet >= 0 ? 'text-white' : 'text-rose-400'
             }`}>
               {dayNet >= 0 ? '+' : ''}{formatCurrency(dayNet, state.settings.currencySymbol)}

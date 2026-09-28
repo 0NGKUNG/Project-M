@@ -216,17 +216,17 @@ export const StatsView: React.FC = () => {
   return (
     <div className="space-y-3 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
       {/* Timeframe Pill Selector */}
-      <div className="h-8 flex items-center justify-between pt-1">
+      <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 pt-1">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white font-mono">STATS</h2>
         </div>
 
-        <div className="flex bg-[#0d0d10] p-1 rounded-xl border border-zinc-800/80 shadow-sm">
+        <div className="flex bg-[#0d0d10] p-1 rounded-xl border border-zinc-800/80 shadow-sm max-w-full overflow-x-auto no-scrollbar">
           {(['day', 'week', 'month', 'year', 'all'] as TimeRange[]).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-3 py-1 rounded-lg text-xs font-mono font-medium capitalize transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-medium capitalize transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 timeRange === range ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
               }`}
             >
