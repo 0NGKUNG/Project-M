@@ -48,7 +48,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between gap-2.5 px-3.5 py-3 rounded-xl bg-[#16161d] hover:bg-[#1a1a23] border border-zinc-800/80 hover:border-zinc-700 text-[13px] text-white transition-all cursor-pointer ${
+        className={`w-full h-11 flex items-center justify-between gap-2.5 px-3.5 rounded-xl bg-[#16161d] hover:bg-[#1a1a23] border border-zinc-800/80 hover:border-zinc-700 text-xs text-white transition-all cursor-pointer ${
           isOpen ? 'border-zinc-500 ring-1 ring-zinc-500/30' : ''
         }`}
       >

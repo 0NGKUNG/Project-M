@@ -255,7 +255,7 @@ export const DebtManager: React.FC = () => {
                   placeholder="e.g. Alex, Mom, Landlord"
                   value={personName}
                   onChange={(e) => setPersonName(e.target.value)}
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   autoFocus
                   required
                 />
@@ -271,7 +271,7 @@ export const DebtManager: React.FC = () => {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none"
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                     required
                   />
                 </div>
@@ -284,7 +284,7 @@ export const DebtManager: React.FC = () => {
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none"
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   />
                 </div>
               </div>
@@ -298,7 +298,7 @@ export const DebtManager: React.FC = () => {
                   placeholder="e.g. Dinner split, emergency ticket"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                 />
               </div>
 

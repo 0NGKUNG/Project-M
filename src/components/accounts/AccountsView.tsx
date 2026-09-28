@@ -280,7 +280,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   placeholder="e.g. Kasikorn Bank, Wallet"
                   value={newAccName}
                   onChange={(e) => setNewAccName(e.target.value)}
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   autoFocus
                   required
                 />
@@ -312,7 +312,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     type="number"
                     value={newAccBalance}
                     onChange={(e) => setNewAccBalance(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none"
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   />
                 </div>
               </div>

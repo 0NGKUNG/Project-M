@@ -148,14 +148,14 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               step="any"
               value={amountStr}
               onChange={(e) => setAmountStr(e.target.value)}
-              className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
+              className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-sm text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
               required
             />
           </div>
 
           {/* Custom Date & Time Selectors */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3 py-2">
+            <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3.5 h-11 border border-zinc-800/80">
               <Calendar size={14} className="text-zinc-400 shrink-0" />
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-[8px] font-mono uppercase text-zinc-500">Date</span>
@@ -169,7 +169,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3 py-2">
+            <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3.5 h-11 border border-zinc-800/80">
               <Clock size={14} className="text-zinc-400 shrink-0" />
               <div className="flex flex-col flex-1 min-w-0">
                 <div className="flex items-center justify-between">
@@ -317,7 +317,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               placeholder="e.g. Lunch with team"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+              className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
             />
           </div>
 

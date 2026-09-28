@@ -484,7 +484,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   placeholder="e.g. October Budget, Holiday Trip"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
+                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   required
                 />
               </div>
@@ -516,7 +516,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                     required
                   />
                 </div>
@@ -526,7 +526,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                     required
                   />
                 </div>
@@ -542,7 +542,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   placeholder="e.g. 8000"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-sm text-white font-mono font-bold focus:outline-none border border-zinc-800/60"
+                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-sm text-white font-mono font-bold focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   required
                 />
               </div>
@@ -565,12 +565,12 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     placeholder="Limit"
                     value={tempCatAmount}
                     onChange={(e) => setTempCatAmount(e.target.value)}
-                    className="w-24 bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                    className="w-28 h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   />
                   <button
                     type="button"
                     onClick={handleAddCategoryAllocation}
-                    className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer"
+                    className="px-4 h-11 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition-colors"
                   >
                     Add
                   </button>
@@ -1202,7 +1202,7 @@ export const SettingsView: React.FC = () => {
                   placeholder="Wallet name (e.g. PayPal)"
                   value={newAccName}
                   onChange={(e) => setNewAccName(e.target.value)}
-                  className="w-full bg-[#101014] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full h-11 bg-[#101014] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   autoFocus
                 />
                 <div className="grid grid-cols-2 gap-2">
@@ -1222,7 +1222,7 @@ export const SettingsView: React.FC = () => {
                     placeholder="Initial balance"
                     value={newAccBalance}
                     onChange={(e) => setNewAccBalance(e.target.value)}
-                    className="bg-[#101014] rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                    className="w-full h-11 bg-[#101014] rounded-xl px-3.5 text-xs text-white focus:outline-none font-mono border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   />
                 </div>
                 <div className="flex justify-end gap-2">

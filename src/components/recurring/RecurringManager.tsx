@@ -248,7 +248,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                     placeholder="e.g. Netflix, Rent, Salary"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                     autoFocus
                     required
                   />
@@ -274,7 +274,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                       placeholder="0.00"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none border border-zinc-800/60"
+                      className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                       required
                     />
                   </div>

@@ -269,7 +269,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full bg-[#16161c] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                    className="w-full h-11 bg-[#16161c] border border-zinc-800/80 rounded-xl px-3.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
                   />
                 </div>
 
@@ -304,7 +304,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                     step="any"
                     value={editBalance}
                     onChange={(e) => setEditBalance(e.target.value)}
-                    className="w-full bg-[#16161c] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
+                    className="w-full h-11 bg-[#16161c] border border-zinc-800/80 rounded-xl px-3.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
                   />
                 </div>
 
