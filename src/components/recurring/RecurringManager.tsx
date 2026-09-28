@@ -3,7 +3,8 @@ import {
   RefreshCw, 
   Plus, 
   Trash2, 
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -61,7 +62,11 @@ function computeNextDue(
   return today.toISOString().split('T')[0];
 }
 
-export const RecurringManager: React.FC = () => {
+export interface RecurringManagerProps {
+  onBack?: () => void;
+}
+
+export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) => {
   const { state, addRecurring, updateRecurring, deleteRecurring } = useFinance();
   const [showAddModal, setShowAddModal] = useState(false);
   const [name, setName] = useState('');
@@ -127,9 +132,17 @@ export const RecurringManager: React.FC = () => {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Recurring &amp; Subscriptions ({recurringList.length})
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors"
+            >
+              <ArrowLeft size={16} />
+            </button>
+          )}
+          <span className="text-base font-bold tracking-tight text-white font-mono uppercase block">
+            RECURRING ({recurringList.length})
           </span>
         </div>
         <button

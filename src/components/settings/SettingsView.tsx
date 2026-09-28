@@ -16,14 +16,16 @@ import {
   Wallet,
   CalendarDays,
   X,
+  RefreshCw,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { supabase } from '../../db/supabaseClient';
 import { CustomSelect } from '../common/CustomSelect';
 import { CategoryIcon, formatCurrency } from '../common/Icons';
 import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
+import { RecurringManager } from '../recurring/RecurringManager';
 
-type SettingsSubPage = null | 'goals' | 'categories';
+type SettingsSubPage = null | 'goals' | 'categories' | 'recurring';
 
 // ─── Row components ───────────────────────────────────────────────
 
@@ -1050,6 +1052,13 @@ export const SettingsView: React.FC = () => {
       </div>
     );
 
+  if (subPage === 'recurring')
+    return (
+      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+        <RecurringManager onBack={() => setSubPage(null)} />
+      </div>
+    );
+
   // ── Main Settings ──
   return (
     <div className="pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none space-y-1">
@@ -1160,6 +1169,12 @@ export const SettingsView: React.FC = () => {
           title="Categories"
           subtitle="Manage parent & subcategories"
           onClick={() => setSubPage('categories')}
+        />
+        <Row
+          icon={<RefreshCw size={15} />}
+          title={`Recurring & Subscriptions (${state.recurring?.length || 0})`}
+          subtitle="Manage scheduled bills, salaries & subscriptions"
+          onClick={() => setSubPage('recurring')}
         />
         <Row
           icon={<Wallet size={15} />}
