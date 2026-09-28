@@ -356,21 +356,21 @@ export const StatsView: React.FC = () => {
                     stroke="#161620"
                     strokeWidth="5"
                   />
-                  {/* Category Arcs - Thinner Modern Ring */}
+                  {/* Category Arcs - Dynamic Ring for All Categories */}
                   {(() => {
                     const radius = 40;
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
-                    const count = Math.min(categoryOutflows.length, 5);
-                    // Balanced gap length in SVG arc units so gaps are clear regardless of segment size
-                    const gapArc = count > 1 ? 7.5 : 0;
+                    const count = categoryOutflows.length;
+                    // Dynamically scale gapArc based on total category count so gaps stay visible without overlapping
+                    const gapArc = count > 1 ? Math.min(6, Math.max(1.5, 25 / count)) : 0;
                     const totalGaps = count > 1 ? count * gapArc : 0;
                     const availableCircumference = Math.max(0, circumference - totalGaps);
 
                     const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
                     let currentOffset = 0;
 
-                    return categoryOutflows.slice(0, 5).map((item, idx) => {
+                    return categoryOutflows.map((item, idx) => {
                       const pct = totalExpense > 0 ? item.amount / totalExpense : 0;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
@@ -380,7 +380,7 @@ export const StatsView: React.FC = () => {
                         strokeDashoffset = 0;
                       } else {
                         // Scale slice length relative to available circumference after accounting for gaps
-                        strokeDash = Math.max(2.5, pct * availableCircumference);
+                        strokeDash = Math.max(1.5, pct * availableCircumference);
                         strokeDashoffset = -(currentOffset + gapArc / 2);
                         // Move offset forward by slice arc length + gap arc length
                         currentOffset += strokeDash + gapArc;
@@ -418,9 +418,9 @@ export const StatsView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column: Category List with Percentage Bars (Always on the right, max 5) */}
-              <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5">
-                {categoryOutflows.slice(0, 5).map((item, idx) => {
+              {/* Right Column: Category List with Percentage Bars */}
+              <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
+                {categoryOutflows.map((item, idx) => {
                   const cat = getCategory(item.catId);
                   const pct = totalExpense > 0 ? Math.round((item.amount / totalExpense) * 100) : 0;
                   const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
@@ -483,21 +483,21 @@ export const StatsView: React.FC = () => {
                     stroke="#161620"
                     strokeWidth="5"
                   />
-                  {/* Category Arcs - Thinner Modern Ring */}
+                  {/* Category Arcs - Dynamic Ring for All Categories */}
                   {(() => {
                     const radius = 40;
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
-                    const count = Math.min(categoryInflows.length, 5);
-                    // Balanced gap length in SVG arc units so gaps are clear regardless of segment size
-                    const gapArc = count > 1 ? 7.5 : 0;
+                    const count = categoryInflows.length;
+                    // Dynamically scale gapArc based on total category count so gaps stay visible without overlapping
+                    const gapArc = count > 1 ? Math.min(6, Math.max(1.5, 25 / count)) : 0;
                     const totalGaps = count > 1 ? count * gapArc : 0;
                     const availableCircumference = Math.max(0, circumference - totalGaps);
 
                     const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
                     let currentOffset = 0;
 
-                    return categoryInflows.slice(0, 5).map((item, idx) => {
+                    return categoryInflows.map((item, idx) => {
                       const pct = totalIncome > 0 ? item.amount / totalIncome : 0;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
@@ -507,7 +507,7 @@ export const StatsView: React.FC = () => {
                         strokeDashoffset = 0;
                       } else {
                         // Scale slice length relative to available circumference after accounting for gaps
-                        strokeDash = Math.max(2.5, pct * availableCircumference);
+                        strokeDash = Math.max(1.5, pct * availableCircumference);
                         strokeDashoffset = -(currentOffset + gapArc / 2);
                         // Move offset forward by slice arc length + gap arc length
                         currentOffset += strokeDash + gapArc;
@@ -545,9 +545,9 @@ export const StatsView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column: Category List with Percentage Bars (Always on the right, max 5) */}
-              <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5">
-                {categoryInflows.slice(0, 5).map((item, idx) => {
+              {/* Right Column: Category List with Percentage Bars */}
+              <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
+                {categoryInflows.map((item, idx) => {
                   const cat = getCategory(item.catId);
                   const pct = totalIncome > 0 ? Math.round((item.amount / totalIncome) * 100) : 0;
                   const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
