@@ -326,7 +326,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
 
       {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
       <div ref={chartFrameRef} className="w-full flex-1 min-h-0 relative select-none">
-        <div className="relative w-full h-48 sm:h-56">
+        <div className="relative w-full h-36 sm:h-52">
           <svg
             ref={svgRef}
             viewBox={`0 0 ${width} ${height}`}
