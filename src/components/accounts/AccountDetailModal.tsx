@@ -20,7 +20,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   useBackButton(Boolean(account), onClose);
   const { state, accountBalances, updateAccount, deleteAccount } = useFinance();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  
+
   // Account Editing State
   const [isEditingAccount, setIsEditingAccount] = useState(false);
   const [editName, setEditName] = useState('');
@@ -28,58 +28,88 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   const [editBalance, setEditBalance] = useState('0');
   const [isDeleting, setIsDeleting] = useState(false);
 
-
-  // All hooks must be above any conditional early return.
-  // accountTransactions and currentBalance used inside useMemo — compute them here with safe guards.
+  // ─── All hooks above the early-return guard ──────────────────────────────
   const currentBalance = account ? (accountBalances[account.id] ?? account.initialBalance) : 0;
+
   const accountTransactions = React.useMemo(() => {
     if (!account) return [];
-    return state.transactions.filter(
+    return [...state.transactions.filter(
       (t) => t.accountId === account.id || t.toAccountId === account.id
-    );
+    )].sort((a, b) => {
+      const da = new Date(`${a.date}T${a.time || '00:00'}`).getTime();
+      const db = new Date(`${b.date}T${b.time || '00:00'}`).getTime();
+      return db - da;
+    });
   }, [account, state.transactions]);
 
-  // Compute 14-day chronological net balance trend for this specific account
-  const accountBalanceHistory = React.useMemo(() => {
+  // All-time monthly balance chart: one point per month from earliest tx → today
+  const allTimeChart = React.useMemo(() => {
     if (!account) return [];
-    const points: { date: string; label: string; netChange: number; balance: number }[] = [];
+
+    // Collect all unique months covered by transactions + the current month
+    const monthSet = new Set<string>();
+    accountTransactions.forEach((tx) => {
+      monthSet.add(tx.date.slice(0, 7)); // "YYYY-MM"
+    });
     const now = new Date();
-    const days = 14;
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    monthSet.add(currentMonth);
 
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 86400000);
-      const dateStr = d.toISOString().split('T')[0];
-      const label = `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
+    if (monthSet.size === 0) return [];
 
-      let netChange = 0;
-      accountTransactions.forEach((tx) => {
-        if (tx.date === dateStr) {
-          if (tx.accountId === account.id) {
-            if (tx.type === 'income') netChange += tx.amount;
-            else if (tx.type === 'expense') netChange -= tx.amount;
-            else if (tx.type === 'transfer') netChange -= tx.amount;
-          }
-          if (tx.toAccountId === account.id && tx.type === 'transfer') {
-            netChange += tx.amount;
-          }
-        }
-      });
+    const months = [...monthSet].sort();
 
-      points.push({ date: dateStr, label, netChange, balance: 0 });
-    }
+    // Net change per month
+    const netByMonth: Record<string, number> = {};
+    months.forEach((m) => (netByMonth[m] = 0));
+    accountTransactions.forEach((tx) => {
+      const m = tx.date.slice(0, 7);
+      if (!(m in netByMonth)) return;
+      if (tx.accountId === account.id) {
+        if (tx.type === 'income') netByMonth[m] += tx.amount;
+        else if (tx.type === 'expense') netByMonth[m] -= tx.amount;
+        else if (tx.type === 'transfer') netByMonth[m] -= tx.amount;
+      }
+      if (tx.toAccountId === account.id && tx.type === 'transfer') {
+        netByMonth[m] += tx.amount;
+      }
+    });
 
-    // Trace cumulative balance backward from current available balance
+    // Build points backward from currentBalance
+    const points: { label: string; balance: number }[] = months.map((m) => ({
+      label: new Date(`${m}-01`).toLocaleString('default', { month: 'short', year: '2-digit' }),
+      balance: 0,
+    }));
+
     let rolling = currentBalance;
     for (let i = points.length - 1; i >= 0; i--) {
       points[i].balance = rolling;
-      rolling -= points[i].netChange;
+      rolling -= netByMonth[months[i]];
     }
 
     return points;
   }, [account, currentBalance, accountTransactions]);
 
-  // Guard: nothing to render if no account selected
+  // ─── Income / Expenses totals ─────────────────────────────────────────────
+  const { totalIncome, totalExpenses } = React.useMemo(() => {
+    let income = 0;
+    let expenses = 0;
+    if (!account) return { totalIncome: 0, totalExpenses: 0 };
+    accountTransactions.forEach((t) => {
+      if (t.type === 'income' && t.accountId === account.id) income += t.amount;
+      if (t.type === 'expense' && t.accountId === account.id) expenses += t.amount;
+      if (t.type === 'transfer') {
+        if (t.accountId === account.id) expenses += t.amount;
+        if (t.toAccountId === account.id) income += t.amount;
+      }
+    });
+    return { totalIncome: income, totalExpenses: expenses };
+  }, [account, accountTransactions]);
+
+  // ─── Guard ────────────────────────────────────────────────────────────────
   if (!account) return null;
+
+  const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
 
   const handleStartEdit = () => {
     setEditName(account.name);
@@ -91,7 +121,6 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editName.trim()) return;
-
     await updateAccount({
       ...account,
       name: editName.trim(),
@@ -99,7 +128,6 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
       initialBalance: parseFloat(editBalance) || 0,
       icon: editType === 'cash' ? 'Wallet' : 'CreditCard',
     });
-
     setIsEditingAccount(false);
   };
 
@@ -112,343 +140,393 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     }
   };
 
-  // Calculate total in & out for this account (accountTransactions from useMemo above)
-  let totalIn = 0;
-  let totalOut = 0;
-  accountTransactions.forEach((t) => {
-    if (t.accountId === account.id && t.type === 'expense') totalOut += t.amount;
-    if (t.accountId === account.id && t.type === 'income') totalIn += t.amount;
-    if (t.type === 'transfer') {
-      if (t.accountId === account.id) totalOut += t.amount;
-      if (t.toAccountId === account.id) totalIn += t.amount;
+  // ─── SVG chart renderer (shared) ──────────────────────────────────────────
+  const renderChart = (points: { label: string; balance: number }[], chartId: string) => {
+    if (points.length < 2) {
+      return (
+        <div className="w-full h-full flex items-center justify-center text-[11px] font-mono text-zinc-600">
+          Not enough data yet
+        </div>
+      );
     }
-  });
+    const balances = points.map((p) => (Number.isFinite(p.balance) ? p.balance : 0));
+    const minBal = Math.min(...balances);
+    const maxBal = Math.max(...balances);
+    const diff = maxBal - minBal;
+    const range = diff > 0 ? diff : 1;
+    const W = 320;
+    const H = 80;
 
+    const coords = points.map((p, idx) => {
+      const safeBal = Number.isFinite(p.balance) ? p.balance : minBal;
+      const x = (idx / Math.max(1, points.length - 1)) * W;
+      const y = diff === 0 ? H / 2 : (H - 8) - ((safeBal - minBal) / range) * (H - 16);
+      return { x, y, ...p };
+    });
 
-  const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
+    const pointsStr = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+    const areaStr = `0,${H} ${pointsStr} ${W},${H}`;
+
+    return (
+      <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={`grad-${chartId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+        <polygon points={areaStr} fill={`url(#grad-${chartId})`} />
+        <polyline
+          points={pointsStr}
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Only show first, last, and every nth label to avoid overcrowding */}
+        {coords.map((c, i) => {
+          const isLast = i === coords.length - 1;
+          const isFirst = i === 0;
+          return (
+            <circle
+              key={i}
+              cx={c.x}
+              cy={c.y}
+              r={isLast ? 3.5 : isFirst ? 2.5 : 1.5}
+              className={
+                isLast
+                  ? 'fill-white stroke-[#0d0d12] stroke-2'
+                  : 'fill-zinc-500'
+              }
+            />
+          );
+        })}
+      </svg>
+    );
+  };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+    <div
+      className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div 
-        className="w-full max-w-lg bg-[#0e0e12] border-t sm:border border-zinc-800 sm:rounded-2xl rounded-t-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl safe-bottom cursor-default"
+      {/* Modal shell — narrow on mobile (sheet), wide on desktop */}
+      <div
+        className="w-full max-w-4xl bg-[#0e0e12] border-t lg:border border-zinc-800 rounded-t-2xl lg:rounded-2xl flex flex-col lg:flex-row overflow-hidden shadow-2xl max-h-[94vh] lg:max-h-[88vh] cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center text-white">
-              <CreditCard size={18} />
+        {/* ═══════════════════════════════════════════════════════════════════
+            LEFT COLUMN — header + cards (always visible, scrollable on mobile)
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex flex-col lg:w-[420px] lg:shrink-0 overflow-y-auto lg:overflow-y-auto lg:border-r border-zinc-800/70">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
+                <CreditCard size={18} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white leading-tight">{account.name}</h3>
+                <p className="text-xs text-zinc-500 uppercase font-mono tracking-wider">
+                  {account.type} account
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-white leading-tight">{account.name}</h3>
-              <p className="text-xs text-zinc-500 uppercase font-mono tracking-wider">
-                {account.type} account
-              </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleStartEdit}
+                title="Edit Account"
+                className="p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <Edit2 size={15} />
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                title="Delete Account"
+                className="p-2 rounded-full bg-zinc-800/80 hover:bg-rose-950/60 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
+              >
+                <Trash2 size={15} />
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer ml-0.5"
+              >
+                <X size={17} />
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={handleStartEdit}
-              title="Edit Account"
-              className="p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <Edit2 size={16} />
-            </button>
-            <button
-              onClick={handleDeleteAccount}
-              disabled={isDeleting}
-              title="Delete Account"
-              className="p-2 rounded-full bg-zinc-800/80 hover:bg-rose-950/60 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
-            >
-              <Trash2 size={16} />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer ml-1"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </div>
 
-        {/* Balance & Stats Card */}
-        <div className="px-6 py-3">
-          <div className="bg-[#14141a] rounded-2xl p-5 shadow-sm space-y-4">
-            <div>
-              <div className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
-                Current Available Balance
-              </div>
-              <div className="text-3xl sm:text-4xl font-mono font-bold text-white mt-1 tabular-nums">
-                {formatCurrency(currentBalance, state.settings.currencySymbol)}
-              </div>
-            </div>
-
-            {/* Line Net Balance Chart */}
-            <div className="pt-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold tracking-wider">
-                  Net Balance Trend (Last 14 Days)
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {formatCurrency(accountBalanceHistory[accountBalanceHistory.length - 1]?.balance ?? currentBalance, state.settings.currencySymbol)}
-                </span>
+          <div className="px-5 space-y-3 pb-5">
+            {/* ── Card 1 · Balance + Income / Expenses ── */}
+            <div className="bg-[#141418] rounded-2xl p-5 space-y-4 border border-zinc-800/50">
+              <div>
+                <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                  Total Balance
+                </div>
+                <div className="text-3xl font-mono font-bold text-white mt-1 tabular-nums">
+                  {formatCurrency(currentBalance, state.settings.currencySymbol)}
+                </div>
               </div>
 
-              <div className="relative h-28 w-full bg-[#0d0d12] rounded-xl p-2 border border-zinc-800/60 overflow-hidden">
-                {/* SVG Line Chart */}
-                {accountBalanceHistory && accountBalanceHistory.length > 1 ? (
-                  <svg className="w-full h-full overflow-visible" viewBox="0 0 320 80" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id={`grad-${account.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Gradient area fill */}
-                    {(() => {
-                      const balances = accountBalanceHistory.map((p) => (Number.isFinite(p.balance) ? p.balance : 0));
-                      const minBal = balances.length > 0 ? Math.min(...balances) : 0;
-                      const maxBal = balances.length > 0 ? Math.max(...balances) : 0;
-                      const diff = maxBal - minBal;
-                      const range = diff > 0 ? diff : 1;
-
-                      const coords = accountBalanceHistory.map((p, idx) => {
-                        const safeBal = Number.isFinite(p.balance) ? p.balance : minBal;
-                        const x = (idx / Math.max(1, accountBalanceHistory.length - 1)) * 320;
-                        const y = diff === 0 ? 40 : 72 - ((safeBal - minBal) / range) * 60;
-                        return { x, y, ...p };
-                      });
-
-                      const pointsStr = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
-                      const areaStr = `0,76 ${pointsStr} 320,76`;
-
-                      return (
-                        <>
-                          <polygon points={areaStr} fill={`url(#grad-${account.id})`} />
-                          <polyline
-                            points={pointsStr}
-                            fill="none"
-                            stroke="#ffffff"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          {/* Endpoint dots */}
-                          {coords.map((c, i) => (
-                            <circle
-                              key={i}
-                              cx={c.x}
-                              cy={c.y}
-                              r={i === coords.length - 1 ? 3.5 : 2}
-                              className={i === coords.length - 1 ? 'fill-white stroke-[#0d0d12] stroke-2' : 'fill-zinc-500'}
-                            />
-                          ))}
-                        </>
-                      );
-                    })()}
-                  </svg>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[11px] font-mono text-zinc-600">
-                    No historical changes yet
+              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800/60">
+                {/* Income */}
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
+                    <TrendingUp size={16} />
                   </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800/80">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
-                  <TrendingUp size={16} />
-                </div>
-                <div>
-                  <div className="text-[10px] text-zinc-400 uppercase font-mono">Total In</div>
-                  <div className="text-xs font-mono font-bold text-white tabular-nums">
-                    +{formatCurrency(totalIn, state.settings.currencySymbol)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-400 shrink-0">
-                  <TrendingDown size={16} />
-                </div>
-                <div>
-                  <div className="text-[10px] text-zinc-400 uppercase font-mono">Total Out</div>
-                  <div className="text-xs font-mono font-bold text-white tabular-nums">
-                    -{formatCurrency(totalOut, state.settings.currencySymbol)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Action button */}
-        <div className="px-6 py-2">
-          <button
-            onClick={() => {
-              onClose();
-              onOpenQuickAddWithAccount(account.id);
-            }}
-            className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-100 active:scale-98 text-black text-xs font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
-          >
-            <span>+ Add Transaction To This Account</span>
-          </button>
-        </div>
-
-        {/* Account History List */}
-        <div className="flex-1 overflow-y-auto px-6 py-3 space-y-3">
-          <div className="text-xs font-mono uppercase font-semibold tracking-wider text-zinc-400">
-            Account History ({accountTransactions.length})
-          </div>
-
-          {accountTransactions.length === 0 ? (
-            <div className="bg-[#121216] rounded-2xl p-8 text-center text-xs text-zinc-500">
-              No transactions recorded for this account yet.
-            </div>
-          ) : (
-            <div className="bg-[#121216] rounded-2xl divide-y divide-zinc-900 overflow-hidden">
-              {accountTransactions.map((tx) => {
-                const isIncoming = tx.type === 'income' || (tx.type === 'transfer' && tx.toAccountId === account.id);
-                const cat = getCategory(tx.categoryId);
-
-                return (
-                  <div
-                    key={tx.id}
-                    onClick={() => setEditingTransaction(tx)}
-                    className="p-3.5 flex items-center justify-between hover:bg-white/[0.04] transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                        isIncoming ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
-                      }`}>
-                        <CategoryIcon name={cat?.icon || 'Receipt'} size={17} />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-white group-hover:text-zinc-200">
-                          {tx.type === 'transfer' ? 'Transfer' : (cat?.name || 'Other')}
-                        </div>
-                        <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                          {tx.date} {tx.time && `• ${tx.time}`} {tx.note && `• ${tx.note}`}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right font-mono font-bold text-xs tabular-nums">
-                      <span className={isIncoming ? 'text-emerald-400' : 'text-white'}>
-                        {isIncoming ? '+' : '-'}{formatCurrency(tx.amount, state.settings.currencySymbol)}
-                      </span>
+                  <div>
+                    <div className="text-[9px] text-zinc-500 uppercase font-mono tracking-wider">Income</div>
+                    <div className="text-sm font-mono font-bold text-emerald-400 tabular-nums">
+                      +{formatCurrency(totalIncome, state.settings.currencySymbol)}
                     </div>
                   </div>
-                );
-              })}
+                </div>
+
+                {/* Expenses */}
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-400 shrink-0">
+                    <TrendingDown size={16} />
+                  </div>
+                  <div>
+                    <div className="text-[9px] text-zinc-500 uppercase font-mono tracking-wider">Expenses</div>
+                    <div className="text-sm font-mono font-bold text-rose-400 tabular-nums">
+                      -{formatCurrency(totalExpenses, state.settings.currencySymbol)}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Edit / Delete Transaction Modal — conditionally mounted so transaction is always non-null inside */}
-        {editingTransaction && (
-          <EditTransactionModal
-            key={editingTransaction.id}
-            transaction={editingTransaction}
-            onClose={() => setEditingTransaction(null)}
-          />
-        )}
-
-        {/* Edit Account Modal */}
-        {isEditingAccount && (
-          <div 
-            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs animate-fade-in cursor-pointer"
-            onClick={() => setIsEditingAccount(false)}
-          >
-            <div 
-              className="w-full max-w-sm bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
-              onClick={(e) => e.stopPropagation()}
-            >
+            {/* ── Card 2 · All-time Balance Chart ── */}
+            <div className="bg-[#141418] rounded-2xl p-5 border border-zinc-800/50 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white font-mono">Edit Account</h3>
+                <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold tracking-wider">
+                  All-time Balance Trend
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400 tabular-nums">
+                  {formatCurrency(currentBalance, state.settings.currencySymbol)}
+                </span>
+              </div>
+
+              <div className="relative h-32 w-full bg-[#0d0d12] rounded-xl p-2 border border-zinc-800/60 overflow-hidden">
+                {renderChart(allTimeChart, `alltime-${account.id}`)}
+              </div>
+
+              {/* Month labels — show a few evenly-spaced */}
+              {allTimeChart.length >= 2 && (
+                <div className="flex justify-between px-1">
+                  {(() => {
+                    const total = allTimeChart.length;
+                    // Pick at most 5 labels: first, ~25%, ~50%, ~75%, last
+                    const idxs = total <= 5
+                      ? allTimeChart.map((_, i) => i)
+                      : [0, Math.floor(total * 0.25), Math.floor(total * 0.5), Math.floor(total * 0.75), total - 1];
+                    const unique = [...new Set(idxs)];
+                    return unique.map((i) => (
+                      <span key={i} className="text-[9px] font-mono text-zinc-600">
+                        {allTimeChart[i].label}
+                      </span>
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* ── Add Transaction button (always visible on mobile; hidden on desktop — shown in right col) ── */}
+            <button
+              onClick={() => {
+                onClose();
+                onOpenQuickAddWithAccount(account.id);
+              }}
+              className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-100 active:scale-[0.98] text-black text-xs font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all lg:hidden"
+            >
+              + Add Transaction To This Account
+            </button>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            RIGHT COLUMN — Transactions (right on desktop, below on mobile)
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          {/* Desktop: sticky add button at top of right panel */}
+          <div className="hidden lg:block px-5 pt-5 pb-3 shrink-0 border-b border-zinc-800/60">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-mono uppercase font-semibold tracking-wider text-zinc-400">
+                Account History ({accountTransactions.length})
+              </span>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenQuickAddWithAccount(account.id);
+                }}
+                className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-100 text-black text-xs font-bold shadow cursor-pointer transition-all"
+              >
+                + Add Transaction
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile: section label */}
+          <div className="lg:hidden px-5 pt-1 pb-2 shrink-0">
+            <span className="text-xs font-mono uppercase font-semibold tracking-wider text-zinc-400">
+              Account History ({accountTransactions.length})
+            </span>
+          </div>
+
+          {/* Transaction list — scrollable */}
+          <div className="flex-1 overflow-y-auto px-5 pb-5 pt-0 lg:pt-2 space-y-1">
+            {accountTransactions.length === 0 ? (
+              <div className="bg-[#121216] rounded-2xl p-8 text-center text-xs text-zinc-500 mt-2">
+                No transactions recorded for this account yet.
+              </div>
+            ) : (
+              <div className="bg-[#121216] rounded-2xl divide-y divide-zinc-900 overflow-hidden">
+                {accountTransactions.map((tx) => {
+                  const isIncoming =
+                    tx.type === 'income' ||
+                    (tx.type === 'transfer' && tx.toAccountId === account.id);
+                  const cat = getCategory(tx.categoryId);
+                  return (
+                    <div
+                      key={tx.id}
+                      onClick={() => setEditingTransaction(tx)}
+                      className="px-4 py-3 flex items-center justify-between hover:bg-white/[0.04] transition-colors cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            isIncoming ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+                          }`}
+                        >
+                          <CategoryIcon name={cat?.icon || 'Receipt'} size={17} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-semibold text-white group-hover:text-zinc-200">
+                            {tx.type === 'transfer' ? 'Transfer' : cat?.name || 'Other'}
+                          </div>
+                          <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                            {tx.date}
+                            {tx.time && ` · ${tx.time}`}
+                            {tx.note && ` · ${tx.note}`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono font-bold text-xs tabular-nums shrink-0 ml-3">
+                        <span className={isIncoming ? 'text-emerald-400' : 'text-white'}>
+                          {isIncoming ? '+' : '-'}
+                          {formatCurrency(tx.amount, state.settings.currencySymbol)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Edit Transaction Modal */}
+      {editingTransaction && (
+        <EditTransactionModal
+          key={editingTransaction.id}
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+        />
+      )}
+
+      {/* Edit Account Modal */}
+      {isEditingAccount && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs cursor-pointer"
+          onClick={() => setIsEditingAccount(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white font-mono">Edit Account</h3>
+              <button
+                type="button"
+                onClick={() => setIsEditingAccount(false)}
+                className="p-1 rounded-full text-zinc-400 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAccount} className="space-y-3">
+              <div>
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                  Account Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full h-11 bg-[#16161c] border border-zinc-800/80 rounded-xl px-3.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                  Account Type
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['bank', 'cash', 'credit', 'investment'] as Account['type'][]).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setEditType(t)}
+                      className={`py-2 px-3 rounded-xl text-xs font-mono capitalize transition-all cursor-pointer ${
+                        editType === t
+                          ? 'bg-white text-black font-bold'
+                          : 'bg-[#16161c] text-zinc-400 hover:text-white border border-zinc-800/80'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                  Initial Balance
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={editBalance}
+                  onChange={(e) => setEditBalance(e.target.value)}
+                  className="w-full h-11 bg-[#16161c] border border-zinc-800/80 rounded-xl px-3.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsEditingAccount(false)}
-                  className="p-1 rounded-full text-zinc-400 hover:text-white"
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-bold font-mono hover:bg-zinc-700 cursor-pointer"
                 >
-                  <X size={16} />
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-white text-black text-xs font-bold font-mono hover:bg-zinc-200 cursor-pointer shadow-md"
+                >
+                  Save Changes
                 </button>
               </div>
-
-              <form onSubmit={handleSaveAccount} className="space-y-3">
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                    Account Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="w-full h-11 bg-[#16161c] border border-zinc-800/80 rounded-xl px-3.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                    Account Type
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['bank', 'cash', 'credit', 'investment'] as Account['type'][]).map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setEditType(t)}
-                        className={`py-2 px-3 rounded-xl text-xs font-mono capitalize transition-all cursor-pointer ${
-                          editType === t
-                            ? 'bg-white text-black font-bold'
-                            : 'bg-[#16161c] text-zinc-400 hover:text-white border border-zinc-800/80'
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                    Initial Balance
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={editBalance}
-                    onChange={(e) => setEditBalance(e.target.value)}
-                    className="w-full h-11 bg-[#16161c] border border-zinc-800/80 rounded-xl px-3.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
-                  />
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingAccount(false)}
-                    className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-bold font-mono hover:bg-zinc-700 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-2.5 rounded-xl bg-white text-black text-xs font-bold font-mono hover:bg-zinc-200 cursor-pointer shadow-md"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </form>
-            </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
