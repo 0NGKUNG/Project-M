@@ -255,25 +255,20 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
 
   return (
     <div className="bg-[#101014] rounded-2xl p-4 sm:p-5 border border-zinc-900/60 shadow-sm flex flex-col space-y-2.5 overflow-hidden">
-      {/* Chart Header - Clean, compact header without space-wasting badge */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-mono font-bold tracking-wider text-zinc-400 uppercase block truncate">
-          Income, Expenses &amp; Net Worth
+      {/* Chart Header - Minimalist Legend and Totals */}
+      <div className="flex items-center justify-end gap-3 text-[10px] sm:text-[11px] font-mono text-zinc-500">
+        <span className="flex items-center gap-1.5 shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+          <span className="text-zinc-400">Net Worth</span>
         </span>
-        <div className="flex items-center gap-3 text-[10px] sm:text-[11px] font-mono text-zinc-500 shrink-0">
-          <span className="flex items-center gap-1.5 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            <span className="hidden xs:inline">Net Worth</span>
-          </span>
-          <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
-          </span>
-          <span className="flex items-center gap-1.5 text-zinc-400 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
-          </span>
-        </div>
+        <span className="flex items-center gap-1.5 text-emerald-400 shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
+        </span>
+        <span className="flex items-center gap-1.5 text-rose-400 shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+          <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
+        </span>
       </div>
 
       {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
