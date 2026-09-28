@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { 
   Wallet, 
   Plus, 
-  PieChart,
   RefreshCw,
   Users,
-  CreditCard
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
@@ -213,31 +211,22 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     onClick={() => onSelectAccount(acc)}
                     className={`relative p-4 rounded-2xl bg-linear-to-br ${gradientClass} border hover:border-zinc-700 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] active:scale-[0.98] shadow-lg group overflow-hidden`}
                   >
-                    {/* Folder / Card subtle top sheen accent */}
+                    {/* Subtle sheen accent */}
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.025] rounded-full blur-xl pointer-events-none -mr-6 -mt-6" />
 
-                    {/* Top Row: Icon + Type Badge */}
-                    <div className="flex items-center justify-between gap-1.5 relative z-10">
-                      <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
-                        {acc.type === 'cash' ? (
-                          <Wallet size={13} />
-                        ) : acc.type === 'savings' ? (
-                          <PieChart size={13} />
-                        ) : (
-                          <CreditCard size={13} />
-                        )}
-                      </div>
-                      <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 bg-black/40 px-2 py-0.5 rounded-md border border-white/5 font-bold">
-                        {acc.type}
-                      </span>
-                    </div>
-
-                    {/* Bottom Row: Name + Balance */}
-                    <div className="mt-3 relative z-10">
-                      <div className="text-[11px] font-bold text-zinc-300 group-hover:text-white transition-colors truncate">
+                    {/* Top: Account name */}
+                    <div className="relative z-10">
+                      <div className="text-[12px] font-bold text-zinc-300 group-hover:text-white transition-colors truncate leading-tight">
                         {acc.name}
                       </div>
-                      <div className={`text-sm sm:text-base font-extrabold font-mono tracking-tight truncate mt-0.5 ${isNegative ? 'text-rose-400' : 'text-white'}`}>
+                    </div>
+
+                    {/* Bottom-right: Balance label + value */}
+                    <div className="relative z-10 flex flex-col items-end mt-3">
+                      <div className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 mb-0.5">
+                        Balance
+                      </div>
+                      <div className={`text-sm sm:text-base font-extrabold font-mono tracking-tight truncate ${isNegative ? 'text-rose-400' : 'text-white'}`}>
                         {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
                       </div>
                     </div>
