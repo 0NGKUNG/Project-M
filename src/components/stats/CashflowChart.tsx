@@ -252,19 +252,28 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
   const activeX = hoveredIndex !== null ? getX(hoveredIndex) : 0;
 
   // Ensure X-axis labels are evenly spaced and legible across all screen sizes
+  // Rightmost label is always included; leftmost label is excluded so spacing is proper without crowd/overlap
   const axisIndices = useMemo(() => {
     const totalPoints = chartData.length;
     if (totalPoints <= 1) return totalPoints ? [0] : [];
 
     const availableWidth = chartWidth || 280;
-    // ~85px per label — enough room for "28 Sep" style text at all sizes; min 2
-    const maxLabels = Math.max(2, Math.min(totalPoints, Math.floor(availableWidth / 85)));
+    // ~75px minimum spacing per label based on container width
+    const targetLabelCount = Math.max(2, Math.min(totalPoints, Math.floor(availableWidth / 75)));
 
+    // Calculate step distance between labels
+    const step = (totalPoints - 1) / (targetLabelCount - 1);
     const indices: number[] = [];
-    for (let i = 0; i < maxLabels; i++) {
-      indices.push(Math.round((i * (totalPoints - 1)) / (maxLabels - 1)));
+
+    // Always include the rightmost point (totalPoints - 1) and step backward
+    for (let i = targetLabelCount - 1; i >= 0; i--) {
+      const idx = Math.round(i * step);
+      // Omit index 0 (most left) per request
+      if (idx > 0) {
+        indices.unshift(idx);
+      }
     }
-    // Deduplicate in case of small datasets
+
     return Array.from(new Set(indices));
   }, [chartData.length, chartWidth]);
 
