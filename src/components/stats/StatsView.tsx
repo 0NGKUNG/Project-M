@@ -71,9 +71,9 @@ export const StatsView: React.FC = () => {
   const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
 
   return (
-    <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+    <div className="space-y-3 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
       {/* Timeframe Pill Selector */}
-      <div className="flex items-center justify-between pt-1">
+      <div className="h-8 flex items-center justify-between pt-1">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white font-mono">STATS</h2>
         </div>
