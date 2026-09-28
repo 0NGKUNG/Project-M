@@ -361,15 +361,14 @@ export const StatsView: React.FC = () => {
                     const radius = 40;
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
-                    const gap = 3.5;
-                    const totalDeduction = strokeWidth + gap;
-                    const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
                     const count = Math.min(categoryOutflows.length, 5);
+                    const gap = count > 1 ? 3.5 : 0;
+                    const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
                     let accumulatedPercent = 0;
 
                     return categoryOutflows.slice(0, 5).map((item, idx) => {
                       const pct = totalExpense > 0 ? item.amount / totalExpense : 0;
-                      const arcLength = pct * circumference;
+                      const rawArcLength = pct * circumference;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
 
@@ -377,8 +376,9 @@ export const StatsView: React.FC = () => {
                         strokeDash = circumference;
                         strokeDashoffset = 0;
                       } else {
-                        const deduction = Math.min(totalDeduction, Math.max(strokeWidth, arcLength * 0.75));
-                        strokeDash = Math.max(0.5, arcLength - deduction);
+                        // Max deduction allowed so small percentages (like 1%) remain visible dots
+                        const deduction = Math.min(gap, Math.max(0, rawArcLength - 1.5));
+                        strokeDash = Math.max(1.5, rawArcLength - deduction);
                         strokeDashoffset = -(accumulatedPercent * circumference + deduction / 2);
                       }
                       accumulatedPercent += pct;
@@ -423,23 +423,26 @@ export const StatsView: React.FC = () => {
                   const color = EXPENSE_PALETTE[idx % EXPENSE_PALETTE.length];
 
                   return (
-                    <div key={item.catId} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                          <CategoryIcon name={cat?.icon || 'Tag'} size={13} className="text-zinc-400 shrink-0" />
-                          <span className="text-white font-medium text-[11px] truncate">{cat?.name || 'Category'}</span>
-                        </div>
-                        <div className="font-mono text-[11px] text-zinc-300 shrink-0">
-                          {formatCurrency(item.amount, state.settings.currencySymbol)}{' '}
-                          <span className="text-[10px] text-zinc-500 font-medium">({pct}%)</span>
-                        </div>
+                    <div key={item.catId} className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800/50 flex items-center justify-center shrink-0">
+                        <CategoryIcon name={cat?.icon || 'Tag'} size={18} className="text-zinc-300" />
                       </div>
-                      <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, backgroundColor: color }}
-                        />
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-white font-medium text-[11px] truncate">{cat?.name || 'Category'}</span>
+                          <span className="font-mono text-[11px] text-zinc-300 shrink-0 ml-2">
+                            {formatCurrency(item.amount, state.settings.currencySymbol)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%`, backgroundColor: color }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono font-medium text-zinc-400 shrink-0">{pct}%</span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -481,15 +484,14 @@ export const StatsView: React.FC = () => {
                     const radius = 40;
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
-                    const gap = 3.5;
-                    const totalDeduction = strokeWidth + gap;
-                    const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
                     const count = Math.min(categoryInflows.length, 5);
+                    const gap = count > 1 ? 3.5 : 0;
+                    const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
                     let accumulatedPercent = 0;
 
                     return categoryInflows.slice(0, 5).map((item, idx) => {
                       const pct = totalIncome > 0 ? item.amount / totalIncome : 0;
-                      const arcLength = pct * circumference;
+                      const rawArcLength = pct * circumference;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
 
@@ -497,8 +499,9 @@ export const StatsView: React.FC = () => {
                         strokeDash = circumference;
                         strokeDashoffset = 0;
                       } else {
-                        const deduction = Math.min(totalDeduction, Math.max(strokeWidth, arcLength * 0.75));
-                        strokeDash = Math.max(0.5, arcLength - deduction);
+                        // Max deduction allowed so small percentages (like 1%) remain visible dots
+                        const deduction = Math.min(gap, Math.max(0, rawArcLength - 1.5));
+                        strokeDash = Math.max(1.5, rawArcLength - deduction);
                         strokeDashoffset = -(accumulatedPercent * circumference + deduction / 2);
                       }
                       accumulatedPercent += pct;
@@ -543,23 +546,26 @@ export const StatsView: React.FC = () => {
                   const color = INCOME_PALETTE[idx % INCOME_PALETTE.length];
 
                   return (
-                    <div key={item.catId} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                          <CategoryIcon name={cat?.icon || 'Tag'} size={13} className="text-zinc-400 shrink-0" />
-                          <span className="text-white font-medium text-[11px] truncate">{cat?.name || 'Income'}</span>
-                        </div>
-                        <div className="font-mono text-[11px] text-zinc-300 shrink-0">
-                          +{formatCurrency(item.amount, state.settings.currencySymbol)}{' '}
-                          <span className="text-[10px] text-zinc-500 font-medium">({pct}%)</span>
-                        </div>
+                    <div key={item.catId} className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800/50 flex items-center justify-center shrink-0">
+                        <CategoryIcon name={cat?.icon || 'Tag'} size={18} className="text-zinc-300" />
                       </div>
-                      <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, backgroundColor: color }}
-                        />
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-white font-medium text-[11px] truncate">{cat?.name || 'Income'}</span>
+                          <span className="font-mono text-[11px] text-zinc-300 shrink-0 ml-2">
+                            +{formatCurrency(item.amount, state.settings.currencySymbol)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%`, backgroundColor: color }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono font-medium text-zinc-400 shrink-0">{pct}%</span>
+                        </div>
                       </div>
                     </div>
                   );
