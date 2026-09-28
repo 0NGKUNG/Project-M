@@ -43,13 +43,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         </button>
 
         {/* Center Quick Add Floating Button */}
-        <div className="flex-1 flex justify-center -mt-5">
+        <div className="flex-1 flex justify-center -mt-7">
           <button
             onClick={onOpenQuickAdd}
-            className="w-13 h-13 rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-90 active:bg-zinc-200 transition-all cursor-pointer"
+            className="w-15 h-15 rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_24px_rgba(255,255,255,0.25)] active:scale-90 active:bg-zinc-200 transition-all cursor-pointer ring-4 ring-[#09090b]"
             aria-label="Quick Add Transaction"
           >
-            <Plus size={26} strokeWidth={2.8} />
+            <Plus size={30} strokeWidth={2.8} />
           </button>
         </div>
 
