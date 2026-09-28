@@ -362,7 +362,7 @@ export const StatsView: React.FC = () => {
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = categoryOutflows.length;
-                    const gap = count > 1 ? Math.min(12, (circumference * 0.4) / count) : 0;
+                    const gap = count > 1 ? 6.5 : 0;
                     const totalGaps = count * gap;
                     const availableCircumference = circumference - totalGaps;
                     const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
@@ -484,7 +484,7 @@ export const StatsView: React.FC = () => {
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = categoryInflows.length;
-                    const gap = count > 1 ? Math.min(12, (circumference * 0.4) / count) : 0;
+                    const gap = count > 1 ? 6.5 : 0;
                     const totalGaps = count * gap;
                     const availableCircumference = circumference - totalGaps;
                     const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
