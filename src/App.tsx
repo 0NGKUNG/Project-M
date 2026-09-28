@@ -98,8 +98,8 @@ export const AppContent: React.FC = () => {
   }, [state.settings.quickAddKeybind, isQuickAddOpen, selectedAccount]);
 
   return (
-    <div className="min-h-screen bg-black text-[#f4f4f5] flex justify-center selection:bg-white selection:text-black antialiased">
-      <div className="w-full flex min-h-screen bg-[#060608]">
+    <div className="h-full h-[100dvh] bg-black text-[#f4f4f5] flex justify-center selection:bg-white selection:text-black antialiased overflow-hidden">
+      <div className="w-full flex h-full h-[100dvh] bg-[#060608] overflow-hidden">
         {/* Desktop / Laptop Left Sidebar */}
         <Sidebar
           currentTab={currentTab}
@@ -108,9 +108,9 @@ export const AppContent: React.FC = () => {
         />
 
         {/* Dynamic Main View Area with Mobile Swipe Navigation */}
-        <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden bg-[#060608]">
+        <div className="flex-1 flex flex-col h-full h-[100dvh] overflow-hidden bg-[#060608] relative">
           {/* Desktop display: static view without carousel overhead */}
-          <main className="hidden lg:block flex-1 w-full py-8 px-6">
+          <main className="hidden lg:block flex-1 w-full py-8 px-6 overflow-y-auto">
             {currentTab === 'today' && (
               <TodayView
                 onOpenQuickAdd={handleOpenQuickAdd}
@@ -131,10 +131,10 @@ export const AppContent: React.FC = () => {
           <div
             ref={containerRef}
             onScroll={handleScroll}
-            className="lg:hidden flex-1 w-full flex overflow-x-auto page-carousel-container no-scrollbar"
+            className="lg:hidden flex-1 w-full flex overflow-x-auto page-carousel-container no-scrollbar overscroll-x-none"
           >
             {/* View 1: Today */}
-            <div className="w-full shrink-0 page-carousel-item overflow-y-auto pt-3">
+            <div className="w-full h-full shrink-0 page-carousel-item overflow-y-auto overscroll-y-contain pt-3">
               <TodayView
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigateTab={handleTabChange}
@@ -142,12 +142,12 @@ export const AppContent: React.FC = () => {
             </div>
 
             {/* View 2: Stats */}
-            <div className="w-full shrink-0 page-carousel-item overflow-y-auto pt-3">
+            <div className="w-full h-full shrink-0 page-carousel-item overflow-y-auto overscroll-y-contain pt-3">
               <StatsView />
             </div>
 
             {/* View 3: Accounts */}
-            <div className="w-full shrink-0 page-carousel-item overflow-y-auto pt-3">
+            <div className="w-full h-full shrink-0 page-carousel-item overflow-y-auto overscroll-y-contain pt-3">
               <AccountsView
                 onSelectAccount={(acc) => setSelectedAccount(acc)}
                 onOpenQuickAddWithAccount={handleOpenQuickAdd}
@@ -155,7 +155,7 @@ export const AppContent: React.FC = () => {
             </div>
 
             {/* View 4: Settings */}
-            <div className="w-full shrink-0 page-carousel-item overflow-y-auto pt-3">
+            <div className="w-full h-full shrink-0 page-carousel-item overflow-y-auto overscroll-y-contain pt-3">
               <SettingsView />
             </div>
           </div>

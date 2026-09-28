@@ -74,7 +74,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
   const getAccount = (accId: string) => state.accounts.find((a) => a.id === accId);
 
   return (
-    <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+    <div className="space-y-6 pb-24 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
       {/* Top Day Switcher */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-2">
