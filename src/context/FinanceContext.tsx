@@ -166,15 +166,33 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           createdAt: Number(d.created_at || d.createdAt || Date.now()),
         })) : prev.debts,
         settings: stRes.data ? {
-          currencySymbol: stRes.data.currency_symbol || '$',
-          currencyCode: stRes.data.currency_code || 'USD',
+          currencySymbol: stRes.data.currency_symbol || prev.settings.currencySymbol || '$',
+          currencyCode: stRes.data.currency_code || prev.settings.currencyCode || 'USD',
           monochromeOnly: false,
-          vibrateOnTap: stRes.data.vibrate_on_tap ?? true,
+          vibrateOnTap: stRes.data.vibrate_on_tap ?? prev.settings.vibrateOnTap ?? true,
           quickAddKeybind: stRes.data.quick_add_keybind || prev.settings.quickAddKeybind || 'n',
           weekStartDay: stRes.data.week_start_day ?? prev.settings.weekStartDay ?? 1,
           goals: stRes.data.goals || prev.settings.goals,
         } : prev.settings,
       }));
+
+      // If Supabase does not have an app_settings row yet, upload the current settings so it is persisted in the cloud!
+      if (!stRes.data && isSupabaseConfigured && supabase) {
+        try {
+          const currentSettings = loadFinanceData().settings;
+          await supabase.from('settings').upsert({
+            id: 'app_settings',
+            currency_symbol: currentSettings.currencySymbol,
+            currency_code: currentSettings.currencyCode,
+            vibrate_on_tap: currentSettings.vibrateOnTap,
+            quick_add_keybind: currentSettings.quickAddKeybind,
+            week_start_day: currentSettings.weekStartDay,
+            goals: currentSettings.goals,
+          });
+        } catch (seedErr) {
+          console.warn('Initial settings sync to Supabase notice:', seedErr);
+        }
+      }
     } catch (e) {
       console.warn('Supabase fetch notice:', e);
     } finally {
@@ -666,7 +684,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('settings').upsert({
+        const payload: any = {
           id: 'app_settings',
           currency_symbol: updated.currencySymbol,
           currency_code: updated.currencyCode,
@@ -674,7 +692,22 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           quick_add_keybind: updated.quickAddKeybind,
           week_start_day: updated.weekStartDay,
           goals: updated.goals,
-        });
+        };
+
+        const { error } = await supabase.from('settings').upsert(payload);
+        if (error) {
+          console.warn('Full settings upsert failed, falling back to core columns:', error);
+          // If columns like week_start_day or goals don't exist yet in user's SQL table, fallback to core settings
+          const { error: fallbackError } = await supabase.from('settings').upsert({
+            id: 'app_settings',
+            currency_symbol: updated.currencySymbol,
+            currency_code: updated.currencyCode,
+            vibrate_on_tap: updated.vibrateOnTap,
+          });
+          if (fallbackError) {
+            console.error('Supabase fallback settings upsert error:', fallbackError);
+          }
+        }
       } catch (err) {
         console.warn('Supabase settings upsert error:', err);
       }
