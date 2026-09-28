@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className={`
         hidden lg:flex flex-col bg-[#09090c] shrink-0 select-none justify-between
         transition-[width] duration-300 ease-in-out overflow-visible relative
-        ${collapsed ? 'w-[72px]' : 'w-72'}
+        ${collapsed ? 'w-24' : 'w-72'}
       `}
     >
       {/* Keep the toggle outside the content column so it never competes with the wordmark. */}
@@ -42,21 +42,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={onToggleCollapse}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="absolute top-5 -right-3.5 z-30 w-7 h-7 rounded-xl bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-lg"
+        className="absolute top-5 -right-4 z-30 w-8 h-8 rounded-full bg-[#18181d] border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500 flex items-center justify-center text-zinc-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 transition-all cursor-pointer shadow-lg"
       >
-        {collapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
+        {collapsed ? <ChevronRight size={16} strokeWidth={2.5} /> : <ChevronLeft size={16} strokeWidth={2.5} />}
       </button>
 
       {/* ── Top section ── */}
-      <div className={`flex flex-col ${collapsed ? 'px-3 pt-6' : 'p-6'}`}>
+      <div className="flex flex-col p-6">
 
         {/* Brand */}
-        <div className={`mb-8 flex h-8 items-center overflow-hidden ${collapsed ? 'justify-center' : 'px-2'}`}>
-          {collapsed ? (
-            <div className="text-xl font-extrabold text-white font-display tracking-wider text-center">N</div>
-          ) : (
-            <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">NØVA</h1>
-          )}
+        <div className="mb-8 flex h-8 items-center overflow-hidden">
+          <h1 className="text-2xl font-extrabold text-white leading-tight font-display tracking-wider">
+            {collapsed ? 'N' : 'NØVA'}
+          </h1>
         </div>
 
         {/* Quick Add */}
@@ -119,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* ── Footer ── */}
-      <div className={`${collapsed ? 'p-3' : 'p-6'}`}>
+      <div className="p-6">
         {collapsed ? (
           <div
             title="Sovereign Vault — Zero leak • Local / Cloud"
