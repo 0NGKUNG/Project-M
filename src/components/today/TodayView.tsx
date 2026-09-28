@@ -296,11 +296,14 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
         )}
       </div>
 
-      {/* Edit / Delete Transaction Modal */}
-      <EditTransactionModal
-        transaction={editingTransaction}
-        onClose={() => setEditingTransaction(null)}
-      />
+      {/* Edit / Delete Transaction Modal — conditionally mounted so transaction is always non-null inside */}
+      {editingTransaction && (
+        <EditTransactionModal
+          key={editingTransaction.id}
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+        />
+      )}
     </div>
   );
 };
