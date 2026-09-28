@@ -345,7 +345,7 @@ export const StatsView: React.FC = () => {
           ) : (
             <div className="flex flex-row items-center gap-3 sm:gap-4 lg:gap-5 pt-1">
               {/* Left Column: Multi-segment Circular Ring Donut Chart */}
-              <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-44 lg:h-44 shrink-0 flex items-center justify-center">
+              <div className="relative w-44 h-44 sm:w-52 sm:h-52 md:w-56 md:h-56 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   {/* Subtle Background Track Circle */}
                   <circle
@@ -404,17 +404,17 @@ export const StatsView: React.FC = () => {
 
                 {/* Center Label and Amount matching modern reference */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
-                  <span className="text-[9px] sm:text-[10px] text-zinc-400 font-medium tracking-tight leading-tight">
+                  <span className="text-[10px] sm:text-xs text-zinc-400 font-medium tracking-tight leading-tight">
                     Spent this period
                   </span>
-                  <span className="text-xs sm:text-sm font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[80px] sm:max-w-[100px] md:max-w-[120px]">
+                  <span className="text-sm sm:text-base font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[110px] sm:max-w-[140px]">
                     {formatCurrency(totalExpense, state.settings.currencySymbol)}
                   </span>
                 </div>
               </div>
 
               {/* Right Column: Category List with Percentage Bars (Top 5) */}
-              <div className="flex-1 min-w-0 flex flex-col justify-center h-32 sm:h-36 md:h-40 lg:h-44 py-0.5 space-y-1 sm:space-y-1.5">
+              <div className="flex-1 min-w-0 flex flex-col justify-center h-44 sm:h-52 md:h-56 py-0.5 space-y-1.5 sm:space-y-2">
                 {categoryOutflows.slice(0, 5).map((item, idx) => {
                   const cat = getCategory(item.catId);
                   const pct = totalExpense > 0 ? Math.round((item.amount / totalExpense) * 100) : 0;
@@ -422,25 +422,25 @@ export const StatsView: React.FC = () => {
                   const color = EXPENSE_PALETTE[idx % EXPENSE_PALETTE.length];
 
                   return (
-                    <div key={item.catId} className="flex items-center gap-1.5 sm:gap-2">
-                      <div className="p-1 sm:p-1.5 rounded-md bg-zinc-900/80 border border-zinc-800/50 flex items-center justify-center shrink-0">
-                        <CategoryIcon name={cat?.icon || 'Tag'} size={13} className="text-zinc-300 sm:w-3.5 sm:h-3.5" />
+                    <div key={item.catId} className="flex items-center gap-1.5 sm:gap-2.5">
+                      <div className="p-1.5 sm:p-2 rounded-lg bg-zinc-900/80 border border-zinc-800/50 flex items-center justify-center shrink-0">
+                        <CategoryIcon name={cat?.icon || 'Tag'} size={15} className="text-zinc-300 sm:w-4 sm:h-4" />
                       </div>
-                      <div className="flex-1 min-w-0 space-y-0.5">
-                        <div className="flex items-center justify-between text-[11px] leading-tight">
-                          <span className="text-white font-medium truncate text-[10px] sm:text-[11px]">{cat?.name || 'Category'}</span>
-                          <span className="font-mono text-[10px] sm:text-[11px] text-zinc-300 shrink-0 ml-1.5">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between text-xs leading-tight">
+                          <span className="text-white font-medium truncate text-[11px] sm:text-xs">{cat?.name || 'Category'}</span>
+                          <span className="font-mono text-[11px] sm:text-xs text-zinc-300 shrink-0 ml-1.5">
                             {formatCurrency(item.amount, state.settings.currencySymbol)}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <div className="flex-1 h-1 sm:h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                          <div className="flex-1 h-1.5 bg-zinc-900 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{ width: `${pct}%`, backgroundColor: color }}
                             />
                           </div>
-                          <span className="text-[9px] sm:text-[10px] font-mono font-medium text-zinc-400 shrink-0">{pct}%</span>
+                          <span className="text-[10px] font-mono font-medium text-zinc-400 shrink-0">{pct}%</span>
                         </div>
                       </div>
                     </div>
@@ -467,7 +467,7 @@ export const StatsView: React.FC = () => {
           ) : (
             <div className="flex flex-row items-center gap-3 sm:gap-4 lg:gap-5 pt-1">
               {/* Left Column: Multi-segment Circular Ring Donut Chart */}
-              <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-44 lg:h-44 shrink-0 flex items-center justify-center">
+              <div className="relative w-44 h-44 sm:w-52 sm:h-52 md:w-56 md:h-56 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   {/* Subtle Background Track Circle */}
                   <circle
@@ -526,17 +526,17 @@ export const StatsView: React.FC = () => {
 
                 {/* Center Label and Amount matching modern reference */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
-                  <span className="text-[9px] sm:text-[10px] text-zinc-400 font-medium tracking-tight leading-tight">
+                  <span className="text-[10px] sm:text-xs text-zinc-400 font-medium tracking-tight leading-tight">
                     Earned this period
                   </span>
-                  <span className="text-xs sm:text-sm font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[80px] sm:max-w-[100px] md:max-w-[120px]">
+                  <span className="text-sm sm:text-base font-mono font-extrabold text-white mt-0.5 leading-tight tracking-tight truncate max-w-[110px] sm:max-w-[140px]">
                     +{formatCurrency(totalIncome, state.settings.currencySymbol)}
                   </span>
                 </div>
               </div>
 
               {/* Right Column: Category List with Percentage Bars (Top 5) */}
-              <div className="flex-1 min-w-0 flex flex-col justify-center h-32 sm:h-36 md:h-40 lg:h-44 py-0.5 space-y-1 sm:space-y-1.5">
+              <div className="flex-1 min-w-0 flex flex-col justify-center h-44 sm:h-52 md:h-56 py-0.5 space-y-1.5 sm:space-y-2">
                 {categoryInflows.slice(0, 5).map((item, idx) => {
                   const cat = getCategory(item.catId);
                   const pct = totalIncome > 0 ? Math.round((item.amount / totalIncome) * 100) : 0;
@@ -544,25 +544,25 @@ export const StatsView: React.FC = () => {
                   const color = INCOME_PALETTE[idx % INCOME_PALETTE.length];
 
                   return (
-                    <div key={item.catId} className="flex items-center gap-1.5 sm:gap-2">
-                      <div className="p-1 sm:p-1.5 rounded-md bg-zinc-900/80 border border-zinc-800/50 flex items-center justify-center shrink-0">
-                        <CategoryIcon name={cat?.icon || 'Tag'} size={13} className="text-zinc-300 sm:w-3.5 sm:h-3.5" />
+                    <div key={item.catId} className="flex items-center gap-1.5 sm:gap-2.5">
+                      <div className="p-1.5 sm:p-2 rounded-lg bg-zinc-900/80 border border-zinc-800/50 flex items-center justify-center shrink-0">
+                        <CategoryIcon name={cat?.icon || 'Tag'} size={15} className="text-zinc-300 sm:w-4 sm:h-4" />
                       </div>
-                      <div className="flex-1 min-w-0 space-y-0.5">
-                        <div className="flex items-center justify-between text-[11px] leading-tight">
-                          <span className="text-white font-medium truncate text-[10px] sm:text-[11px]">{cat?.name || 'Income'}</span>
-                          <span className="font-mono text-[10px] sm:text-[11px] text-zinc-300 shrink-0 ml-1.5">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between text-xs leading-tight">
+                          <span className="text-white font-medium truncate text-[11px] sm:text-xs">{cat?.name || 'Income'}</span>
+                          <span className="font-mono text-[11px] sm:text-xs text-zinc-300 shrink-0 ml-1.5">
                             +{formatCurrency(item.amount, state.settings.currencySymbol)}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <div className="flex-1 h-1 sm:h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                          <div className="flex-1 h-1.5 bg-zinc-900 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{ width: `${pct}%`, backgroundColor: color }}
                             />
                           </div>
-                          <span className="text-[9px] sm:text-[10px] font-mono font-medium text-zinc-400 shrink-0">{pct}%</span>
+                          <span className="text-[10px] font-mono font-medium text-zinc-400 shrink-0">{pct}%</span>
                         </div>
                       </div>
                     </div>
