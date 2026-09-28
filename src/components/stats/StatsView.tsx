@@ -6,7 +6,9 @@ import {
   ArrowUpRight,
   Percent,
   Equal,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Search,
+  X
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -14,18 +16,25 @@ import { CashflowChart } from './CashflowChart';
 import { EditTransactionModal } from '../transactions/EditTransactionModal';
 import type { Transaction } from '../../types/finance';
 
-type TimeRange = 'week' | 'month' | 'year' | 'all';
+type TimeRange = 'day' | 'week' | 'month' | 'year' | 'all';
+type TypeFilter = 'all' | 'expense' | 'income' | 'transfer';
 
 export const StatsView: React.FC = () => {
   const { state } = useFinance();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // Filter transactions based on selected range
   const filteredTransactions = useMemo(() => {
     const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
     return state.transactions.filter((tx) => {
       const txDate = new Date(tx.date);
+      if (timeRange === 'day') {
+        return tx.date === todayStr;
+      }
       if (timeRange === 'week') {
         const weekAgo = new Date(now.getTime() - 7 * 86400000);
         return txDate >= weekAgo && txDate <= now;
@@ -79,9 +88,52 @@ export const StatsView: React.FC = () => {
   const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
   const getAccount = (accId: string) => state.accounts.find((a) => a.id === accId);
 
-  // Group transactions based on selected view (Day for week/month, Month for year/all)
+  // Filter transactions within the card by search query and type filter
+  const searchedTransactions = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return filteredTransactions.filter((tx) => {
+      if (typeFilter !== 'all' && tx.type !== typeFilter) {
+        return false;
+      }
+      if (!q) return true;
+
+      const catName = getCategory(tx.categoryId)?.name?.toLowerCase() || '';
+      const accName = getAccount(tx.accountId)?.name?.toLowerCase() || '';
+      const subCatName = tx.subcategoryId
+        ? state.categories.find((c) => c.id === tx.subcategoryId)?.name?.toLowerCase() || ''
+        : '';
+      const note = tx.note?.toLowerCase() || '';
+      const amountStr = tx.amount.toString();
+
+      return (
+        catName.includes(q) ||
+        accName.includes(q) ||
+        subCatName.includes(q) ||
+        note.includes(q) ||
+        amountStr.includes(q)
+      );
+    });
+  }, [filteredTransactions, searchQuery, typeFilter, state.categories, state.accounts]);
+
+  // Group transactions based on selected view:
+  // - 'day': Group by hour (e.g. 14:00, 15:00)
+  // - 'week' and 'month': Group by day
+  // - 'year' and 'all': Group by month
   const groupedTransactions = useMemo(() => {
-    const sorted = [...filteredTransactions].sort((a, b) => {
+    const sorted = [...searchedTransactions].sort((a, b) => {
+      if (timeRange === 'day') {
+        const getHourVal = (tx: Transaction) => {
+          if (tx.time) {
+            const h = parseInt(tx.time.split(':')[0], 10);
+            if (!isNaN(h)) return h;
+          }
+          return new Date(tx.createdAt || 0).getHours();
+        };
+        const hA = getHourVal(a);
+        const hB = getHourVal(b);
+        if (hB !== hA) return hB - hA;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      }
       if (b.date !== a.date) return b.date > a.date ? 1 : -1;
       return (b.createdAt || 0) - (a.createdAt || 0);
     });
@@ -89,7 +141,7 @@ export const StatsView: React.FC = () => {
     const groups: {
       key: string;
       label: string;
-      transactions: typeof filteredTransactions;
+      transactions: typeof searchedTransactions;
       totalIncome: number;
       totalExpense: number;
     }[] = [];
@@ -100,7 +152,18 @@ export const StatsView: React.FC = () => {
       let groupKey: string;
       let groupLabel: string;
 
-      if (timeRange === 'week' || timeRange === 'month') {
+      if (timeRange === 'day') {
+        let hour = 0;
+        if (tx.time) {
+          const parsed = parseInt(tx.time.split(':')[0], 10);
+          if (!isNaN(parsed)) hour = parsed;
+        } else {
+          hour = new Date(tx.createdAt || 0).getHours();
+        }
+        const hourPadded = hour.toString().padStart(2, '0');
+        groupKey = `hour-${hourPadded}`;
+        groupLabel = `${hourPadded}:00 - ${hourPadded}:59`;
+      } else if (timeRange === 'week' || timeRange === 'month') {
         groupKey = tx.date;
         const d = new Date(tx.date + 'T00:00:00');
         const now = new Date();
@@ -148,7 +211,7 @@ export const StatsView: React.FC = () => {
     });
 
     return groups;
-  }, [filteredTransactions, timeRange]);
+  }, [searchedTransactions, timeRange]);
 
   return (
     <div className="space-y-3 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
@@ -159,7 +222,7 @@ export const StatsView: React.FC = () => {
         </div>
 
         <div className="flex bg-[#0d0d10] p-1 rounded-xl border border-zinc-800/80 shadow-sm">
-          {(['week', 'month', 'year', 'all'] as TimeRange[]).map((range) => (
+          {(['day', 'week', 'month', 'year', 'all'] as TimeRange[]).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
@@ -220,7 +283,13 @@ export const StatsView: React.FC = () => {
 
         {/* Target Spending Goal Progress for Selected Period */}
         {(() => {
-          const goalLimit = timeRange === 'week' ? state.settings.goals?.weekly : timeRange === 'month' ? state.settings.goals?.monthly : undefined;
+          const goalLimit = timeRange === 'day' 
+            ? state.settings.goals?.daily 
+            : timeRange === 'week' 
+            ? state.settings.goals?.weekly 
+            : timeRange === 'month' 
+            ? state.settings.goals?.monthly 
+            : undefined;
           if (!goalLimit || goalLimit <= 0) return null;
           const progress = Math.min(100, Math.round((totalExpense / goalLimit) * 100));
           const isOver = totalExpense > goalLimit;
@@ -340,13 +409,62 @@ export const StatsView: React.FC = () => {
 
       {/* Grouped Transactions List */}
       <div className="bg-[#101014] rounded-2xl p-6 border border-zinc-900/60 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Transactions ({filteredTransactions.length})
-          </span>
-          <span className="text-[10px] font-mono text-zinc-500 uppercase">
-            Grouped by {timeRange === 'week' || timeRange === 'month' ? 'Day' : 'Month'}
-          </span>
+        {/* Card Header & Controls */}
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase">
+                Transactions ({searchedTransactions.length})
+              </span>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase">
+                • Grouped by {timeRange === 'day' ? 'Hour' : timeRange === 'week' || timeRange === 'month' ? 'Day' : 'Month'}
+              </span>
+            </div>
+
+            {/* Type Filters */}
+            <div className="flex items-center bg-[#0d0d10] p-1 rounded-xl border border-zinc-800/80 self-start sm:self-auto">
+              {(
+                [
+                  { id: 'all', label: 'All' },
+                  { id: 'expense', label: 'Expenses' },
+                  { id: 'income', label: 'Income' },
+                  { id: 'transfer', label: 'Transfer' },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTypeFilter(tab.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer ${
+                    typeFilter === tab.id
+                      ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by note, category, account, or amount..."
+              className="w-full bg-[#0c0c10] border border-zinc-800/80 rounded-xl pl-9 pr-9 py-2 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-zinc-600 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         {groupedTransactions.length === 0 ? (
@@ -354,8 +472,12 @@ export const StatsView: React.FC = () => {
             <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
               <CalendarIcon size={18} />
             </div>
-            <div className="text-xs text-zinc-400 font-medium">No transactions in this period</div>
-            <p className="text-[10px] text-zinc-600">Transactions you log will appear grouped here</p>
+            <div className="text-xs text-zinc-400 font-medium">
+              {searchQuery || typeFilter !== 'all' ? 'No transactions matching filter' : 'No transactions in this period'}
+            </div>
+            <p className="text-[10px] text-zinc-600">
+              {searchQuery || typeFilter !== 'all' ? 'Try adjusting your search query or filter' : 'Transactions you log will appear grouped here'}
+            </p>
           </div>
         ) : (
           <div className="space-y-4">

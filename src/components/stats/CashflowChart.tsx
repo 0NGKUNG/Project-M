@@ -3,7 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
 
 interface CashflowChartProps {
-  timeRange?: 'week' | 'month' | 'year' | 'all';
+  timeRange?: 'day' | 'week' | 'month' | 'year' | 'all';
 }
 
 export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month' }) => {
@@ -30,13 +30,37 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
     const points: { label: string; date: string; income: number; expense: number; balance: number }[] = [];
     const now = new Date();
 
-    let numDays = 14;
-    if (timeRange === 'week') numDays = 7;
-    else if (timeRange === 'month') numDays = 30;
-    else if (timeRange === 'year') numDays = 12;
-    else numDays = 30;
+    if (timeRange === 'day') {
+      const todayStr = now.toISOString().split('T')[0];
+      for (let h = 0; h < 24; h++) {
+        const hStr = String(h).padStart(2, '0');
+        const label = `${hStr}:00`;
+        let inc = 0;
+        let exp = 0;
+        state.transactions.forEach((tx) => {
+          if (tx.date === todayStr) {
+            let txHour = -1;
+            if (tx.time) {
+              txHour = parseInt(tx.time.split(':')[0], 10);
+            } else if (tx.createdAt) {
+              txHour = new Date(tx.createdAt).getHours();
+            }
+            if (txHour === h) {
+              if (tx.type === 'income') inc += tx.amount;
+              if (tx.type === 'expense') exp += tx.amount;
+            }
+          }
+        });
 
-    if (timeRange === 'year') {
+        points.push({
+          label,
+          date: `${todayStr} ${label}`,
+          income: inc,
+          expense: exp,
+          balance: inc - exp,
+        });
+      }
+    } else if (timeRange === 'year') {
       // Monthly points
       for (let i = 11; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -63,6 +87,11 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
         });
       }
     } else {
+      let numDays = 30;
+      if (timeRange === 'week') numDays = 7;
+      else if (timeRange === 'month') numDays = 30;
+      else numDays = 30;
+
       // Daily points
       for (let i = numDays - 1; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 86400000);
@@ -191,7 +220,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const axisIndices = useMemo(() => {
     if (chartData.length <= 1) return chartData.length ? [0] : [];
 
-    const minimumLabelWidth = timeRange === 'year' ? 44 : 52;
+    const minimumLabelWidth = timeRange === 'year' || timeRange === 'day' ? 44 : 52;
     const availableWidth = chartWidth || 280;
     const labelCount = Math.min(
       chartData.length,
