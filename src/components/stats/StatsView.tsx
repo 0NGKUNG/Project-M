@@ -362,13 +362,14 @@ export const StatsView: React.FC = () => {
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = categoryOutflows.length;
-                    const gapArc = count > 1 ? 10 : 0;
+                    const gap = count > 1 ? Math.min(12, (circumference * 0.4) / count) : 0;
+                    const totalGaps = count * gap;
+                    const availableCircumference = circumference - totalGaps;
                     const EXPENSE_PALETTE = ['#ff5757', '#38bdf8', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
-                    let accumulatedPercent = 0;
+                    let accumulatedLength = 0;
 
                     return categoryOutflows.map((item, idx) => {
                       const pct = totalExpense > 0 ? item.amount / totalExpense : 0;
-                      const rawArc = pct * circumference;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
 
@@ -376,11 +377,10 @@ export const StatsView: React.FC = () => {
                         strokeDash = circumference;
                         strokeDashoffset = 0;
                       } else {
-                        // Subtract a clean fixed gap from each slice's natural percentage length
-                        strokeDash = Math.max(1, rawArc - gapArc);
-                        strokeDashoffset = -(accumulatedPercent * circumference + gapArc / 2);
+                        strokeDash = Math.max(0.5, pct * availableCircumference);
+                        strokeDashoffset = -(accumulatedLength + (idx + 0.5) * gap);
                       }
-                      accumulatedPercent += pct;
+                      accumulatedLength += strokeDash;
                       const strokeColor = EXPENSE_PALETTE[idx % EXPENSE_PALETTE.length];
 
                       return (
@@ -484,13 +484,14 @@ export const StatsView: React.FC = () => {
                     const circumference = 2 * Math.PI * radius;
                     const strokeWidth = 5;
                     const count = categoryInflows.length;
-                    const gapArc = count > 1 ? 10 : 0;
+                    const gap = count > 1 ? Math.min(12, (circumference * 0.4) / count) : 0;
+                    const totalGaps = count * gap;
+                    const availableCircumference = circumference - totalGaps;
                     const INCOME_PALETTE = ['#34d399', '#38bdf8', '#a855f7', '#fbbf24', '#2dd4bf', '#4ade80'];
-                    let accumulatedPercent = 0;
+                    let accumulatedLength = 0;
 
                     return categoryInflows.map((item, idx) => {
                       const pct = totalIncome > 0 ? item.amount / totalIncome : 0;
-                      const rawArc = pct * circumference;
                       let strokeDash = 0;
                       let strokeDashoffset = 0;
 
@@ -498,11 +499,10 @@ export const StatsView: React.FC = () => {
                         strokeDash = circumference;
                         strokeDashoffset = 0;
                       } else {
-                        // Subtract a clean fixed gap from each slice's natural percentage length
-                        strokeDash = Math.max(1, rawArc - gapArc);
-                        strokeDashoffset = -(accumulatedPercent * circumference + gapArc / 2);
+                        strokeDash = Math.max(0.5, pct * availableCircumference);
+                        strokeDashoffset = -(accumulatedLength + (idx + 0.5) * gap);
                       }
-                      accumulatedPercent += pct;
+                      accumulatedLength += strokeDash;
                       const strokeColor = INCOME_PALETTE[idx % INCOME_PALETTE.length];
 
                       return (
