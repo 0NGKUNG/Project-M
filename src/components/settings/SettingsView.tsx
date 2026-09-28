@@ -359,19 +359,19 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             onClick={() => setSelectedGoal(null)}
           >
             <div
-              className="w-full sm:max-w-sm bg-[#101014] rounded-t-2xl sm:rounded-2xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-3"
+              className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#101014] rounded-t-2xl sm:rounded-2xl md:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-300"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Overalls Big Highlight Card */}
-              <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between shadow-xs">
+              <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between shadow-xs">
                 <div>
-                  <div className="text-xs font-bold text-white font-mono">Overalls</div>
+                  <div className="text-xs sm:text-sm font-bold text-white font-mono">Overalls</div>
                   <div className="text-xs text-zinc-400 font-mono mt-0.5">
                     {formatCurrency(selectedGoal.amount, state.settings.currencySymbol)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs font-bold text-white font-mono">{percent}%</div>
+                  <div className="text-xs sm:text-sm font-bold text-white font-mono">{percent}%</div>
                   <div className="text-xs text-zinc-400 font-mono mt-0.5">
                     {formatCurrency(totalSpent, state.settings.currencySymbol)}
                   </div>
@@ -380,7 +380,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
               {/* Category Breakdown list (Reference style cards) */}
               {selectedGoal.categories && selectedGoal.categories.length > 0 && (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {selectedGoal.categories.map((c) => {
                     const cat = state.categories.find((item) => item.id === c.categoryId);
                     const spent = categorySpent[c.categoryId] || 0;
@@ -389,7 +389,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     return (
                       <div
                         key={c.categoryId}
-                        className="p-3 rounded-2xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between text-xs"
+                        className="p-3.5 rounded-2xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between text-xs"
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-200">
@@ -411,20 +411,20 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               )}
 
               {/* Stats Footer (Days Remaining, Daily Remaining) */}
-              <div className="pt-2 border-t border-zinc-900 space-y-1.5 text-xs font-mono text-zinc-400">
-                <div className="flex justify-between">
+              <div className="pt-3 border-t border-zinc-900 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-zinc-400">
+                <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
                   <span>Period</span>
                   <span className="text-white capitalize">{selectedGoal.period}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
                   <span>Date Range</span>
                   <span className="text-white">{selectedGoal.startDate} ━ {selectedGoal.endDate}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
                   <span>Days Remaining</span>
                   <span className="text-white font-bold">{daysLeft} days</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
                   <span>Daily Allowance</span>
                   <span className="text-emerald-400 font-bold">
                     {state.settings.currencySymbol}{dailyAllowance} / day
@@ -432,7 +432,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
               </div>
 
-              {/* Action Buttons: Delete | Edit | Close (Reference style 3-button footer) */}
+              {/* Action Buttons: Delete | Edit | Close */}
               <div className="flex items-center gap-2 pt-2">
                 <button
                   type="button"
@@ -471,10 +471,10 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           onClick={() => setShowCreateModal(false)}
         >
           <div
-            className="w-full sm:max-w-md bg-[#101014] rounded-t-2xl sm:rounded-2xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 space-y-4"
+            className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl bg-[#101014] rounded-t-2xl sm:rounded-2xl md:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-bold text-white font-mono">Create Spending Goal</h3>
+            <h3 className="text-base sm:text-lg font-bold text-white font-mono">Create Spending Goal</h3>
 
             <form onSubmit={handleSaveGoal} className="space-y-3">
               {/* Name */}
@@ -917,19 +917,19 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* Add Top-Level Category Modal */}
       {showAddParentModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
           onClick={() => setShowAddParentModal(false)}
         >
           <div
-            className="w-full max-w-sm bg-[#101014] rounded-2xl p-5 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+            className="w-full max-w-sm sm:max-w-md md:max-w-lg bg-[#101014] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-8 border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-bold text-white font-mono capitalize">
+            <h3 className="text-base sm:text-lg font-bold text-white font-mono capitalize">
               New {tab} Category
             </h3>
-            <form onSubmit={handleCreateParent} className="space-y-3">
+            <form onSubmit={handleCreateParent} className="space-y-4">
               <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                   Category Name
                 </label>
                 <input
@@ -938,7 +938,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
                   autoFocus
-                  className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
+                  className="w-full bg-[#16161d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none border border-zinc-800/60"
                   required
                 />
               </div>
@@ -947,7 +947,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                   Icon
                 </label>
-                <div className="grid grid-cols-5 gap-1.5 max-h-32 overflow-y-auto p-1 bg-[#16161d] rounded-xl border border-zinc-800/60">
+                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 gap-1.5 max-h-40 overflow-y-auto p-1.5 bg-[#16161d] rounded-xl border border-zinc-800/60">
                   {availableIcons.map((ic) => (
                     <button
                       key={ic}

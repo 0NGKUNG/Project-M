@@ -218,22 +218,22 @@ export const DebtManager: React.FC = () => {
       {/* Add Debt / Loan Modal */}
       {showAddModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
           onClick={() => setShowAddModal(false)}
         >
           <div 
-            className="w-full max-w-sm bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+            className="w-full max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#101014] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-8 border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-bold text-white font-mono">Track Borrow or Loan</h3>
+            <h3 className="text-base sm:text-lg font-bold text-white font-mono">Track Borrow or Loan</h3>
 
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setType('lend')}
-                  className={`py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
-                    type === 'lend' ? 'bg-emerald-500 text-black font-bold' : 'bg-[#16161d] text-zinc-400'
+                  className={`py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+                    type === 'lend' ? 'bg-emerald-500 text-black font-bold shadow-sm' : 'bg-[#16161d] text-zinc-400 hover:text-white'
                   }`}
                 >
                   I Lent Money
@@ -241,32 +241,32 @@ export const DebtManager: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setType('borrow')}
-                  className={`py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
-                    type === 'borrow' ? 'bg-rose-500 text-white font-bold' : 'bg-[#16161d] text-zinc-400'
+                  className={`py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+                    type === 'borrow' ? 'bg-rose-500 text-white font-bold shadow-sm' : 'bg-[#16161d] text-zinc-400 hover:text-white'
                   }`}
                 >
                   I Borrowed Money
                 </button>
               </div>
 
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                  Person Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Alex, Mom, Landlord"
-                  value={personName}
-                  onChange={(e) => setPersonName(e.target.value)}
-                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                  autoFocus
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                    Person Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Alex, Mom, Landlord"
+                    value={personName}
+                    onChange={(e) => setPersonName(e.target.value)}
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                    autoFocus
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                     Amount
                   </label>
                   <CurrencyInput
@@ -281,7 +281,7 @@ export const DebtManager: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                     Due Date (optional)
                   </label>
                   <input
@@ -291,19 +291,19 @@ export const DebtManager: React.FC = () => {
                     className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                  Note / Reason
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Dinner split, emergency ticket"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                />
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                    Note / Reason
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Dinner split, emergency ticket"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

@@ -255,32 +255,32 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       {/* Quick Account Add Modal */}
       {showAddModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
           onClick={() => setShowAddModal(false)}
         >
           <div 
-            className="w-full max-w-sm bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 cursor-default"
+            className="w-full max-w-sm sm:max-w-md md:max-w-xl lg:max-w-2xl bg-[#101014] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-8 border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-bold text-white font-mono">Create New Account</h3>
+            <h3 className="text-base sm:text-lg font-bold text-white font-mono">Create New Account</h3>
 
-            <form onSubmit={handleCreateAccount} className="space-y-3">
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                  Account Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Kasikorn Bank, Wallet"
-                  value={newAccName}
-                  onChange={(e) => setNewAccName(e.target.value)}
-                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                  autoFocus
-                  required
-                />
-              </div>
+            <form onSubmit={handleCreateAccount} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                <div className="sm:col-span-2 md:col-span-1">
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                    Account Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Kasikorn Bank, Wallet"
+                    value={newAccName}
+                    onChange={(e) => setNewAccName(e.target.value)}
+                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                    autoFocus
+                    required
+                  />
+                </div>
 
-              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                     Account Type
@@ -312,17 +312,17 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                  className="px-4 py-2 text-xs text-zinc-400 hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
+                  className="px-5 py-2.5 bg-white text-black text-xs font-bold rounded-xl cursor-pointer hover:bg-zinc-200 transition-colors"
                 >
                   Save Account
                 </button>

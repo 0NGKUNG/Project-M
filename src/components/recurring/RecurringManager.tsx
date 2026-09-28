@@ -234,31 +234,32 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
           onClick={() => { resetForm(); setShowAddModal(false); }}
         >
           <div
-            className="w-full sm:max-w-sm bg-[#101014] rounded-t-2xl sm:rounded-2xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto"
+            className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#101014] rounded-t-2xl sm:rounded-2xl md:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto transition-all duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-5 space-y-4">
-              <h3 className="text-sm font-bold text-white font-mono">New Recurring</h3>
+            <div className="p-5 sm:p-6 md:p-8 space-y-5">
+              <h3 className="text-base sm:text-lg font-bold text-white font-mono">New Recurring Item</h3>
 
-              <form onSubmit={handleCreate} className="space-y-3">
-                {/* Title */}
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Title</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Netflix, Rent, Salary"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                    autoFocus
-                    required
-                  />
-                </div>
+              <form onSubmit={handleCreate} className="space-y-4">
+                {/* 2-Column Grid on md+ */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Title */}
+                  <div className="md:col-span-2">
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">Title</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Netflix, Rent, Salary"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                      autoFocus
+                      required
+                    />
+                  </div>
 
-                {/* Type + Amount */}
-                <div className="grid grid-cols-2 gap-2">
+                  {/* Type */}
                   <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Type</label>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">Type</label>
                     <CustomSelect
                       value={type}
                       onChange={(val) => setType(val as 'expense' | 'income')}
@@ -268,8 +269,10 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                       ]}
                     />
                   </div>
+
+                  {/* Amount */}
                   <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Amount</label>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">Amount</label>
                     <CurrencyInput
                       currencySymbol={state.settings.currencySymbol}
                       type="number"
@@ -280,20 +283,20 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                       required
                     />
                   </div>
-                </div>
 
-                {/* Wallet + Category */}
-                <div className="grid grid-cols-2 gap-2">
+                  {/* Wallet */}
                   <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Wallet</label>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">Wallet</label>
                     <CustomSelect
                       value={accountId || state.accounts[0]?.id || ''}
                       onChange={(val) => setAccountId(val)}
                       options={state.accounts.map((a) => ({ value: a.id, label: a.name }))}
                     />
                   </div>
+
+                  {/* Category */}
                   <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Category</label>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">Category</label>
                     <CustomSelect
                       value={categoryId || state.categories.filter((c) => c.type === type)[0]?.id || ''}
                       onChange={(val) => setCategoryId(val)}

@@ -78,16 +78,16 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+      className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-md sm:max-w-lg md:max-w-xl bg-[#101014] rounded-2xl p-6 border border-zinc-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto cursor-default transition-all duration-300"
+        className="w-full max-w-md sm:max-w-xl md:max-w-2xl lg:max-w-3xl bg-[#101014] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-8 border border-zinc-800 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto cursor-default transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between pb-2 border-b border-zinc-900">
+        <div className="flex items-center justify-between pb-3 border-b border-zinc-900">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-white font-mono">Edit Transaction</h3>
+            <h3 className="text-base sm:text-lg font-bold text-white font-mono">Edit Transaction</h3>
           </div>
           <button
             onClick={onClose}
@@ -97,138 +97,149 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
-          {/* Transaction Type Tabs */}
-          <div className="flex bg-[#16161d] p-1 rounded-2xl gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic();
-                setType('expense');
-              }}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                type === 'expense' ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <ArrowDownRight size={14} className={type === 'expense' ? 'text-rose-400' : ''} />
-              Expense
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic();
-                setType('income');
-              }}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                type === 'income' ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <ArrowUpRight size={14} className={type === 'income' ? 'text-emerald-400' : ''} />
-              Income
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic();
-                setType('transfer');
-              }}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                type === 'transfer' ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <ArrowRightLeft size={14} className={type === 'transfer' ? 'text-blue-400' : ''} />
-              Transfer
-            </button>
-          </div>
-
-          {/* Amount */}
-          <div>
-            <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-              Amount
-            </label>
-            <CurrencyInput
-              currencySymbol={state.settings.currencySymbol}
-              type="number"
-              step="any"
-              value={amountStr}
-              onChange={(e) => setAmountStr(e.target.value)}
-              className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-sm text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-              required
-            />
-          </div>
-
-          {/* Custom Date & Time Selectors */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3.5 h-11 border border-zinc-800/80">
-              <Calendar size={14} className="text-zinc-400 shrink-0" />
-              <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-[8px] font-mono uppercase text-zinc-500">Date</span>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="bg-transparent text-xs text-white focus:outline-none w-full font-mono"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3.5 h-11 border border-zinc-800/80">
-              <Clock size={14} className="text-zinc-400 shrink-0" />
-              <div className="flex flex-col flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-[8px] font-mono uppercase text-zinc-500">Time</span>
-                  <button
-                    type="button"
-                    onClick={() => setTime(getCurrentTimeStr())}
-                    className="text-[8px] text-zinc-400 hover:text-white font-mono cursor-pointer"
-                  >
-                    Now
-                  </button>
-                </div>
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="bg-transparent text-xs text-white focus:outline-none w-full font-mono"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Account Selection */}
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSave} className="space-y-4 sm:space-y-5">
+          {/* Top Section: Type & Amount in 2-column grid on md+ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                {type === 'transfer' ? 'Source Account' : 'Account'}
+              <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                Type
               </label>
-              <CustomSelect
-                value={accountId}
-                onChange={(val) => setAccountId(val)}
-                options={state.accounts.map((a) => ({
-                  value: a.id,
-                  label: a.name,
-                }))}
+              {/* Transaction Type Tabs */}
+              <div className="flex bg-[#16161d] p-1 rounded-2xl gap-1 h-11">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setType('expense');
+                  }}
+                  className={`flex-1 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    type === 'expense' ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <ArrowDownRight size={14} className={type === 'expense' ? 'text-rose-400' : ''} />
+                  Expense
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setType('income');
+                  }}
+                  className={`flex-1 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    type === 'income' ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <ArrowUpRight size={14} className={type === 'income' ? 'text-emerald-400' : ''} />
+                  Income
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setType('transfer');
+                  }}
+                  className={`flex-1 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    type === 'transfer' ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <ArrowRightLeft size={14} className={type === 'transfer' ? 'text-blue-400' : ''} />
+                  Transfer
+                </button>
+              </div>
+            </div>
+
+            {/* Amount */}
+            <div>
+              <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                Amount
+              </label>
+              <CurrencyInput
+                currencySymbol={state.settings.currencySymbol}
+                type="number"
+                step="any"
+                value={amountStr}
+                onChange={(e) => setAmountStr(e.target.value)}
+                className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-sm text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                required
               />
             </div>
+          </div>
 
-            {type === 'transfer' && (
+          {/* Date / Time & Account row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Custom Date & Time Selectors */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3.5 h-11 border border-zinc-800/80">
+                <Calendar size={14} className="text-zinc-400 shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-[8px] font-mono uppercase text-zinc-500">Date</span>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="bg-transparent text-xs text-white focus:outline-none w-full font-mono"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 bg-[#16161d] rounded-xl px-3.5 h-11 border border-zinc-800/80">
+                <Clock size={14} className="text-zinc-400 shrink-0" />
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-mono uppercase text-zinc-500">Time</span>
+                    <button
+                      type="button"
+                      onClick={() => setTime(getCurrentTimeStr())}
+                      className="text-[8px] text-zinc-400 hover:text-white font-mono cursor-pointer"
+                    >
+                      Now
+                    </button>
+                  </div>
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="bg-transparent text-xs text-white focus:outline-none w-full font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Account Selection */}
+            <div className={`grid ${type === 'transfer' ? 'grid-cols-2 gap-2' : 'grid-cols-1'}`}>
               <div>
                 <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                  Destination Account
+                  {type === 'transfer' ? 'From' : 'Account'}
                 </label>
                 <CustomSelect
-                  value={toAccountId || state.accounts.find((a) => a.id !== accountId)?.id || ''}
-                  onChange={(val) => setToAccountId(val)}
-                  options={state.accounts
-                    .filter((a) => a.id !== accountId)
-                    .map((a) => ({
-                      value: a.id,
-                      label: a.name,
-                    }))}
+                  value={accountId}
+                  onChange={(val) => setAccountId(val)}
+                  options={state.accounts.map((a) => ({
+                    value: a.id,
+                    label: a.name,
+                  }))}
                 />
               </div>
-            )}
+
+              {type === 'transfer' && (
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+                    To
+                  </label>
+                  <CustomSelect
+                    value={toAccountId || state.accounts.find((a) => a.id !== accountId)?.id || ''}
+                    onChange={(val) => setToAccountId(val)}
+                    options={state.accounts
+                      .filter((a) => a.id !== accountId)
+                      .map((a) => ({
+                        value: a.id,
+                        label: a.name,
+                      }))}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Categories Grid (if not transfer) */}
@@ -237,7 +248,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block">
                 Category
               </label>
-              <div className="grid grid-cols-4 gap-2 max-h-36 overflow-y-auto pr-1">
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2 max-h-44 overflow-y-auto pr-1">
                 {parentCategories.map((cat) => {
                   const isSelected = categoryId === cat.id;
                   return (

@@ -179,7 +179,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-xs animate-fade-in p-0 sm:p-4"
       onClick={onClose}
     >
       <input
@@ -190,11 +190,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       />
 
       <div 
-        className="w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-[460px] bg-[#0c0c10] sm:border border-zinc-900 sm:rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl safe-top safe-bottom select-none"
+        className="w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl bg-[#0c0c10] sm:border border-zinc-900 sm:rounded-2xl md:rounded-3xl flex flex-col justify-between overflow-hidden shadow-2xl safe-top safe-bottom select-none transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top App Bar: Back icon + Type Switcher Pills */}
-        <div className="flex items-center justify-between px-4 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">
+        <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 hover:text-white transition-colors cursor-pointer"
@@ -214,7 +214,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                     triggerHaptic();
                     setType(t);
                   }}
-                  className={`py-1.5 px-3 sm:px-4 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer ${
+                  className={`py-1.5 px-3 sm:px-5 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer ${
                     isAct ? 'bg-white text-black shadow-xs' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
@@ -229,8 +229,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
         {/* Category Pill Grid (Reference Top Section) */}
         {type !== 'transfer' ? (
-          <div className="px-4 py-3 flex-1 min-h-0 overflow-y-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 flex-1 min-h-0 overflow-y-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3">
               {parentCategories.map((cat) => {
                 const isSelected = selectedCategoryId === cat.id;
                 const subs = getSubcategories(cat.id);
