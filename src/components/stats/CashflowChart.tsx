@@ -9,7 +9,6 @@ interface CashflowChartProps {
 export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month' }) => {
   const { state, totalNetWorth } = useFinance();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [activeMetric, setActiveMetric] = useState<'all' | 'balance' | 'flow'>('all');
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   // Build sequential data points based on timeRange
@@ -174,65 +173,50 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
   const activeX = hoveredIndex !== null ? getX(hoveredIndex) : 0;
 
   return (
-    <div className="bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm space-y-3">
-      {/* Chart Header - fixed height, flex-wrap proof */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-h-[52px]">
+    <div className="bg-[#101014] rounded-2xl p-5 sm:p-6 border border-zinc-900/60 shadow-sm space-y-4">
+      {/* Chart Header */}
+      <div className="flex items-center justify-between min-h-[38px]">
         <div>
-          <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Cashflow & Balance
+          <span className="text-[11px] font-mono font-bold tracking-wider text-zinc-400 uppercase block">
+            Cashflow &amp; Balance
           </span>
-          <div className="flex items-center gap-3 text-[11px] font-mono mt-1">
-            <button
-              onClick={() => setActiveMetric('all')}
-              className={`flex items-center gap-1.5 cursor-pointer transition-opacity ${
-                activeMetric === 'all' ? 'opacity-100 font-bold' : 'opacity-50'
-              }`}
-            >
-              <span className="w-2.5 h-0.5 bg-[#3b82f6] rounded-full" />
-              <span className="text-blue-400">Balance</span>
-            </button>
-            <button
-              onClick={() => setActiveMetric(activeMetric === 'flow' ? 'all' : 'flow')}
-              className="flex items-center gap-1.5 cursor-pointer"
-            >
-              <span className="w-2.5 h-0.5 bg-[#10b981] rounded-full" />
-              <span className="text-emerald-400">In: +{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
-            </button>
-            <button
-              onClick={() => setActiveMetric(activeMetric === 'flow' ? 'all' : 'flow')}
-              className="flex items-center gap-1.5 cursor-pointer"
-            >
-              <span className="w-2.5 h-0.5 bg-[#f43f5e] rounded-full" />
-              <span className="text-rose-400">Out: -{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
-            </button>
+          <div className="flex items-center gap-3 text-[11px] font-mono mt-1 text-zinc-500">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <span>Balance</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-zinc-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>+{formatCurrency(totalIn, state.settings.currencySymbol)}</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-zinc-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+              <span>-{formatCurrency(totalOut, state.settings.currencySymbol)}</span>
+            </span>
           </div>
         </div>
 
-        {/* Hover info badge - neatly contained within card, never overflowing */}
-        <div className={`font-mono px-3 py-1 rounded-xl border transition-opacity duration-150 self-start sm:self-auto text-left sm:text-right ${
-          activePoint
-            ? 'opacity-100 bg-[#16161d] border-zinc-700/80 shadow-lg'
-            : 'opacity-0 pointer-events-none border-transparent'
+        {/* Hover info badge */}
+        <div className={`font-mono px-3 py-1.5 rounded-xl border border-zinc-800 bg-[#16161d] transition-opacity duration-150 text-right ${
+          activePoint ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
-          <div className="text-[10px] text-zinc-400 font-bold">
-            {activePoint ? activePoint.label : '-'}
+          <div className="text-[10px] text-zinc-400">
+            {activePoint ? activePoint.label : ''}
           </div>
-          <div className="text-[11px] sm:text-xs text-white font-bold whitespace-nowrap flex items-center gap-2">
-            {activePoint ? (
+          <div className="text-xs font-bold text-white whitespace-nowrap flex items-center gap-2">
+            {activePoint && (
               <>
                 <span className="text-blue-400">
                   {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
                 </span>
-                <span className="text-[10px] text-zinc-500">•</span>
-                <span className="text-emerald-400">
+                <span className="text-zinc-600 font-normal">|</span>
+                <span className="text-emerald-400 text-[11px]">
                   +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
                 </span>
-                <span className="text-rose-400">
+                <span className="text-rose-400 text-[11px]">
                   -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
                 </span>
               </>
-            ) : (
-              <span className="text-zinc-700">0.00</span>
             )}
           </div>
         </div>
@@ -366,80 +350,50 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
           {/* Highlight Nodes / Targets on the active hovered column */}
           {hoveredIndex !== null && activePoint && (
             <g>
-              {/* Balance point circle (Blue) */}
+              {/* Clean Balance Point target */}
               <circle
                 cx={activeX}
                 cy={getY(activePoint.balance)}
-                r={7}
+                r={5.5}
                 fill="#000000"
                 stroke="#3b82f6"
-                strokeWidth={2.5}
-              />
-              <circle
-                cx={activeX}
-                cy={getY(activePoint.balance)}
-                r={3.5}
-                fill="#ffffff"
-              />
-
-              {/* Income point circle (Green) */}
-              <circle
-                cx={activeX}
-                cy={getY(activePoint.income)}
-                r={5}
-                fill="#000000"
-                stroke="#10b981"
                 strokeWidth={2}
               />
               <circle
                 cx={activeX}
-                cy={getY(activePoint.income)}
-                r={2}
-                fill="#34d399"
+                cy={getY(activePoint.balance)}
+                r={2.5}
+                fill="#ffffff"
               />
 
-              {/* Floating Pill Tooltip tag directly on the chart */}
-              <g transform={`translate(${Math.min(width - 65, Math.max(activeX, 45))}, ${Math.max(20, getY(activePoint.balance) - 28)})`}>
-                <rect
-                  x={-28}
-                  y={-14}
-                  width={56}
-                  height={22}
-                  rx={11}
-                  fill="#3b82f6"
-                  filter="url(#glow)"
+              {/* Inflow point dot */}
+              {activePoint.income > 0 && (
+                <circle
+                  cx={activeX}
+                  cy={getY(activePoint.income)}
+                  r={3.5}
+                  fill="#10b981"
+                  stroke="#000000"
+                  strokeWidth={1.5}
                 />
-                <rect
-                  x={-28}
-                  y={-14}
-                  width={56}
-                  height={22}
-                  rx={11}
-                  fill="#3b82f6"
+              )}
+
+              {/* Outflow point dot */}
+              {activePoint.expense > 0 && (
+                <circle
+                  cx={activeX}
+                  cy={getY(activePoint.expense)}
+                  r={3.5}
+                  fill="#f43f5e"
+                  stroke="#000000"
+                  strokeWidth={1.5}
                 />
-                <text
-                  x={0}
-                  y={1.5}
-                  textAnchor="middle"
-                  fill="#ffffff"
-                  fontSize="11"
-                  fontFamily="monospace"
-                  fontWeight="bold"
-                >
-                  {formatCurrency(activePoint.balance, state.settings.currencySymbol).replace('.00', '')}
-                </text>
-                {/* Pointer arrow downward */}
-                <polygon
-                  points="-4,8 4,8 0,12"
-                  fill="#3b82f6"
-                />
-              </g>
+              )}
             </g>
           )}
 
           {/* X Axis Labels */}
           {chartData.map((d, idx) => {
-            // Show select evenly spaced labels
             const step = Math.max(1, Math.floor(chartData.length / 6));
             const isEdgeOrStep = idx === 0 || idx === chartData.length - 1 || idx % step === 0;
             if (!isEdgeOrStep) return null;
@@ -450,7 +404,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                 x={getX(idx)}
                 y={height - 10}
                 textAnchor="middle"
-                fill={hoveredIndex === idx ? '#ffffff' : '#71717a'}
+                fill={hoveredIndex === idx ? '#ffffff' : '#52525b'}
                 fontSize="10"
                 fontFamily="monospace"
                 fontWeight={hoveredIndex === idx ? 'bold' : 'normal'}
@@ -460,21 +414,6 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
             );
           })}
         </svg>
-      </div>
-
-      {/* Metric legend description */}
-      <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 pt-1 border-t border-zinc-900/60">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-500" /> Net Balance
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" /> Inflow
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-rose-500" /> Outflow
-          </span>
-        </div>
       </div>
     </div>
   );
