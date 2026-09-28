@@ -84,12 +84,12 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         </button>
       </div>
 
-      {/* View Sub-tabs: Wallets, Recurring, Debts - clean compact single line */}
-      <div className="flex bg-[#101014] p-1 rounded-2xl border border-zinc-900 gap-1 overflow-x-auto no-scrollbar">
+      {/* View sub-tabs */}
+      <div className="flex bg-[#0d0d10] p-1 rounded-2xl border border-zinc-800/80 gap-1 overflow-x-auto no-scrollbar shadow-sm">
         <button
           onClick={() => setCurrentSubTab('wallets')}
           className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-            currentSubTab === 'wallets' ? 'bg-white text-black font-bold shadow-md' : 'text-zinc-400 hover:text-white'
+            currentSubTab === 'wallets' ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
           }`}
         >
           <Wallet size={13} />
@@ -99,7 +99,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         <button
           onClick={() => setCurrentSubTab('recurring')}
           className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-            currentSubTab === 'recurring' ? 'bg-white text-black font-bold shadow-md' : 'text-zinc-400 hover:text-white'
+            currentSubTab === 'recurring' ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
           }`}
         >
           <RefreshCw size={13} />
@@ -109,7 +109,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         <button
           onClick={() => setCurrentSubTab('debts')}
           className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-            currentSubTab === 'debts' ? 'bg-white text-black font-bold shadow-md' : 'text-zinc-400 hover:text-white'
+            currentSubTab === 'debts' ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
           }`}
         >
           <Users size={13} />
@@ -121,7 +121,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       {currentSubTab === 'wallets' && (
         <div className="space-y-3 animate-fade-in">
           {/* Net Worth Hero Card */}
-          <div className="bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-7 border border-zinc-900/60 shadow-xl relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-5 sm:p-7 border border-zinc-800/80 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
 
             <div className="flex items-center text-zinc-400 text-xs font-mono mb-2">
@@ -130,7 +130,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               </span>
             </div>
 
-            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white mb-6">
+            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white mb-6 tabular-nums">
               {formatCurrency(totalNetWorth, state.settings.currencySymbol)}
             </div>
 
@@ -139,8 +139,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               {/* Individual Account Progress Bars List: a ----- 50%, b ---- 30% */}
               <div className="space-y-2.5">
                 {accountStats.map((acc, idx) => {
-                  // ── Unified accent palette ──────────────────────────────
-                  // Written as complete class strings so Tailwind JIT picks them up.
+                  // Keep the allocation chart monochrome so it belongs with the vault UI.
                   const ACCENTS = [
                     { dot: 'bg-white',    bar: 'bg-white',    border: 'border-white/30',    from: 'from-[#ffffff09]', via: 'via-[#151520]' },
                     { dot: 'bg-zinc-300', bar: 'bg-zinc-300', border: 'border-zinc-300/25', from: 'from-[#d4d4d809]', via: 'via-[#141520]' },
@@ -174,10 +173,10 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       </div>
 
                       {/* Progress bar — same colour as dot */}
-                      <div className="w-full h-1.5 rounded-full bg-zinc-900 overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${accent.bar}`}
-                          style={{ width: `${Math.max(2, acc.percentage)}%` }}
+                          style={{ width: `${acc.percentage > 0 ? acc.percentage : 0}%` }}
                         />
                       </div>
                     </div>
@@ -193,44 +192,44 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               Account Ledger ({accountStats.length})
             </span>
 
-            <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4">
               {accountStats.map((acc, index) => {
                 const isNegative = (acc.currentBalance ?? 0) < 0;
 
-                // Matching card background and text colors directly from chart ranking
-                const RANK_CARD_THEMES = [
-                  { bg: 'bg-white', textTitle: 'text-zinc-900 group-hover:text-black', textLabel: 'text-zinc-500', textVal: 'text-black', textNeg: 'text-rose-600' },
-                  { bg: 'bg-zinc-200', textTitle: 'text-zinc-900 group-hover:text-black', textLabel: 'text-zinc-600', textVal: 'text-zinc-900', textNeg: 'text-rose-600' },
-                  { bg: 'bg-zinc-500', textTitle: 'text-white', textLabel: 'text-zinc-200', textVal: 'text-white', textNeg: 'text-rose-200' },
-                  { bg: 'bg-zinc-700', textTitle: 'text-zinc-100 group-hover:text-white', textLabel: 'text-zinc-400', textVal: 'text-white', textNeg: 'text-rose-400' },
-                  { bg: 'bg-zinc-800', textTitle: 'text-zinc-200 group-hover:text-white', textLabel: 'text-zinc-400', textVal: 'text-white', textNeg: 'text-rose-400' },
-                  { bg: 'bg-zinc-900', textTitle: 'text-zinc-300 group-hover:text-white', textLabel: 'text-zinc-500', textVal: 'text-white', textNeg: 'text-rose-400' },
-                ];
-                const theme = RANK_CARD_THEMES[index % RANK_CARD_THEMES.length];
-
                 return (
-                  <div
+                  <button
                     key={acc.id}
                     onClick={() => onSelectAccount(acc)}
-                    className={`relative p-4 rounded-2xl ${theme.bg} hover:brightness-110 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] active:scale-[0.98] shadow-lg group overflow-hidden`}
+                    className="relative min-h-[132px] rounded-2xl border border-zinc-800/80 bg-[#101014] p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-700 hover:bg-[#15151b] active:scale-[0.99] cursor-pointer group overflow-hidden"
                   >
-                    {/* Top: Account name */}
-                    <div className="relative z-10">
-                      <div className={`text-[12px] font-bold ${theme.textTitle} transition-colors truncate leading-tight`}>
-                        {acc.name}
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-60" />
+                    <div className="relative z-10 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-zinc-200 group-hover:text-white transition-colors truncate leading-tight">
+                          {acc.name}
+                        </div>
+                        <div className="mt-1 text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                          {acc.type}
+                        </div>
                       </div>
+                      <span className="flex h-7 min-w-7 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/80 px-1.5 font-mono text-[10px] text-zinc-500 group-hover:border-zinc-700 group-hover:text-zinc-300 transition-colors">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
                     </div>
 
-                    {/* Bottom-right: Balance label + value */}
-                    <div className="relative z-10 flex flex-col items-end mt-3">
-                      <div className={`text-[9px] font-mono uppercase tracking-wider ${theme.textLabel} mb-0.5`}>
+                    <div className="relative z-10 mt-5">
+                      <div className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 mb-1">
                         Balance
                       </div>
-                      <div className={`text-sm sm:text-base font-extrabold font-mono tracking-tight truncate ${isNegative ? theme.textNeg : theme.textVal}`}>
+                      <div className={`text-lg font-extrabold font-mono tracking-tight tabular-nums truncate ${isNegative ? 'text-rose-400' : 'text-white'}`}>
                         {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
                       </div>
+                      <div className="mt-2 flex items-center gap-2 text-[10px] font-mono text-zinc-500">
+                        <span className="h-1 w-1 rounded-full bg-zinc-600" />
+                        {acc.percentage}% of net worth
+                      </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
