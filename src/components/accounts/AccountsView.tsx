@@ -152,15 +152,19 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   const barBg = dotColors[idx % dotColors.length];
 
                   return (
-                    <div key={acc.id} className="space-y-1">
+                    <div 
+                      key={acc.id} 
+                      onClick={() => onSelectAccount(acc)}
+                      className="space-y-1 p-1.5 -mx-1.5 rounded-xl hover:bg-white/5 active:scale-[0.99] transition-all cursor-pointer group"
+                    >
                       <div className="flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${barBg} shrink-0`} />
-                          <span className="text-zinc-300 font-semibold truncate">{acc.name}</span>
-                          <span className="text-[10px] text-zinc-600 uppercase font-mono">({acc.type})</span>
+                          <span className="text-zinc-300 font-semibold truncate group-hover:text-white transition-colors">{acc.name}</span>
+                          <span className="text-[10px] text-zinc-500 uppercase font-mono">({acc.type})</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-[11px] text-zinc-500 font-mono">
+                          <span className="text-[11px] text-zinc-400 font-mono">
                             {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
                           </span>
                           <span className="text-xs font-bold text-white font-mono w-10 text-right">
