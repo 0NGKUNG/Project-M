@@ -87,12 +87,12 @@ select {
   padding-right: 2.25rem !important;
 }
 
-/* iOS Safe Area Utilities */
+/* Safe Area Utilities (iOS & Android home indicator / gesture bar) */
 .safe-bottom {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .safe-top {
-  padding-top: max(0.75rem, env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Page Carousel Snap and Transitions - limit to max 1 page per swipe */

@@ -14,8 +14,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onOpenQuickAdd,
 }) => {
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#09090b]/95 backdrop-blur-md border-t border-zinc-900 safe-bottom">
-      <div className="flex items-center justify-around px-2 py-2 max-w-md mx-auto">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#09090b]/95 backdrop-blur-xl border-t border-zinc-900/80 safe-bottom">
+      <div className="flex items-center justify-around px-3 pt-2 pb-1.5 max-w-md mx-auto">
         <button
           onClick={() => onTabChange('today')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-all active:scale-95 cursor-pointer ${
