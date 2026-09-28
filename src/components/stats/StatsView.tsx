@@ -4,7 +4,6 @@ import {
   AlertCircle,
   ArrowDownLeft,
   ArrowUpRight,
-  Equal,
   Calendar as CalendarIcon,
   Search,
   X

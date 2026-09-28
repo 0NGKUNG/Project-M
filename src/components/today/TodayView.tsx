@@ -7,8 +7,7 @@ import {
   ArrowDownLeft, 
   Calendar as CalendarIcon,
   Target,
-  AlertCircle,
-  Equal
+  AlertCircle
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -46,7 +45,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
     return { dayIncome: inc, dayExpense: exp };
   }, [dayTransactions]);
 
-  const dayNet = dayIncome - dayExpense;
+
 
   // Day shift
   const handleShiftDay = (days: number) => {
