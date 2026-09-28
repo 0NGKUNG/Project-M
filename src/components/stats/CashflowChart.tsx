@@ -488,24 +488,24 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ timeRange = 'month
                     top: Math.max(8, Math.min(posYPercent - 42, 60)) + '%',
                   }}
                 >
-                  <div className="text-[10px] text-zinc-400 font-semibold mb-0.5">
+                  <div className="text-[11px] text-zinc-400 font-medium mb-1">
                     {activePoint.label}
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-white whitespace-nowrap">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-white whitespace-nowrap">
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                     <span className="text-blue-400">
                       {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
                     </span>
                   </div>
                   {(activePoint.income > 0 || activePoint.expense > 0) && (
-                    <div className="flex items-center gap-2 mt-0.5 text-[10px] whitespace-nowrap border-t border-zinc-800/80 pt-0.5">
+                    <div className="flex items-center gap-2 mt-1 text-[11px] whitespace-nowrap border-t border-zinc-800/80 pt-1">
                       {activePoint.income > 0 && (
-                        <span className="text-emerald-400 font-semibold">
+                        <span className="text-emerald-400 font-bold">
                           +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
                         </span>
                       )}
                       {activePoint.expense > 0 && (
-                        <span className="text-rose-400 font-semibold">
+                        <span className="text-rose-400 font-bold">
                           -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
                         </span>
                       )}
