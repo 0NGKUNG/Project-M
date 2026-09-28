@@ -197,39 +197,36 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               {accountStats.map((acc, index) => {
                 const isNegative = (acc.currentBalance ?? 0) < 0;
 
-                // Same accent palette — same index = same colour as the chart row above
-                const ACCENTS = [
-                  { dot: 'bg-white',    bar: 'bg-white',    border: 'border-white/30',    from: 'from-[#ffffff09]', via: 'via-[#151520]' },
-                  { dot: 'bg-zinc-300', bar: 'bg-zinc-300', border: 'border-zinc-300/25', from: 'from-[#d4d4d809]', via: 'via-[#141520]' },
-                  { dot: 'bg-zinc-500', bar: 'bg-zinc-500', border: 'border-zinc-500/30', from: 'from-[#71717509]', via: 'via-[#141420]' },
-                  { dot: 'bg-zinc-600', bar: 'bg-zinc-600', border: 'border-zinc-600/35', from: 'from-[#52525609]', via: 'via-[#131420]' },
-                  { dot: 'bg-zinc-700', bar: 'bg-zinc-700', border: 'border-zinc-700/40', from: 'from-[#3f3f4609]', via: 'via-[#131418]' },
-                  { dot: 'bg-zinc-800', bar: 'bg-zinc-800', border: 'border-zinc-800/50', from: 'from-[#27272a09]', via: 'via-[#121418]' },
+                // Matching card background and text colors directly from chart ranking
+                const RANK_CARD_THEMES = [
+                  { bg: 'bg-white', textTitle: 'text-zinc-900 group-hover:text-black', textLabel: 'text-zinc-500', textVal: 'text-black', textNeg: 'text-rose-600' },
+                  { bg: 'bg-zinc-200', textTitle: 'text-zinc-900 group-hover:text-black', textLabel: 'text-zinc-600', textVal: 'text-zinc-900', textNeg: 'text-rose-600' },
+                  { bg: 'bg-zinc-500', textTitle: 'text-white', textLabel: 'text-zinc-200', textVal: 'text-white', textNeg: 'text-rose-200' },
+                  { bg: 'bg-zinc-700', textTitle: 'text-zinc-100 group-hover:text-white', textLabel: 'text-zinc-400', textVal: 'text-white', textNeg: 'text-rose-400' },
+                  { bg: 'bg-zinc-800', textTitle: 'text-zinc-200 group-hover:text-white', textLabel: 'text-zinc-400', textVal: 'text-white', textNeg: 'text-rose-400' },
+                  { bg: 'bg-zinc-900', textTitle: 'text-zinc-300 group-hover:text-white', textLabel: 'text-zinc-500', textVal: 'text-white', textNeg: 'text-rose-400' },
                 ];
-                const accent = ACCENTS[index % ACCENTS.length];
+                const theme = RANK_CARD_THEMES[index % RANK_CARD_THEMES.length];
 
                 return (
                   <div
                     key={acc.id}
                     onClick={() => onSelectAccount(acc)}
-                    className={`relative p-4 rounded-2xl bg-linear-to-br ${accent.from} ${accent.via} to-[#0e0e12] border ${accent.border} hover:brightness-125 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] active:scale-[0.98] shadow-lg group overflow-hidden`}
+                    className={`relative p-4 rounded-2xl ${theme.bg} hover:brightness-110 transition-all cursor-pointer flex flex-col justify-between min-h-[110px] active:scale-[0.98] shadow-lg group overflow-hidden`}
                   >
-                    {/* Colour-matched sheen in top-right corner */}
-                    <div className={`absolute top-0 right-0 w-24 h-24 ${accent.dot} opacity-[0.04] rounded-full blur-xl pointer-events-none -mr-6 -mt-6`} />
-
                     {/* Top: Account name */}
                     <div className="relative z-10">
-                      <div className="text-[12px] font-bold text-zinc-300 group-hover:text-white transition-colors truncate leading-tight">
+                      <div className={`text-[12px] font-bold ${theme.textTitle} transition-colors truncate leading-tight`}>
                         {acc.name}
                       </div>
                     </div>
 
                     {/* Bottom-right: Balance label + value */}
                     <div className="relative z-10 flex flex-col items-end mt-3">
-                      <div className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 mb-0.5">
+                      <div className={`text-[9px] font-mono uppercase tracking-wider ${theme.textLabel} mb-0.5`}>
                         Balance
                       </div>
-                      <div className={`text-sm sm:text-base font-extrabold font-mono tracking-tight truncate ${isNegative ? 'text-rose-400' : 'text-white'}`}>
+                      <div className={`text-sm sm:text-base font-extrabold font-mono tracking-tight truncate ${isNegative ? theme.textNeg : theme.textVal}`}>
                         {formatCurrency(acc.currentBalance ?? 0, state.settings.currencySymbol)}
                       </div>
                     </div>
