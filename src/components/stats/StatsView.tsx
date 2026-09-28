@@ -1,7 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Target, 
-  AlertCircle 
+  AlertCircle,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Percent
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -98,8 +101,9 @@ export const StatsView: React.FC = () => {
         {/* Summary Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
-              Income
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
+              <ArrowDownLeft size={13} className="text-emerald-400 shrink-0" />
+              <span className="truncate">Income</span>
             </div>
             <div className="text-lg font-bold font-mono text-emerald-400 truncate leading-none">
               +{formatCurrency(totalIncome, state.settings.currencySymbol)}
@@ -107,8 +111,9 @@ export const StatsView: React.FC = () => {
           </div>
 
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
-              Expenses
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
+              <ArrowUpRight size={13} className="text-rose-400 shrink-0" />
+              <span className="truncate">Expenses</span>
             </div>
             <div className="text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(totalExpense, state.settings.currencySymbol)}
@@ -116,8 +121,9 @@ export const StatsView: React.FC = () => {
           </div>
 
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
-              Net
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
+              <span className="w-3.5 h-3.5 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-[9px] font-bold shrink-0">≈</span>
+              <span className="truncate">Net</span>
             </div>
             <div className={`text-lg font-bold font-mono truncate leading-none ${netSavings >= 0 ? 'text-white' : 'text-rose-400'}`}>
               {netSavings >= 0 ? '+' : ''}{formatCurrency(netSavings, state.settings.currencySymbol)}
@@ -125,8 +131,9 @@ export const StatsView: React.FC = () => {
           </div>
 
           <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[92px]">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider h-4 flex items-center">
-              Savings Rate
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
+              <Percent size={13} className="text-purple-400 shrink-0" />
+              <span className="truncate">Savings Rate</span>
             </div>
             <div className="text-lg font-bold font-mono text-white truncate leading-none">
               {savingsRate}%
