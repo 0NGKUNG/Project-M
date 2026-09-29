@@ -6,11 +6,9 @@ import {
   Wallet as WalletIcon, 
   FileText, 
   ChevronDown, 
-  X,
-  Plus,
-  Minus,
-  Calculator,
-  Clock
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import type { TransactionType } from '../../types/finance';
@@ -38,15 +36,26 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
   const [date, setDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState<string>('');
   
-  // Quick subcategory dropdown modal/drawer
+  // Custom Calendar state for Date Picker
+  const [calendarYear, setCalendarYear] = useState<number>(() => new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState<number>(() => new Date().getMonth());
+
+  // Quick subcategory dropdown modal/drawer (for mobile or click)
   const [activeDropdownCatId, setActiveDropdownCatId] = useState<string | null>(null);
 
-  // Hidden account picker & note quick prompt
-  const [showAccountPicker, setShowAccountPicker] = useState<boolean>(false);
-  const [showNoteInput, setShowNoteInput] = useState<boolean>(false);
+  // Selector state for Right Side Panel on PC / Modal on Mobile
+  const [activeRightPanel, setActiveRightPanel] = useState<'datetime' | 'account' | null>(null);
 
-  // Numpad toggle for desktop & Date/Time modal toggle
-  const [showNumpad, setShowNumpad] = useState<boolean>(true);
+  // Hidden account picker fallback flag for mobile compatibility
+  const [showAccountPicker, setShowAccountPicker] = useState<boolean>(false);
+
+  // Auto-detect layout: hide numpad on PC/desktop screens (>=768px), show on mobile (<768px)
+  const [showNumpad, setShowNumpad] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return true;
+  });
   const [time, setTime] = useState<string>(() => {
     const now = new Date();
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -55,6 +64,231 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Wheel column scroll container refs & item refs for auto-centering active time
+  const hourColRef = useRef<HTMLDivElement>(null);
+  const minColRef = useRef<HTMLDivElement>(null);
+  const periodColRef = useRef<HTMLDivElement>(null);
+
+  const hourItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const minItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const periodItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // Helper to scroll item into exact center baseline
+  const scrollToCenter = (container: HTMLDivElement | null, element: HTMLDivElement | null) => {
+    if (!container || !element) return;
+    const targetScroll = element.offsetTop - (container.clientHeight / 2) + (element.clientHeight / 2);
+    container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+  };
+
+  // Auto-scroll active time elements to exact middle baseline when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = setTimeout(() => {
+      const [rawH = '12', m = '00'] = time.split(':');
+      const currentH = parseInt(rawH, 10);
+      const hour12Num = currentH % 12 || 12;
+      const hourStr = String(hour12Num).padStart(2, '0');
+      const periodStr = currentH >= 12 ? 'PM' : 'AM';
+
+      const hourEl = hourItemRefs.current[hourStr];
+      if (hourEl && hourColRef.current) {
+        hourColRef.current.scrollTop = hourEl.offsetTop - (hourColRef.current.clientHeight / 2) + (hourEl.clientHeight / 2);
+      }
+
+      const minEl = minItemRefs.current[m];
+      if (minEl && minColRef.current) {
+        minColRef.current.scrollTop = minEl.offsetTop - (minColRef.current.clientHeight / 2) + (minEl.clientHeight / 2);
+      }
+
+      const periodEl = periodItemRefs.current[periodStr];
+      if (periodEl && periodColRef.current) {
+        periodColRef.current.scrollTop = periodEl.offsetTop - (periodColRef.current.clientHeight / 2) + (periodEl.clientHeight / 2);
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, activeRightPanel, showDateTimePicker]);
+
+  // Real-time scroll handlers to detect center element instantly while dragging or scrolling
+  const updateActiveHourFromScroll = () => {
+    if (!hourColRef.current) return;
+    const container = hourColRef.current;
+    const centerPoint = container.scrollTop + container.clientHeight / 2;
+
+    let closestHour = '12';
+    let minDiff = Infinity;
+
+    Object.entries(hourItemRefs.current).forEach(([hStr, el]) => {
+      if (!el) return;
+      const elCenter = el.offsetTop + el.clientHeight / 2;
+      const diff = Math.abs(centerPoint - elCenter);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestHour = hStr;
+      }
+    });
+
+    const hourNum = parseInt(closestHour, 10);
+    const [rawH = '12', m = '00'] = time.split(':');
+    const currentH = parseInt(rawH, 10);
+    const isPM = currentH >= 12;
+    let new24H = hourNum % 12;
+    if (isPM) new24H += 12;
+    const newTime = `${String(new24H).padStart(2, '0')}:${m}`;
+
+    if (newTime !== time) {
+      setTime(newTime);
+    }
+  };
+
+  const updateActiveMinFromScroll = () => {
+    if (!minColRef.current) return;
+    const container = minColRef.current;
+    const centerPoint = container.scrollTop + container.clientHeight / 2;
+
+    let closestMin = '00';
+    let minDiff = Infinity;
+
+    Object.entries(minItemRefs.current).forEach(([mStr, el]) => {
+      if (!el) return;
+      const elCenter = el.offsetTop + el.clientHeight / 2;
+      const diff = Math.abs(centerPoint - elCenter);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestMin = mStr;
+      }
+    });
+
+    const [h = '12'] = time.split(':');
+    const newTime = `${h}:${closestMin}`;
+
+    if (newTime !== time) {
+      setTime(newTime);
+    }
+  };
+
+  const updateActivePeriodFromScroll = () => {
+    if (!periodColRef.current) return;
+    const container = periodColRef.current;
+    const centerPoint = container.scrollTop + container.clientHeight / 2;
+
+    let closestPeriod = 'AM';
+    let minDiff = Infinity;
+
+    Object.entries(periodItemRefs.current).forEach(([pStr, el]) => {
+      if (!el) return;
+      const elCenter = el.offsetTop + el.clientHeight / 2;
+      const diff = Math.abs(centerPoint - elCenter);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestPeriod = pStr;
+      }
+    });
+
+    const [rawH = '12', m = '00'] = time.split(':');
+    const currentH = parseInt(rawH, 10);
+    let new24H = currentH % 12;
+    if (closestPeriod === 'PM') new24H += 12;
+    const newTime = `${String(new24H).padStart(2, '0')}:${m}`;
+
+    if (newTime !== time) {
+      setTime(newTime);
+    }
+  };
+
+  // Direct 1-item step wheel handlers (moves container by exactly 40px item height per notch)
+  const handleHourWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (!hourColRef.current) return;
+    const direction = e.deltaY > 0 ? 1 : -1;
+    hourColRef.current.scrollBy({ top: direction * 40, behavior: 'smooth' });
+  };
+
+  const handleMinWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (!minColRef.current) return;
+    const direction = e.deltaY > 0 ? 1 : -1;
+    minColRef.current.scrollBy({ top: direction * 40, behavior: 'smooth' });
+  };
+
+  const handlePeriodWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (!periodColRef.current) return;
+    const direction = e.deltaY > 0 ? 1 : -1;
+    periodColRef.current.scrollBy({ top: direction * 40, behavior: 'smooth' });
+  };
+
+  // Natural mouse drag-to-scroll handler proportional to drag distance
+  const handleMouseDown = (containerRef: React.RefObject<HTMLDivElement | null>) => (e: React.MouseEvent) => {
+    const el = containerRef.current;
+    if (!el) return;
+    let startY = e.pageY;
+    let initialScrollTop = el.scrollTop;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.pageY - startY;
+      if (Math.abs(deltaY) > 3) {
+        moveEvent.preventDefault();
+        el.scrollTop = initialScrollTop - deltaY;
+      }
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  // Helper to generate full days matrix for the active month (Mon-Sun layout)
+  const calendarDays = React.useMemo(() => {
+    const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1);
+    const lastDayOfMonth = new Date(calendarYear, calendarMonth + 1, 0);
+    
+    // Day of week index (Monday = 0, Sunday = 6)
+    let startDayOfWeek = firstDayOfMonth.getDay() - 1;
+    if (startDayOfWeek === -1) startDayOfWeek = 6; // Convert Sunday from 0 to 6
+
+    const daysInMonth = lastDayOfMonth.getDate();
+    const days: Array<{ day: number; dateStr: string; isCurrentMonth: boolean }> = [];
+
+    // Prev month padding
+    const prevMonthLastDay = new Date(calendarYear, calendarMonth, 0).getDate();
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      days.push({
+        day: prevMonthLastDay - i,
+        dateStr: '',
+        isCurrentMonth: false,
+      });
+    }
+
+    // Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+      const monthStr = String(calendarMonth + 1).padStart(2, '0');
+      const dayStr = String(d).padStart(2, '0');
+      days.push({
+        day: d,
+        dateStr: `${calendarYear}-${monthStr}-${dayStr}`,
+        isCurrentMonth: true,
+      });
+    }
+
+    // Next month padding to keep fixed 6 rows (42 total cells) so card height never changes
+    const remaining = 42 - days.length;
+    for (let d = 1; d <= remaining; d++) {
+      days.push({
+        day: d,
+        dateStr: '',
+        isCurrentMonth: false,
+      });
+    }
+
+    return days;
+  }, [calendarYear, calendarMonth]);
+
   // Top level categories
   const parentCategories = state.categories.filter(
     (c) => !c.parentId && c.type === (type === 'income' ? 'income' : 'expense')
@@ -62,8 +296,18 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
   const getSubcategories = (catId: string) => state.categories.filter((c) => c.parentId === catId);
 
-  // Sync selected account
+  // Sync selected account & auto-reset date/time to NOW when modal opens
   useEffect(() => {
+    if (isOpen) {
+      setShowNumpad(window.innerWidth < 768);
+      const now = new Date();
+      setDate(now.toISOString().split('T')[0]);
+      setCalendarYear(now.getFullYear());
+      setCalendarMonth(now.getMonth());
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      setTime(`${hh}:${mm}`);
+    }
     if (defaultAccountId) {
       setSelectedAccountId(defaultAccountId);
     } else if (state.accounts.length > 0 && !selectedAccountId) {
@@ -116,7 +360,39 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
   if (!isOpen) return null;
 
-  // Numpad handler
+  // Helper to evaluate simple expressions like "100 - 50" or "100 + 50"
+  const evaluateAmountExpression = (expr: string): string => {
+    try {
+      // Replace non math chars
+      const sanitized = expr.replace(/[^0-9.+-]/g, '');
+      if (!sanitized) return '0';
+      
+      // Split tokens or use Function evaluator safely
+      // Match numbers and operators
+      const tokens = sanitized.match(/(\d+\.?\d*)|([+-])/g);
+      if (!tokens || tokens.length === 0) return '0';
+
+      let result = parseFloat(tokens[0]) || 0;
+      let currentOp = '+';
+
+      for (let i = 1; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (token === '+' || token === '-') {
+          currentOp = token;
+        } else {
+          const val = parseFloat(token) || 0;
+          if (currentOp === '+') result += val;
+          if (currentOp === '-') result -= val;
+        }
+      }
+
+      return String(Math.max(0, parseFloat(result.toFixed(2))));
+    } catch {
+      return expr;
+    }
+  };
+
+  // Numpad handler supporting calculator equations
   const handleKeypadPress = (val: string) => {
     triggerHaptic();
     if (val === 'C') {
@@ -131,30 +407,33 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       }
       return;
     }
-    if (val === '.') {
-      if (!amountStr.includes('.')) {
-        setAmountStr(amountStr + '.');
+    if (val === '=') {
+      const computed = evaluateAmountExpression(amountStr);
+      setAmountStr(computed);
+      return;
+    }
+    if (val === '+' || val === '-') {
+      // Don't append duplicate operator
+      const lastChar = amountStr.slice(-1);
+      if (lastChar === '+' || lastChar === '-') {
+        setAmountStr(amountStr.slice(0, -1) + val);
+      } else {
+        setAmountStr(amountStr + val);
       }
       return;
     }
-    if (val === '+') {
-      // Simple convenience: add 100 or round up
-      const cur = parseFloat(amountStr) || 0;
-      setAmountStr(String(cur + 100));
-      return;
-    }
-    if (val === '-') {
-      const cur = parseFloat(amountStr) || 0;
-      setAmountStr(String(Math.max(0, cur - 100)));
+    if (val === '.') {
+      const lastToken = amountStr.split(/[+-]/).pop() || '';
+      if (!lastToken.includes('.')) {
+        setAmountStr(amountStr + '.');
+      }
       return;
     }
 
     if (amountStr === '0') {
       setAmountStr(val);
     } else {
-      const parts = amountStr.split('.');
-      if (parts[1] && parts[1].length >= 2) return;
-      if (amountStr.length > 9) return;
+      if (amountStr.length > 20) return;
       setAmountStr(amountStr + val);
     }
   };
@@ -184,9 +463,29 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
   const selectedAccount = state.accounts.find((a) => a.id === selectedAccountId);
   const selectedCategory = state.categories.find((c) => c.id === selectedCategoryId);
   const selectedSub = state.categories.find((c) => c.id === selectedSubcategoryId);
+  const currentSubcategories = selectedCategory ? getSubcategories(selectedCategory.id) : [];
+  const hasSubcategories = type !== 'transfer' && currentSubcategories.length > 0;
 
-  // Quick Date format for badge (e.g., Today / YYYY-MM-DD)
+  // Quick Date format for badge
   const isToday = date === new Date().toISOString().split('T')[0];
+
+  const handleOpenDateTime = () => {
+    triggerHaptic();
+    if (window.innerWidth >= 768) {
+      setActiveRightPanel(activeRightPanel === 'datetime' ? null : 'datetime');
+    } else {
+      setShowDateTimePicker(true);
+    }
+  };
+
+  const handleOpenAccount = () => {
+    triggerHaptic();
+    if (window.innerWidth >= 768) {
+      setActiveRightPanel(activeRightPanel === 'account' ? null : 'account');
+    } else {
+      setShowAccountPicker(true);
+    }
+  };
 
   return (
     <div 
@@ -200,448 +499,688 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         readOnly
       />
 
+      {/* Outer Wrapper for Side Panels & Main Card on Desktop */}
       <div 
-        className="w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl bg-[#0c0c10] sm:border border-zinc-900 sm:rounded-2xl md:rounded-3xl flex flex-col justify-between overflow-hidden shadow-2xl safe-top safe-bottom select-none transition-all duration-300"
+        className="flex items-stretch justify-center gap-3 w-full max-w-full sm:max-w-4xl lg:max-w-6xl transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top App Bar: Back icon + Type Switcher Pills */}
-        <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 hover:text-white transition-colors cursor-pointer"
-          >
-            <ArrowLeft size={16} />
-          </button>
+        {/* 1. LEFT SIDE PANEL: Subcategories (Behind Main Card z-10) */}
+        <div className={`hidden md:flex relative z-10 transition-all duration-300 ease-out ${hasSubcategories ? 'w-60 lg:w-64 opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-16 pointer-events-none'}`}>
+          <div className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0">
+            <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-zinc-900 shrink-0">
+              <div className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center text-white shrink-0">
+                <CategoryIcon name={selectedCategory?.icon || 'Tag'} size={13} />
+              </div>
+              <span className="text-xs font-mono font-bold text-white uppercase tracking-wider truncate">
+                {selectedCategory?.name}
+              </span>
+            </div>
+            
+            <div className="space-y-2 font-mono flex-1 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  setSelectedSubcategoryId(undefined);
+                }}
+                className={`w-full py-3.5 px-4 rounded-xl flex items-center justify-between text-xs transition-all cursor-pointer min-h-[48px] ${
+                  selectedSubcategoryId === undefined
+                    ? 'bg-white text-black font-bold shadow-xs'
+                    : 'bg-[#14141a] text-zinc-400 hover:text-white hover:bg-zinc-800/80'
+                }`}
+              >
+                <span>All / General</span>
+                {selectedSubcategoryId === undefined && <Check size={14} strokeWidth={3} />}
+              </button>
 
-          {/* Type Segmented Pill */}
-          <div className="flex bg-[#14141a] p-1 rounded-xl border border-zinc-800/80 gap-1">
-            {(['expense', 'income', 'transfer'] as const).map((t) => {
-              const isAct = type === t;
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic();
-                    setType(t);
-                  }}
-                  className={`py-1.5 px-3 sm:px-5 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer ${
-                    isAct ? 'bg-white text-black shadow-xs' : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  {t === 'expense' ? 'Expense' : t === 'income' ? 'Income' : 'Transfer'}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Keypad toggle for PC/Laptop */}
-          <button
-            type="button"
-            onClick={() => setShowNumpad(!showNumpad)}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
-              showNumpad ? 'bg-zinc-800 text-white' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'
-            }`}
-            title={showNumpad ? 'Hide Keypad (Keyboard mode)' : 'Show Keypad'}
-          >
-            <Calculator size={15} />
-          </button>
-        </div>
-
-        {/* Category Pill Grid (Reference Top Section) */}
-        {type !== 'transfer' ? (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 flex-1 min-h-0 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
-              {parentCategories.map((cat) => {
-                const isSelected = selectedCategoryId === cat.id;
-                const subs = getSubcategories(cat.id);
-                const hasSubs = subs.length > 0;
-
+              {currentSubcategories.map((sub) => {
+                const isSubSelected = selectedSubcategoryId === sub.id;
                 return (
-                  <div
-                    key={cat.id}
+                  <button
+                    key={sub.id}
+                    type="button"
                     onClick={() => {
                       triggerHaptic();
-                      setSelectedCategoryId(cat.id);
-                      setSelectedSubcategoryId(undefined);
+                      setSelectedSubcategoryId(sub.id);
                     }}
-                    className={`relative p-2.5 sm:p-3 rounded-2xl flex items-center gap-2 cursor-pointer transition-all border ${
-                      isSelected
-                        ? 'bg-zinc-200 text-black border-white shadow-md'
-                        : 'bg-[#14141a] text-zinc-300 border-zinc-900 hover:border-zinc-800'
+                    className={`w-full py-3.5 px-4 rounded-xl flex items-center justify-between text-xs transition-all cursor-pointer min-h-[48px] ${
+                      isSubSelected
+                        ? 'bg-white text-black font-bold shadow-xs'
+                        : 'bg-[#14141a] text-zinc-400 hover:text-white hover:bg-zinc-800/80'
                     }`}
                   >
-                    <div
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                        isSelected ? 'bg-black text-white' : 'bg-zinc-900 text-zinc-300'
-                      }`}
-                    >
-                      <CategoryIcon name={cat.icon || 'Tag'} size={14} />
+                    <div className="flex items-center gap-2.5 truncate">
+                      <CategoryIcon name={sub.icon || 'Tag'} size={14} className={isSubSelected ? 'text-black' : 'text-zinc-500'} />
+                      <span className="truncate">{sub.name}</span>
                     </div>
+                    {isSubSelected && <Check size={14} strokeWidth={3} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
 
-                    <div className="truncate flex-1 min-w-0">
-                      <div className="text-[11px] sm:text-xs font-bold truncate leading-snug" title={cat.name}>{cat.name}</div>
-                      {isSelected && selectedSub ? (
-                        <div className="text-[9px] sm:text-[10px] text-zinc-700 truncate leading-tight font-medium mt-0.5" title={selectedSub.name}>
-                          {selectedSub.name}
-                        </div>
-                      ) : hasSubs ? (
-                        <div className={`text-[9px] sm:text-[10px] truncate leading-tight mt-0.5 ${isSelected ? 'text-zinc-600' : 'text-zinc-500 font-mono'}`}>
-                          {subs.length} sub
-                        </div>
-                      ) : null}
-                    </div>
+        {/* 2. MAIN CARD: Category Grid (3 cols on PC), Amount Display, Note Input, Save Button (Elevated z-20 so side panels emerge behind it) */}
+        <div className="relative z-20 w-full sm:max-w-2xl md:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-900 sm:rounded-2xl md:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0">
+          
+          {/* Top App Bar: Back icon + Type Switcher Pills */}
+          <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+            </button>
 
-                    {/* Small dropdown arrow pill if it has subcategories */}
-                    {hasSubs && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerHaptic();
-                          setSelectedCategoryId(cat.id);
-                          setActiveDropdownCatId(activeDropdownCatId === cat.id ? null : cat.id);
-                        }}
-                        className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-lg flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
-                          isSelected ? 'bg-black/10 text-black hover:bg-black/20' : 'bg-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-800'
-                        }`}
-                        title="Pick Subcategory"
-                      >
-                        <ChevronDown size={11} />
-                      </button>
-                    )}
-                  </div>
+            {/* Type Segmented Pill */}
+            <div className="flex bg-[#14141a] p-1 rounded-xl border border-zinc-800/80 gap-1">
+              {(['expense', 'income', 'transfer'] as const).map((t) => {
+                const isAct = type === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      setType(t);
+                    }}
+                    className={`py-1.5 px-3 sm:px-5 rounded-lg text-xs font-mono font-bold capitalize transition-all cursor-pointer ${
+                      isAct ? 'bg-white text-black shadow-xs' : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {t === 'expense' ? 'Expense' : t === 'income' ? 'Income' : 'Transfer'}
+                  </button>
                 );
               })}
             </div>
 
-            {/* Inline Subcategory Bar if active category has subcategories */}
-            {selectedCategory && getSubcategories(selectedCategory.id).length > 0 && (
-              <div className="mt-3 p-2.5 rounded-2xl bg-[#14141a] border border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <span className="text-[10px] font-mono uppercase text-zinc-500 font-bold px-1 shrink-0">
-                  Sub:
-                </span>
+            <div className="w-8" />
+          </div>
+
+          {/* Category Pill Grid (3 columns per row on PC view, taller with more vertical room) */}
+          {type !== 'transfer' ? (
+            <div className="px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-[280px] md:min-h-[340px] overflow-y-auto">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-3.5">
+                {parentCategories.map((cat) => {
+                  const isSelected = selectedCategoryId === cat.id;
+                  const subs = getSubcategories(cat.id);
+                  const hasSubs = subs.length > 0;
+
+                  return (
+                    <div
+                      key={cat.id}
+                      onClick={() => {
+                        triggerHaptic();
+                        setSelectedCategoryId(cat.id);
+                        setSelectedSubcategoryId(undefined);
+                      }}
+                      className={`relative p-3 sm:p-4 rounded-2xl flex items-center gap-2.5 cursor-pointer transition-all border min-h-[58px] sm:min-h-[64px] ${
+                        isSelected
+                          ? 'bg-zinc-200 text-black border-white shadow-md'
+                          : 'bg-[#14141a] text-zinc-300 border-zinc-900 hover:border-zinc-800'
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          isSelected ? 'bg-black text-white' : 'bg-zinc-900 text-zinc-300'
+                        }`}
+                      >
+                        <CategoryIcon name={cat.icon || 'Tag'} size={16} />
+                      </div>
+
+                      <div className="truncate flex-1 min-w-0">
+                        <div className="text-[11px] sm:text-xs font-bold truncate leading-snug" title={cat.name}>{cat.name}</div>
+                        {isSelected && selectedSub ? (
+                          <div className="text-[9px] sm:text-[10px] text-zinc-700 truncate leading-tight font-medium mt-0.5" title={selectedSub.name}>
+                            {selectedSub.name}
+                          </div>
+                        ) : hasSubs ? (
+                          <div className={`text-[9px] sm:text-[10px] truncate leading-tight mt-0.5 ${isSelected ? 'text-zinc-600' : 'text-zinc-500 font-mono'}`}>
+                            {subs.length} sub
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Mobile dropdown arrow for subcategories */}
+                      {hasSubs && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerHaptic();
+                            setSelectedCategoryId(cat.id);
+                            if (window.innerWidth >= 768) {
+                              // Left panel auto opens on PC
+                            } else {
+                              setActiveDropdownCatId(activeDropdownCatId === cat.id ? null : cat.id);
+                            }
+                          }}
+                          className={`md:hidden w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-lg flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
+                            isSelected ? 'bg-black/10 text-black hover:bg-black/20' : 'bg-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                          }`}
+                          title="Pick Subcategory"
+                        >
+                          <ChevronDown size={11} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+
+            </div>
+          ) : (
+            /* Transfer Wallet to Wallet selector */
+            <div className="px-4 py-3 space-y-2">
+              <div className="text-[10px] font-mono uppercase text-zinc-400 font-bold">Transfer Between Wallets</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-[9px] text-zinc-500 font-mono block mb-1">From Wallet</span>
+                  <select
+                    value={selectedAccountId}
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    className="w-full bg-[#14141a] rounded-xl px-3 py-2 text-xs text-white border border-zinc-800 focus-within:outline-none font-mono"
+                  >
+                    {state.accounts.map((a) => (
+                      <option key={a.id} value={a.id}>{a.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <span className="text-[9px] text-zinc-500 font-mono block mb-1">To Wallet</span>
+                  <select
+                    value={toAccountId}
+                    onChange={(e) => setToAccountId(e.target.value)}
+                    className="w-full bg-[#14141a] rounded-xl px-3 py-2 text-xs text-white border border-zinc-800 focus-within:outline-none font-mono"
+                  >
+                    {state.accounts.filter(a => a.id !== selectedAccountId).map((a) => (
+                      <option key={a.id} value={a.id}>{a.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Amount Display Card & Date/Wallet Selectors */}
+          <div className="px-5 sm:px-6 py-3 border-t border-zinc-900/60 bg-[#0e0e13]">
+            <div className="flex items-center justify-between gap-4">
+              {/* Left: Amount Label & Value Input */}
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider mb-0.5">
+                  {type === 'expense' ? 'Amount' : type === 'income' ? 'Received' : 'Transfer'}
+                </div>
+                <div className="flex items-center gap-1.5 font-mono text-zinc-200">
+                  <span className="text-2xl sm:text-3xl font-bold text-zinc-400">{state.settings.currencySymbol}</span>
+                  {!showNumpad ? (
+                    <input
+                      type="text"
+                      value={amountStr}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/[^0-9.]/g, '');
+                        setAmountStr(clean || '0');
+                      }}
+                      className="text-2xl sm:text-3xl font-bold text-zinc-100 tracking-tight bg-transparent focus:outline-none w-48 transition-colors"
+                      placeholder="0"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="text-2xl sm:text-3xl font-bold text-zinc-100 tracking-tight truncate">
+                      {formatNumberWithCommas(amountStr)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Date & Wallet Selectors */}
+              <div className="flex items-center gap-2.5 shrink-0">
+                {/* Date & Time Pill */}
                 <button
                   type="button"
-                  onClick={() => {
-                    triggerHaptic();
-                    setSelectedSubcategoryId(undefined);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-[11px] font-mono whitespace-nowrap transition-all cursor-pointer ${
-                    selectedSubcategoryId === undefined
-                      ? 'bg-white text-black font-bold shadow-xs'
-                      : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                  onClick={handleOpenDateTime}
+                  className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border transition-all cursor-pointer shadow-sm group ${
+                    activeRightPanel === 'datetime'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#14141a] hover:bg-[#1b1b22] border-zinc-800 hover:border-zinc-700'
                   }`}
                 >
-                  All / General
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    activeRightPanel === 'datetime' ? 'bg-black text-white' : 'bg-zinc-900 text-zinc-400 group-hover:text-white'
+                  }`}>
+                    <CalendarIcon size={15} />
+                  </div>
+                  <div className="text-left font-mono">
+                    <div className={`text-xs font-bold leading-tight ${activeRightPanel === 'datetime' ? 'text-black' : 'text-white'}`}>
+                      {isToday ? 'Today' : date}
+                    </div>
+                    <div className={`text-[10px] leading-tight mt-0.5 ${activeRightPanel === 'datetime' ? 'text-zinc-700' : 'text-zinc-500'}`}>{time}</div>
+                  </div>
                 </button>
-                {getSubcategories(selectedCategory.id).map((sub) => {
-                  const isSub = selectedSubcategoryId === sub.id;
-                  return (
+
+                {/* Wallet Pill */}
+                <button
+                  type="button"
+                  onClick={handleOpenAccount}
+                  className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border transition-all cursor-pointer shadow-sm group ${
+                    activeRightPanel === 'account'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#14141a] hover:bg-[#1b1b22] border-zinc-800 hover:border-zinc-700'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    activeRightPanel === 'account' ? 'bg-black text-white' : 'bg-zinc-900 text-zinc-400 group-hover:text-white'
+                  }`}>
+                    <WalletIcon size={15} />
+                  </div>
+                  <div className="text-left font-mono">
+                    <div className={`text-xs font-bold leading-tight ${activeRightPanel === 'account' ? 'text-black' : 'text-white'}`}>
+                      {selectedAccount?.name || 'Wallet'}
+                    </div>
+                    <div className={`text-[10px] leading-tight mt-0.5 ${activeRightPanel === 'account' ? 'text-zinc-700' : 'text-zinc-500'}`}>Account</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Note / Memo Section (Dedicated Full-Width Row Outside Amount Card) */}
+          <div className="px-5 sm:px-6 py-3 bg-[#0c0c10] border-t border-zinc-900/80">
+            <label className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider block mb-1.5">
+              Note / Memo
+            </label>
+            <div className="flex items-center gap-2.5 bg-[#14141a] rounded-2xl px-4 py-2.5 sm:py-3 border border-zinc-800/80 focus-within:border-zinc-600 transition-all">
+              <FileText size={16} className="text-zinc-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Add memo, note, or description..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none font-mono placeholder:text-zinc-600"
+              />
+            </div>
+          </div>
+
+          {/* Touch Keypad Grid for Mobile (showNumpad) matching mobile design reference */}
+          {showNumpad && (() => {
+            const hasPendingOp = /[+-]/.test(amountStr);
+            return (
+              <div className="px-4 py-3 bg-[#0a0a0d] border-t border-zinc-900/80 space-y-2 shrink-0 font-mono">
+                <div className="grid grid-cols-4 gap-1.5 text-center">
+                  {/* Row 1: 1, 2, 3, + */}
+                  {['1', '2', '3', '+'].map((k) => (
                     <button
-                      key={sub.id}
+                      key={k}
+                      type="button"
+                      onClick={() => handleKeypadPress(k)}
+                      className={`py-3 rounded-2xl font-bold text-base transition-all active:scale-95 cursor-pointer border ${
+                        k === '+'
+                          ? 'bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700'
+                          : 'bg-[#14141a] text-white border-zinc-800/80 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {k}
+                    </button>
+                  ))}
+
+                  {/* Row 2: 4, 5, 6, - */}
+                  {['4', '5', '6', '-'].map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => handleKeypadPress(k)}
+                      className={`py-3 rounded-2xl font-bold text-base transition-all active:scale-95 cursor-pointer border ${
+                        k === '-'
+                          ? 'bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700'
+                          : 'bg-[#14141a] text-white border-zinc-800/80 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {k}
+                    </button>
+                  ))}
+
+                  {/* Row 3: 7, 8, 9, back */}
+                  {['7', '8', '9', 'back'].map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => handleKeypadPress(k)}
+                      className={`py-3 rounded-2xl font-bold text-base transition-all active:scale-95 cursor-pointer border flex items-center justify-center ${
+                        k === 'back'
+                          ? 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white'
+                          : 'bg-[#14141a] text-white border-zinc-800/80 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {k === 'back' ? '⌫' : k}
+                    </button>
+                  ))}
+
+                  {/* Row 4: 0, ., =, Save/Check */}
+                  {['0', '.', hasPendingOp ? '=' : 'C', 'Save'].map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => {
+                        if (k === 'Save') {
+                          if (hasPendingOp) {
+                            handleKeypadPress('=');
+                          } else {
+                            executeSubmit();
+                          }
+                        } else {
+                          handleKeypadPress(k);
+                        }
+                      }}
+                      disabled={k === 'Save' && !hasPendingOp && parseFormattedNumber(amountStr) <= 0}
+                      className={`py-3 rounded-2xl font-bold text-base transition-all active:scale-95 cursor-pointer flex items-center justify-center border ${
+                        k === 'Save'
+                          ? 'bg-white text-black border-white hover:bg-zinc-200 disabled:opacity-30 disabled:pointer-events-none'
+                          : k === '='
+                          ? 'bg-amber-500 text-black border-amber-400 font-black'
+                          : k === 'C'
+                          ? 'bg-red-950/40 text-red-400 border-red-900/50 hover:bg-red-900/50'
+                          : 'bg-[#14141a] text-white border-zinc-800/80 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {k === 'Save' ? <Check size={18} strokeWidth={3} /> : k}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Save Transaction Action Button (Inside Main Card Bottom for Desktop) */}
+          {!showNumpad && (
+            <div className="px-5 sm:px-6 py-3.5 bg-[#0a0a0d] border-t border-zinc-900 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={executeSubmit}
+                disabled={parseFormattedNumber(amountStr) <= 0}
+                className="px-8 py-3 bg-white hover:bg-zinc-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none text-black font-mono text-sm font-bold rounded-2xl cursor-pointer shadow-lg transition-all flex items-center gap-2"
+              >
+                <Check size={18} strokeWidth={3} />
+                <span>Save Transaction</span>
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* 3. RIGHT SIDE PANEL: Date & Time or Account Selector (Behind Main Card z-10) */}
+        <div className={`hidden md:flex relative z-10 transition-all duration-300 ease-out ${activeRightPanel ? 'w-64 lg:w-72 opacity-100 translate-x-0' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'}`}>
+          <div className="w-64 lg:w-72 flex flex-col gap-3 overflow-y-auto no-scrollbar h-full font-mono shrink-0">
+            
+            {activeRightPanel === 'datetime' ? (
+              <div key="datetime" className="space-y-3 flex-1 flex flex-col overflow-y-auto no-scrollbar animate-in fade-in zoom-in-95 duration-200">
+                
+                {/* 1. TOP CARD: Calendar Card (Separate Card with Fixed 6-Row Grid) */}
+                <div className="bg-[#0c0c10] border border-zinc-900 rounded-3xl p-4 shadow-2xl space-y-3">
+                  {/* Calendar Month Header & Navigation */}
+                  <div className="flex items-center justify-between px-1">
+                    <button
                       type="button"
                       onClick={() => {
                         triggerHaptic();
-                        setSelectedSubcategoryId(sub.id);
+                        const current = new Date(calendarYear, calendarMonth - 1, 1);
+                        setCalendarYear(current.getFullYear());
+                        setCalendarMonth(current.getMonth());
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-mono whitespace-nowrap transition-all cursor-pointer ${
-                        isSub ? 'bg-white text-black font-bold shadow-xs' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                      className="w-7 h-7 rounded-xl bg-[#14141a] border border-zinc-800/80 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-xs font-bold text-white tracking-wide">
+                      {new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'short', year: 'numeric' })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        const next = new Date(calendarYear, calendarMonth + 1, 1);
+                        setCalendarYear(next.getFullYear());
+                        setCalendarMonth(next.getMonth());
+                      }}
+                      className="w-7 h-7 rounded-xl bg-[#14141a] border border-zinc-800/80 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+
+                  {/* Days of Week Header */}
+                  <div className="grid grid-cols-7 gap-1 text-center">
+                    {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => (
+                      <span key={day} className="text-[9px] font-bold text-zinc-500 py-1">
+                        {day}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Calendar Days Grid (Always 42 cells so height stays 100% fixed) */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {calendarDays.map((item, idx) => {
+                      const isSelected = item.isCurrentMonth && item.dateStr === date;
+                      const isTodayDate = item.dateStr === new Date().toISOString().split('T')[0];
+
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            if (item.dateStr) {
+                              triggerHaptic();
+                              setDate(item.dateStr);
+                            }
+                          }}
+                          disabled={!item.isCurrentMonth}
+                          className={`h-7 rounded-full text-xs font-medium flex items-center justify-center transition-all cursor-pointer ${
+                            !item.isCurrentMonth
+                              ? 'text-zinc-700/60 pointer-events-none'
+                              : isSelected
+                              ? 'bg-white text-black font-bold shadow-md scale-105'
+                              : isTodayDate
+                              ? 'bg-zinc-800 text-white font-bold border border-zinc-700'
+                              : 'text-zinc-300 hover:bg-zinc-800/80'
+                          }`}
+                        >
+                          {item.day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. MIDDLE CARD: Time Wheel Card (Separate Card) */}
+                <div className="bg-[#0c0c10] border border-zinc-900 rounded-3xl p-4 shadow-2xl space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400">Select Time</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        const now = new Date();
+                        const hhNum = now.getHours();
+                        const mm = String(now.getMinutes()).padStart(2, '0');
+                        const hh = String(hhNum).padStart(2, '0');
+                        setTime(`${hh}:${mm}`);
+
+                        const hour12Num = hhNum % 12 || 12;
+                        const hourStr = String(hour12Num).padStart(2, '0');
+                        const periodStr = hhNum >= 12 ? 'PM' : 'AM';
+
+                        setTimeout(() => {
+                          scrollToCenter(hourColRef.current, hourItemRefs.current[hourStr]);
+                          scrollToCenter(minColRef.current, minItemRefs.current[mm]);
+                          scrollToCenter(periodColRef.current, periodItemRefs.current[periodStr]);
+                        }, 10);
+                      }}
+                      className="text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Set to Now
+                    </button>
+                  </div>
+
+                  {/* Time Wheel (h-56 displaying 2 before / 2 after values centered) */}
+                  <div className="relative overflow-hidden h-56 flex items-center justify-center pt-1">
+                    {/* Top & Bottom Gradient Fading Overlay Mask */}
+                    <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#0c0c10] via-[#0c0c10]/90 to-transparent z-20 pointer-events-none" />
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0c0c10] via-[#0c0c10]/90 to-transparent z-20 pointer-events-none" />
+
+                    {/* Columns layout matching uploaded screenshot: [Hour] : [Minute] [AM/PM] */}
+                    <div className="grid grid-cols-7 w-full text-center z-0 h-full items-center font-mono">
+                      {/* Hours Column (span 2: 01 to 12 sequentially) */}
+                      <div ref={hourColRef} onScroll={updateActiveHourFromScroll} onWheel={handleHourWheel} onMouseDown={handleMouseDown(hourColRef)} className="col-span-2 h-full overflow-y-auto no-scrollbar snap-y snap-mandatory py-[96px] cursor-grab active:cursor-grabbing select-none">
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((hourNum) => {
+                          const hourStr = String(hourNum).padStart(2, '0');
+                          const [rawH] = time.split(':');
+                          const currentH = parseInt(rawH || '12', 10);
+                          const is12Hour = (currentH % 12 || 12) === hourNum;
+
+                          return (
+                            <div
+                              key={hourStr}
+                              ref={(el) => { hourItemRefs.current[hourStr] = el; }}
+                              onClick={() => {
+                                triggerHaptic();
+                                const [, m = '00'] = time.split(':');
+                                const isPM = currentH >= 12;
+                                let new24H = hourNum % 12;
+                                if (isPM) new24H += 12;
+                                setTime(`${String(new24H).padStart(2, '0')}:${m}`);
+                                scrollToCenter(hourColRef.current, hourItemRefs.current[hourStr]);
+                              }}
+                              className={`snap-center snap-always h-8 flex items-center justify-center cursor-pointer transition-all ${
+                                is12Hour ? 'text-white text-2xl font-black scale-105' : 'text-zinc-600/50 text-base font-bold hover:text-zinc-400'
+                              }`}
+                            >
+                              {hourStr}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Colon Separator Column (span 1) */}
+                      <div className="col-span-1 z-20 text-white text-xl font-black flex items-center justify-center pointer-events-none select-none">
+                        :
+                      </div>
+
+                      {/* Minutes Column (span 2: 00 to 59 all 60 minutes) */}
+                      <div ref={minColRef} onScroll={updateActiveMinFromScroll} onWheel={handleMinWheel} onMouseDown={handleMouseDown(minColRef)} className="col-span-2 h-full overflow-y-auto no-scrollbar snap-y snap-mandatory py-[96px] cursor-grab active:cursor-grabbing select-none">
+                        {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map((mVal) => {
+                          const [, m = '00'] = time.split(':');
+                          const isSel = m === mVal;
+                          return (
+                            <div
+                              key={mVal}
+                              ref={(el) => { minItemRefs.current[mVal] = el; }}
+                              onClick={() => {
+                                triggerHaptic();
+                                const [h = '12'] = time.split(':');
+                                setTime(`${h}:${mVal}`);
+                                scrollToCenter(minColRef.current, minItemRefs.current[mVal]);
+                              }}
+                              className={`snap-center snap-always h-8 flex items-center justify-center cursor-pointer transition-all ${
+                                isSel ? 'text-white text-2xl font-black scale-105' : 'text-zinc-600/50 text-base font-bold hover:text-zinc-400'
+                              }`}
+                            >
+                              {mVal}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* AM / PM Column (span 2) */}
+                      <div ref={periodColRef} onScroll={updateActivePeriodFromScroll} onWheel={handlePeriodWheel} onMouseDown={handleMouseDown(periodColRef)} className="col-span-2 h-full overflow-y-auto no-scrollbar snap-y snap-mandatory py-[96px] cursor-grab active:cursor-grabbing select-none">
+                        {['AM', 'PM'].map((period) => {
+                          const [rawH] = time.split(':');
+                          const currentH = parseInt(rawH || '12', 10);
+                          const isPM = currentH >= 12;
+                          const isSel = period === 'PM' ? isPM : !isPM;
+
+                          return (
+                            <div
+                              key={period}
+                              ref={(el) => { periodItemRefs.current[period] = el; }}
+                              onClick={() => {
+                                triggerHaptic();
+                                const [, m = '00'] = time.split(':');
+                                let new24H = currentH % 12;
+                                if (period === 'PM') new24H += 12;
+                                setTime(`${String(new24H).padStart(2, '0')}:${m}`);
+                                scrollToCenter(periodColRef.current, periodItemRefs.current[period]);
+                              }}
+                              className={`snap-center snap-always h-8 flex items-center justify-center cursor-pointer transition-all ${
+                                isSel ? 'text-white text-lg font-black scale-105' : 'text-zinc-600/50 text-sm font-bold hover:text-zinc-400'
+                              }`}
+                            >
+                              {period}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. BOTTOM CARD: Standalone Card for Done Button */}
+                <div className="bg-[#0c0c10] border border-zinc-900 rounded-3xl p-3 shadow-2xl">
+                  <button
+                    type="button"
+                    onClick={() => setActiveRightPanel(null)}
+                    className="w-full py-3.5 bg-white hover:bg-zinc-200 text-black font-bold text-sm rounded-2xl cursor-pointer shadow-md transition-all active:scale-98"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Wallet/Account Selector Card */
+              <div key="account" className="bg-[#0c0c10] border border-zinc-900 rounded-3xl p-4 shadow-2xl space-y-2 flex-1 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-900 shrink-0">
+                  <span className="text-xs font-bold uppercase tracking-wider text-white">Select Account</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveRightPanel(null)}
+                    className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                {state.accounts.map((acc) => {
+                  const isSelected = selectedAccountId === acc.id;
+                  return (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        setSelectedAccountId(acc.id);
+                        setActiveRightPanel(null);
+                      }}
+                      className={`w-full py-3.5 px-4 rounded-xl flex items-center justify-between text-xs transition-all cursor-pointer min-h-[48px] ${
+                        isSelected
+                          ? 'bg-white text-black font-bold'
+                          : 'bg-[#14141a] text-zinc-300 hover:bg-zinc-800'
                       }`}
                     >
-                      {sub.name}
+                      <div className="flex items-center gap-2">
+                        <WalletIcon size={14} className={isSelected ? 'text-black' : 'text-zinc-400'} />
+                        <span className="font-bold">{acc.name}</span>
+                      </div>
+                      {isSelected && <Check size={14} strokeWidth={3} />}
                     </button>
                   );
                 })}
               </div>
             )}
           </div>
-        ) : (
-          /* Transfer Wallet to Wallet selector */
-          <div className="px-4 py-3 space-y-2">
-            <div className="text-[10px] font-mono uppercase text-zinc-400 font-bold">Transfer Between Wallets</div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <span className="text-[9px] text-zinc-500 font-mono block mb-1">From Wallet</span>
-                <select
-                  value={selectedAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="w-full bg-[#14141a] rounded-xl px-3 py-2 text-xs text-white border border-zinc-800 focus:outline-none font-mono"
-                >
-                  {state.accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <span className="text-[9px] text-zinc-500 font-mono block mb-1">To Wallet</span>
-                <select
-                  value={toAccountId}
-                  onChange={(e) => setToAccountId(e.target.value)}
-                  className="w-full bg-[#14141a] rounded-xl px-3 py-2 text-xs text-white border border-zinc-800 focus:outline-none font-mono"
-                >
-                  {state.accounts.filter(a => a.id !== selectedAccountId).map((a) => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Amount Display & Quick Note Strip (Center) */}
-        <div className="px-6 py-2.5 flex items-center justify-between border-t border-zinc-900/60 bg-[#0e0e13] gap-3">
-          <div className="flex-1 truncate">
-            <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
-              {type === 'expense' ? 'Amount' : type === 'income' ? 'Received' : 'Transfer'}
-            </div>
-            <div className="flex items-baseline gap-1 font-mono">
-              <span className="text-xl text-zinc-500 font-medium">{state.settings.currencySymbol}</span>
-              {!showNumpad ? (
-                <input
-                  type="text"
-                  value={amountStr}
-                  onChange={(e) => {
-                    const clean = e.target.value.replace(/[^0-9.]/g, '');
-                    setAmountStr(clean || '0');
-                  }}
-                  className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight bg-transparent border-b border-dashed border-zinc-700 focus:border-white focus:outline-none w-48"
-                  placeholder="0"
-                  autoFocus
-                />
-              ) : (
-                <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight truncate">
-                  {formatNumberWithCommas(amountStr)}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Note Badge under/beside value */}
-          <div className="flex items-center gap-2">
-            {!showNumpad && (
-              <button
-                type="button"
-                onClick={executeSubmit}
-                disabled={parseFormattedNumber(amountStr) <= 0}
-                className="px-4 py-2 bg-white hover:bg-zinc-200 text-black font-mono text-xs font-bold rounded-xl cursor-pointer shadow-md transition-all flex items-center gap-1.5 disabled:opacity-30"
-              >
-                <Check size={15} strokeWidth={3} />
-                <span>Save</span>
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowNoteInput(!showNoteInput)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-mono transition-colors cursor-pointer max-w-[160px] truncate"
-            >
-              <FileText size={12} className="text-zinc-500 shrink-0" />
-              <span className="truncate">{note ? note : 'Add Note'}</span>
-            </button>
-          </div>
         </div>
 
-        {/* Note input inline prompt directly under amount */}
-        {showNoteInput && (
-          <div className="px-6 py-2 bg-[#121218] border-t border-zinc-900 flex items-center gap-2 animate-fade-in">
-            <input
-              type="text"
-              placeholder="Add memo/note..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              autoFocus
-              className="flex-1 bg-[#181822] rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none border border-zinc-800 font-mono"
-            />
-            <button
-              type="button"
-              onClick={() => setShowNoteInput(false)}
-              className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
-            >
-              OK
-            </button>
-          </div>
-        )}
-
-        {/* ─── Bottom Reference Layout: Keypad (Left) + Quick Attributes (Right) ─── */}
-        {showNumpad ? (
-          <div className="p-3 bg-[#0a0a0d] border-t border-zinc-900 flex gap-2">
-            {/* Keypad */}
-            <div className="flex-[3] grid grid-cols-4 gap-1.5">
-              {['1', '2', '3'].map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => handleKeypadPress(k)}
-                  className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
-                >
-                  {k}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => handleKeypadPress('+')}
-                className="py-3 bg-[#181822] hover:bg-zinc-800 text-zinc-300 font-mono text-base font-bold rounded-2xl cursor-pointer flex items-center justify-center"
-                title="+100"
-              >
-                <Plus size={16} />
-              </button>
-
-              {['4', '5', '6'].map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => handleKeypadPress(k)}
-                  className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
-                >
-                  {k}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => handleKeypadPress('-')}
-                className="py-3 bg-[#181822] hover:bg-zinc-800 text-zinc-300 font-mono text-base font-bold rounded-2xl cursor-pointer flex items-center justify-center"
-                title="-100"
-              >
-                <Minus size={16} />
-              </button>
-
-              {['7', '8', '9'].map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => handleKeypadPress(k)}
-                  className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
-                >
-                  {k}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => handleKeypadPress('back')}
-                className="py-3 bg-[#1a1416] hover:bg-rose-950/40 text-rose-400 font-mono text-base font-bold rounded-2xl cursor-pointer"
-              >
-                ⌫
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleKeypadPress('.')}
-                className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
-              >
-                .
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleKeypadPress('0')}
-                className="py-3 bg-[#14141a] hover:bg-[#1e1e26] active:scale-95 text-white font-mono text-lg font-bold rounded-2xl cursor-pointer"
-              >
-                0
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleKeypadPress('C')}
-                className="py-3 bg-[#14141a] hover:bg-zinc-800 text-zinc-500 hover:text-white font-mono text-xs font-bold rounded-2xl cursor-pointer"
-              >
-                CLR
-              </button>
-
-              {/* Checkmark submit button */}
-              <button
-                type="button"
-                onClick={executeSubmit}
-                disabled={parseFormattedNumber(amountStr) <= 0}
-                className="py-3 bg-white hover:bg-zinc-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none text-black font-bold rounded-2xl flex items-center justify-center shadow-lg cursor-pointer transition-all"
-              >
-                <Check size={20} strokeWidth={3} />
-              </button>
-            </div>
-
-            {/* Quick Attribute Tiles (Right Column) */}
-            <div className="flex-1 flex flex-col gap-1.5">
-              {/* 1. Date & Time Pill */}
-              <button
-                type="button"
-                onClick={() => setShowDateTimePicker(true)}
-                className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 hover:border-zinc-700 transition-colors cursor-pointer text-center flex-1"
-              >
-                <CalendarIcon size={14} className="text-zinc-400 mb-0.5" />
-                <span className="text-[10px] font-mono font-bold text-white truncate max-w-full">
-                  {isToday ? 'Today' : date.slice(5)}
-                </span>
-                <span className="text-[8px] font-mono text-zinc-500">{time}</span>
-              </button>
-
-              {/* 2. Target Wallet Pill */}
-              <button
-                type="button"
-                onClick={() => setShowAccountPicker(!showAccountPicker)}
-                className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 hover:border-zinc-700 transition-colors cursor-pointer text-center flex-1"
-              >
-                <WalletIcon size={14} className="text-zinc-400 mb-0.5" />
-                <span className="text-[10px] font-mono font-bold text-white truncate max-w-full">
-                  {selectedAccount?.name || 'Wallet'}
-                </span>
-              </button>
-
-              {/* 3. Category Quick Peek */}
-              <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 text-center flex-1">
-                <CategoryIcon name={selectedCategory?.icon || 'Tag'} size={14} className="text-zinc-400 mb-0.5" />
-                <span className="text-[9px] font-mono font-bold text-zinc-400 truncate max-w-full">
-                  {selectedSub?.name || selectedCategory?.name || 'Category'}
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="p-3 bg-[#0a0a0d] border-t border-zinc-900 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              {/* Date & Time Pill */}
-              <button
-                type="button"
-                onClick={() => setShowDateTimePicker(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#14141a] border border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer"
-              >
-                <CalendarIcon size={14} className="text-zinc-400" />
-                <div className="text-left font-mono">
-                  <div className="text-[11px] font-bold text-white leading-tight">
-                    {isToday ? 'Today' : date}
-                  </div>
-                  <div className="text-[9px] text-zinc-500 leading-tight">{time}</div>
-                </div>
-              </button>
-
-              {/* Wallet Pill */}
-              <button
-                type="button"
-                onClick={() => setShowAccountPicker(!showAccountPicker)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#14141a] border border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer"
-              >
-                <WalletIcon size={14} className="text-zinc-400" />
-                <div className="text-left font-mono">
-                  <div className="text-[11px] font-bold text-white leading-tight">
-                    {selectedAccount?.name || 'Wallet'}
-                  </div>
-                  <div className="text-[9px] text-zinc-500 leading-tight">Account</div>
-                </div>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={executeSubmit}
-              disabled={parseFormattedNumber(amountStr) <= 0}
-              className="px-5 py-2.5 bg-white hover:bg-zinc-200 text-black font-mono text-xs font-bold rounded-xl cursor-pointer shadow-md transition-all flex items-center gap-2 disabled:opacity-30"
-            >
-              <Check size={16} strokeWidth={3} />
-              <span>Save Transaction</span>
-            </button>
-          </div>
-        )}
+      </div>
 
         {/* Popups & Modals */}
-        {/* 1. Subcategory Picker Modal (Reference screenshot 2) */}
+        {/* 1. Subcategory Picker Modal (For mobile click) */}
         {activeDropdownCatId && (
           <div 
             className="fixed inset-0 z-60 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
@@ -670,7 +1209,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
               </div>
 
               <div className="space-y-1 max-h-60 overflow-y-auto">
-                {/* General / No subcategory option */}
                 <button
                   type="button"
                   onClick={() => {
@@ -691,7 +1229,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                   )}
                 </button>
 
-                {/* Subcategories list */}
                 {getSubcategories(activeDropdownCatId).map((sub) => {
                   const isSelected = selectedCategoryId === activeDropdownCatId && selectedSubcategoryId === sub.id;
                   return (
@@ -723,7 +1260,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
           </div>
         )}
 
-        {/* 2. Quick Wallet Selector Modal (Reference screenshot 4) */}
+        {/* 2. Quick Wallet Selector Modal (Mobile) */}
         {showAccountPicker && (
           <div 
             className="fixed inset-0 z-60 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
@@ -775,112 +1312,247 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
           </div>
         )}
 
-        {/* 3. Custom Date & Time Selector Modal */}
+        {/* 3. Custom Date & Time Selector Modal (Mobile) */}
         {showDateTimePicker && (
           <div 
-            className="fixed inset-0 z-60 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+            className="fixed inset-0 z-60 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
             onClick={() => setShowDateTimePicker(false)}
           >
             <div 
-              className="w-full max-w-xs bg-[#101014] border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-4 font-mono"
+              className="w-full max-w-sm bg-[#101014] border border-zinc-800 rounded-2xl md:rounded-3xl p-5 shadow-2xl space-y-4 font-mono max-h-[90vh] overflow-y-auto no-scrollbar"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
-                <div className="flex items-center gap-2 text-white">
-                  <CalendarIcon size={14} className="text-zinc-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Date & Time</span>
+              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+                <div className="flex items-center gap-2.5 text-white">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300">
+                    <CalendarIcon size={16} />
+                  </div>
+                  <span className="text-sm font-bold uppercase tracking-wider">Date & Time</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowDateTimePicker(false)}
-                  className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+                  className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
-                  <X size={12} />
+                  <X size={14} />
                 </button>
               </div>
 
-              <div className="space-y-3">
-                {/* Date Input */}
-                <div>
-                  <label className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">
-                    Select Date
-                  </label>
-                  <div className="flex items-center gap-2 bg-[#14141a] rounded-xl px-3 py-2 border border-zinc-800">
-                    <CalendarIcon size={14} className="text-zinc-400 shrink-0" />
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="bg-transparent text-xs text-white focus:outline-none w-full font-mono cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                {/* Time Input */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] uppercase text-zinc-500 font-bold">
-                      Select Time
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const now = new Date();
-                        setTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
-                      }}
-                      className="text-[9px] text-zinc-400 hover:text-white font-mono cursor-pointer"
-                    >
-                      Set to Now
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 bg-[#14141a] rounded-xl px-3 py-2 border border-zinc-800">
-                    <Clock size={14} className="text-zinc-400 shrink-0" />
-                    <input
-                      type="time"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      className="bg-transparent text-xs text-white focus:outline-none w-full font-mono cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                {/* Preset Date Quick Pills */}
-                <div className="flex items-center gap-1.5 pt-1">
+              {/* 1. TOP CARD: Calendar Widget */}
+              <div className="bg-[#14141a] border border-zinc-800/80 rounded-2xl p-3.5 space-y-3">
+                <div className="flex items-center justify-between px-1">
                   <button
                     type="button"
                     onClick={() => {
-                      setDate(new Date().toISOString().split('T')[0]);
+                      triggerHaptic();
+                      const current = new Date(calendarYear, calendarMonth - 1, 1);
+                      setCalendarYear(current.getFullYear());
+                      setCalendarMonth(current.getMonth());
                     }}
-                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                      isToday ? 'bg-white text-black' : 'bg-[#14141a] text-zinc-400 hover:text-white'
-                    }`}
+                    className="w-7 h-7 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
                   >
-                    Today
+                    <ChevronLeft size={14} />
                   </button>
+                  <span className="text-xs font-bold text-white tracking-wide">
+                    {new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'short', year: 'numeric' })}
+                  </span>
                   <button
                     type="button"
                     onClick={() => {
-                      const y = new Date(Date.now() - 86400000);
-                      setDate(y.toISOString().split('T')[0]);
+                      triggerHaptic();
+                      const next = new Date(calendarYear, calendarMonth + 1, 1);
+                      setCalendarYear(next.getFullYear());
+                      setCalendarMonth(next.getMonth());
                     }}
-                    className="flex-1 py-1.5 rounded-lg text-[10px] font-bold bg-[#14141a] text-zinc-400 hover:text-white transition-all cursor-pointer"
+                    className="w-7 h-7 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
                   >
-                    Yesterday
+                    <ChevronRight size={14} />
                   </button>
+                </div>
+
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => (
+                    <span key={day} className="text-[9px] font-bold text-zinc-500 py-1">
+                      {day}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-1">
+                  {calendarDays.map((item, idx) => {
+                    const isSelected = item.isCurrentMonth && item.dateStr === date;
+                    const isTodayDate = item.dateStr === new Date().toISOString().split('T')[0];
+
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          if (item.dateStr) {
+                            triggerHaptic();
+                            setDate(item.dateStr);
+                          }
+                        }}
+                        disabled={!item.isCurrentMonth}
+                        className={`h-7 rounded-full text-xs font-medium flex items-center justify-center transition-all cursor-pointer ${
+                          !item.isCurrentMonth
+                            ? 'text-zinc-700 pointer-events-none'
+                            : isSelected
+                            ? 'bg-white text-black font-bold shadow-md scale-105'
+                            : isTodayDate
+                            ? 'bg-zinc-800 text-white font-bold border border-zinc-700'
+                            : 'text-zinc-300 hover:bg-zinc-800/80'
+                        }`}
+                      >
+                        {item.day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. BOTTOM CARD: Scrollable Time Wheel Picker */}
+              <div className="bg-[#14141a] border border-zinc-800/80 rounded-2xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[10px] uppercase font-bold text-zinc-400">Select Time</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      const now = new Date();
+                      const hhNum = now.getHours();
+                      const mm = String(now.getMinutes()).padStart(2, '0');
+                      const hh = String(hhNum).padStart(2, '0');
+                      setTime(`${hh}:${mm}`);
+
+                      const hour12Num = hhNum % 12 || 12;
+                      const hourStr = String(hour12Num).padStart(2, '0');
+                      const periodStr = hhNum >= 12 ? 'PM' : 'AM';
+
+                      setTimeout(() => {
+                        scrollToCenter(hourColRef.current, hourItemRefs.current[hourStr]);
+                        scrollToCenter(minColRef.current, minItemRefs.current[mm]);
+                        scrollToCenter(periodColRef.current, periodItemRefs.current[periodStr]);
+                      }, 10);
+                    }}
+                    className="text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Set to Now
+                  </button>
+                </div>
+
+                {/* Time Wheel directly on outer card matching Desktop height & handlers */}
+                <div className="relative overflow-hidden h-56 flex items-center justify-center pt-1">
+                  {/* Top & Bottom Gradient Fading Overlay Mask */}
+                  <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#14141a] via-[#14141a]/90 to-transparent z-20 pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#14141a] via-[#14141a]/90 to-transparent z-20 pointer-events-none" />
+
+                  {/* Columns layout matching uploaded screenshot: [Hour] : [Minute] [AM/PM] */}
+                  <div className="grid grid-cols-7 w-full text-center z-0 h-full items-center font-mono">
+                    {/* Hours Column (span 2: 01 to 12 sequentially) */}
+                    <div ref={hourColRef} onScroll={updateActiveHourFromScroll} onWheel={handleHourWheel} onMouseDown={handleMouseDown(hourColRef)} className="col-span-2 h-full overflow-y-auto no-scrollbar snap-y snap-mandatory py-[96px] cursor-grab active:cursor-grabbing select-none">
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((hourNum) => {
+                        const hourStr = String(hourNum).padStart(2, '0');
+                        const [rawH] = time.split(':');
+                        const currentH = parseInt(rawH || '12', 10);
+                        const is12Hour = (currentH % 12 || 12) === hourNum;
+
+                        return (
+                          <div
+                            key={hourStr}
+                            ref={(el) => { hourItemRefs.current[hourStr] = el; }}
+                            onClick={() => {
+                              triggerHaptic();
+                              const [, m = '00'] = time.split(':');
+                              const isPM = currentH >= 12;
+                              let new24H = hourNum % 12;
+                              if (isPM) new24H += 12;
+                              setTime(`${String(new24H).padStart(2, '0')}:${m}`);
+                              scrollToCenter(hourColRef.current, hourItemRefs.current[hourStr]);
+                            }}
+                            className={`snap-center snap-always h-8 flex items-center justify-center cursor-pointer transition-all ${
+                              is12Hour ? 'text-white text-2xl font-black scale-105' : 'text-zinc-600/50 text-base font-bold hover:text-zinc-400'
+                            }`}
+                          >
+                            {hourStr}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Colon Separator Column (span 1) */}
+                    <div className="col-span-1 z-20 text-white text-xl font-black flex items-center justify-center pointer-events-none select-none">
+                      :
+                    </div>
+
+                    {/* Minutes Column (span 2: 00 to 59 all 60 minutes) */}
+                    <div ref={minColRef} onScroll={updateActiveMinFromScroll} onWheel={handleMinWheel} onMouseDown={handleMouseDown(minColRef)} className="col-span-2 h-full overflow-y-auto no-scrollbar snap-y snap-mandatory py-[96px] cursor-grab active:cursor-grabbing select-none">
+                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map((mVal) => {
+                        const [, m = '00'] = time.split(':');
+                        const isSel = m === mVal;
+                        return (
+                          <div
+                            key={mVal}
+                            ref={(el) => { minItemRefs.current[mVal] = el; }}
+                            onClick={() => {
+                              triggerHaptic();
+                              const [h = '12'] = time.split(':');
+                              setTime(`${h}:${mVal}`);
+                              scrollToCenter(minColRef.current, minItemRefs.current[mVal]);
+                            }}
+                            className={`snap-center snap-always h-8 flex items-center justify-center cursor-pointer transition-all ${
+                              isSel ? 'text-white text-2xl font-black scale-105' : 'text-zinc-600/50 text-base font-bold hover:text-zinc-400'
+                            }`}
+                          >
+                            {mVal}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* AM / PM Column (span 2) */}
+                    <div ref={periodColRef} onScroll={updateActivePeriodFromScroll} onWheel={handlePeriodWheel} onMouseDown={handleMouseDown(periodColRef)} className="col-span-2 h-full overflow-y-auto no-scrollbar snap-y snap-mandatory py-[96px] cursor-grab active:cursor-grabbing select-none">
+                      {['AM', 'PM'].map((period) => {
+                        const [rawH] = time.split(':');
+                        const currentH = parseInt(rawH || '12', 10);
+                        const isPM = currentH >= 12;
+                        const isSel = period === 'PM' ? isPM : !isPM;
+
+                        return (
+                          <div
+                            key={period}
+                            ref={(el) => { periodItemRefs.current[period] = el; }}
+                            onClick={() => {
+                              triggerHaptic();
+                              const [, m = '00'] = time.split(':');
+                              let new24H = currentH % 12;
+                              if (period === 'PM') new24H += 12;
+                              setTime(`${String(new24H).padStart(2, '0')}:${m}`);
+                              scrollToCenter(periodColRef.current, periodItemRefs.current[period]);
+                            }}
+                            className={`snap-center snap-always h-8 flex items-center justify-center cursor-pointer transition-all ${
+                              isSel ? 'text-white text-lg font-black scale-105' : 'text-zinc-600/50 text-sm font-bold hover:text-zinc-400'
+                            }`}
+                          >
+                            {period}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setShowDateTimePicker(false)}
-                className="w-full py-2.5 bg-white text-black font-bold text-xs rounded-xl cursor-pointer hover:bg-zinc-200 transition-colors"
+                className="w-full py-3 bg-white hover:bg-zinc-200 text-black font-bold text-xs rounded-xl cursor-pointer shadow-md transition-all active:scale-95"
               >
                 Done
               </button>
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };
