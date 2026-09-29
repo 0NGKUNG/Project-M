@@ -301,7 +301,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
               />
             )}
 
-            {/* Main Smooth Stroke with subtle drop glow */}
+            {/* Main Smooth Stroke */}
             <path 
               d={pathD} 
               fill="none" 
@@ -309,7 +309,6 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
               strokeWidth="2" 
               strokeLinecap="round" 
               strokeLinejoin="round" 
-              filter={`url(#glow-${account.id})`}
             />
 
             {/* Active Highlight Dot */}

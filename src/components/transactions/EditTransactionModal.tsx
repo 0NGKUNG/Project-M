@@ -306,7 +306,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       >
         {/* 1. LEFT PANEL: Subcategories (Desktop) */}
         <div 
-          className={`hidden md:flex justify-end relative z-10 transition-all duration-300 ease-out ${
+          className={`hidden md:flex justify-end relative z-10 overflow-hidden transition-all duration-300 ease-out ${
             hasSubcategories ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 translate-x-16 pointer-events-none'
           }`}
         >
@@ -902,7 +902,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
         {/* 3. RIGHT PANEL: Date & Time or Account Selector (Desktop) */}
         <div 
-          className={`hidden md:flex relative z-10 transition-all duration-300 ease-out ${
+          className={`hidden md:flex relative z-10 overflow-hidden transition-all duration-300 ease-out ${
             activeRightPanel ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'
           }`}
         >
