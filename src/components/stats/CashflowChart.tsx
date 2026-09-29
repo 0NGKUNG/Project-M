@@ -322,7 +322,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
   };
 
   return (
-    <div className="bg-[#101014] rounded-2xl p-4 sm:p-5 border border-zinc-900/60 shadow-sm flex flex-col space-y-3 overflow-hidden">
+    <div className="bg-[#101014] rounded-2xl p-3 sm:p-5 border border-zinc-900/60 shadow-sm flex flex-col space-y-2 sm:space-y-3 overflow-hidden">
       {/* Chart Header - Net Worth and Savings Rate displayed over the chart */}
       <div className="flex items-center justify-between">
         <div>
@@ -330,7 +330,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
             <span>Net Worth</span>
           </div>
-          <div className={`text-lg sm:text-xl font-bold font-mono tracking-tight mt-0.5 leading-none ${
+          <div className={`text-base sm:text-xl font-bold font-mono tracking-tight mt-0.5 leading-none ${
             displayNetWorth >= 0 ? 'text-white' : 'text-rose-400'
           }`}>
             {displayNetWorth >= 0 ? '+' : ''}{formatCurrency(displayNetWorth, state.settings.currencySymbol)}
@@ -342,7 +342,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
             <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
             <span>Savings</span>
           </div>
-          <div className="text-lg sm:text-xl font-bold font-mono tracking-tight text-white mt-0.5 leading-none">
+          <div className="text-base sm:text-xl font-bold font-mono tracking-tight text-white mt-0.5 leading-none">
             {displaySavingsRate}%
           </div>
         </div>
@@ -350,7 +350,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
 
       {/* SVG Curved Line Chart Canvas with interactive cursor tracking */}
       <div ref={chartFrameRef} className="w-full flex-1 min-h-0 relative select-none">
-        <div className="relative w-full h-36 sm:h-52">
+        <div className="relative w-full h-28 sm:h-52">
           <svg
             ref={svgRef}
             viewBox={`0 0 ${width} ${height}`}
