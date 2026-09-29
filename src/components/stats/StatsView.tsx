@@ -288,7 +288,7 @@ export const StatsView: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-white">
                   <Target size={14} className="text-zinc-400 shrink-0" />
-                  <span className="capitalize">{timeRange} Limit</span>
+                  <span className="capitalize">{timeRange} Budget</span>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-400">
                   {progress}% used
@@ -306,13 +306,13 @@ export const StatsView: React.FC = () => {
 
               <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-mono text-zinc-400">
                 <span>{formatCurrency(totalExpense, state.settings.currencySymbol)} spent</span>
-                <span>Target: {formatCurrency(goalLimit, state.settings.currencySymbol)}</span>
+                <span>Budget: {formatCurrency(goalLimit, state.settings.currencySymbol)}</span>
               </div>
 
               {isOver && (
                 <div className="flex items-center gap-1 text-[10px] font-mono text-rose-400 pt-0.5">
                   <AlertCircle size={11} className="shrink-0" />
-                  <span>Over by {formatCurrency(totalExpense - goalLimit, state.settings.currencySymbol)}</span>
+                  <span>Over budget by {formatCurrency(totalExpense - goalLimit, state.settings.currencySymbol)}</span>
                 </div>
               )}
             </div>

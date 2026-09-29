@@ -116,7 +116,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const openCreateModal = () => {
     const now = new Date();
     setEditingBudgetId(null);
-    setName('Spending Goal');
+    setName('Monthly Budget');
     setPeriod('monthly');
     setAmount('');
     setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]);
@@ -129,7 +129,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const openEditModal = (b: Budget) => {
     setEditingBudgetId(b.id);
-    setName(b.name || 'Spending Goal');
+    setName(b.name || 'Monthly Budget');
     setPeriod(b.period || 'monthly');
     setAmount(String(b.amount));
     setStartDate(b.startDate || new Date().toISOString().split('T')[0]);
@@ -184,7 +184,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (editingBudgetId) {
       updateBudget({
         id: editingBudgetId,
-        name: name.trim() || 'Spending Goal',
+        name: name.trim() || 'Monthly Budget',
         amount: totalAmount,
         period,
         startDate,
@@ -193,7 +193,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       });
     } else {
       addBudget({
-        name: name.trim() || 'Spending Goal',
+        name: name.trim() || 'Monthly Budget',
         amount: totalAmount,
         period,
         startDate,
@@ -241,7 +241,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           >
             <ArrowLeft size={16} />
           </button>
-          <h2 className="text-base font-bold text-white font-mono">SPENDING GOALS</h2>
+          <h2 className="text-base font-bold text-white font-mono">BUDGETS</h2>
         </div>
 
         <button
@@ -249,25 +249,25 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-sm"
         >
           <Plus size={13} strokeWidth={2.8} />
-          New Goal
+          New Budget
         </button>
       </div>
 
-      {/* List of Goals matching reference 1 & 2 */}
+      {/* List of Budgets matching reference 1 & 2 */}
       {state.budgets.length === 0 ? (
         <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/60 text-center space-y-2">
           <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
             <Target size={18} />
           </div>
-          <div className="text-xs text-zinc-400 font-medium">No spending goals set</div>
+          <div className="text-xs text-zinc-400 font-medium">No budgets set</div>
           <p className="text-[10px] text-zinc-600 max-w-xs mx-auto">
-            Create a date range goal and allocate limits for categories like Food, Essentials, or Savings.
+            Create a date range budget and allocate limits for categories like Food, Essentials, or Savings.
           </p>
           <button
             onClick={openCreateModal}
             className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-black text-xs font-bold cursor-pointer"
           >
-            <Plus size={13} /> Add Goal
+            <Plus size={13} /> Add Budget
           </button>
         </div>
       ) : (
@@ -370,8 +370,8 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <Target size={16} />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-bold text-white font-mono">{selectedGoal.name || 'Spending Goal'}</h3>
-                    <p className="text-[10px] text-zinc-500 font-mono uppercase">{selectedGoal.period} target</p>
+                    <h3 className="text-sm sm:text-base font-bold text-white font-mono">{selectedGoal.name || 'Monthly Budget'}</h3>
+                    <p className="text-[10px] text-zinc-500 font-mono uppercase">{selectedGoal.period} budget</p>
                   </div>
                 </div>
                 <button
@@ -465,14 +465,14 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   }}
                   className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer text-center"
                 >
-                  Delete Goal
+                  Delete Budget
                 </button>
                 <button
                   type="button"
                   onClick={() => openEditModal(selectedGoal)}
                   className="flex-1 py-2.5 rounded-xl bg-white text-black hover:bg-zinc-200 text-xs font-mono font-bold transition-all cursor-pointer text-center shadow-md active:scale-95"
                 >
-                  Edit Goal
+                  Edit Budget
                 </button>
               </div>
             </div>
@@ -498,7 +498,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <Target size={16} />
                   </div>
                   <h3 className="text-sm sm:text-base font-bold text-white font-mono">
-                    {editingBudgetId ? 'Edit Spending Goal' : 'Create Spending Goal'}
+                    {editingBudgetId ? 'Edit Budget' : 'Create Budget'}
                   </h3>
                 </div>
                 <button
@@ -514,7 +514,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                   {/* Name */}
                   <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Goal Name</label>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Budget Name</label>
                     <input
                       type="text"
                       placeholder="e.g. October Budget, Holiday Trip"
@@ -650,7 +650,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     type="submit"
                     className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
                   >
-                    Save Goal
+                    Save Budget
                   </button>
                 </div>
               </form>
@@ -1240,16 +1240,16 @@ export const SettingsView: React.FC = () => {
       <SectionLabel>Manage</SectionLabel>
       <Card>
         <Row
-          icon={<Target size={15} />}
-          title="Spending Goals"
-          subtitle="Set range goals & category allocations"
-          onClick={() => setSubPage('goals')}
-        />
-        <Row
           icon={<Tag size={15} />}
           title="Categories"
           subtitle="Manage parent & subcategories"
           onClick={() => setSubPage('categories')}
+        />
+        <Row
+          icon={<Target size={15} />}
+          title="Budgets"
+          subtitle="Set range budgets & category allocations"
+          onClick={() => setSubPage('goals')}
         />
         <Row
           icon={<RefreshCw size={15} />}

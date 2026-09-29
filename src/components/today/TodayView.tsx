@@ -146,18 +146,18 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
           </div>
         </div>
 
-        {/* Daily Spending Goal Pill / Progress */}
+        {/* Daily Budget Pill / Progress */}
         <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-bold text-white">
               <Target size={15} className="text-zinc-400" />
-              <span>Daily Spending Goal</span>
+              <span>Daily Budget</span>
             </div>
             <button
               onClick={() => setIsEditingGoal(!isEditingGoal)}
             className="text-[10px] font-mono text-zinc-400 hover:text-white cursor-pointer"
           >
-            {dailyGoal > 0 ? (isEditingGoal ? 'Cancel' : 'Edit Limit') : '+ Set Goal'}
+            {dailyGoal > 0 ? (isEditingGoal ? 'Cancel' : 'Edit Budget') : '+ Set Budget'}
           </button>
         </div>
 
@@ -183,7 +183,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
           <div>
             <div className="flex justify-between text-xs font-mono text-zinc-400 mb-1.5">
               <span>{formatCurrency(dayExpense, state.settings.currencySymbol)} spent</span>
-              <span>Limit: {formatCurrency(dailyGoal, state.settings.currencySymbol)}</span>
+              <span>Budget: {formatCurrency(dailyGoal, state.settings.currencySymbol)}</span>
             </div>
             <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
               <div 
@@ -196,13 +196,13 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
             {isOverGoal && (
               <div className="flex items-center gap-1.5 text-[10px] font-mono text-rose-400 mt-2">
                 <AlertCircle size={12} />
-                <span>Over daily target by {formatCurrency(dayExpense - dailyGoal, state.settings.currencySymbol)}</span>
+                <span>Over daily budget by {formatCurrency(dayExpense - dailyGoal, state.settings.currencySymbol)}</span>
               </div>
             )}
           </div>
         ) : (
           <p className="text-[11px] text-zinc-500">
-            No daily limit set. Tap '+ Set Goal' to track and cap your daily spending.
+            No daily budget set. Tap '+ Set Budget' to track and cap your daily spending.
           </p>
         )}
       </div>
