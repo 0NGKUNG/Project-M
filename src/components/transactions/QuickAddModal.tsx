@@ -872,8 +872,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         </div>
 
         {/* 3. RIGHT SIDE PANEL: Date & Time or Account Selector (Behind Main Card z-10) */}
+        {/* Height is pinned to the main card so the TimeWheelPicker's h-full always resolves to a
+            definite height. Without it the wheel's own content inflates the panel, which inflates
+            the centering padding and breaks the whole modal layout (runaway resize loop). */}
         <div 
-          className={`hidden md:flex relative z-10 overflow-hidden transition-all duration-300 ease-out ${
+          className={`hidden md:flex relative z-10 overflow-hidden transition-all duration-300 ease-out sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] ${
             activeRightPanel ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'
           }`}
         >

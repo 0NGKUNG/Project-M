@@ -903,8 +903,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
         </div>
 
         {/* 3. RIGHT PANEL: Date & Time or Account Selector (Desktop) */}
+        {/* Height is pinned to the main card so nested h-full/flex-1 content (e.g. the time wheel)
+            always resolves against a definite height instead of its own content. */}
         <div 
-          className={`hidden md:flex relative z-10 overflow-hidden transition-all duration-300 ease-out ${
+          className={`hidden md:flex relative z-10 overflow-hidden transition-all duration-300 ease-out sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] ${
             activeRightPanel ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'
           }`}
         >

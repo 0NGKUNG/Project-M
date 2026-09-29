@@ -11,6 +11,10 @@ export interface WheelColumnProps {
   active?: boolean;
 }
 
+// Largest height the wheel is ever laid out at. Guards against a runaway measurement when an
+// ancestor has an indefinite height (the column's own content would otherwise keep growing it).
+const MAX_WHEEL_HEIGHT = 420;
+
 export const WheelColumn: React.FC<WheelColumnProps> = ({
   items,
   selectedIndex,
@@ -41,7 +45,8 @@ export const WheelColumn: React.FC<WheelColumnProps> = ({
     if (!el) return;
     const updateHeight = () => {
       if (el.clientHeight > 0) {
-        setContainerHeight((prev) => (Math.abs(prev - el.clientHeight) > 2 ? el.clientHeight : prev));
+        const measured = Math.min(el.clientHeight, MAX_WHEEL_HEIGHT);
+        setContainerHeight((prev) => (Math.abs(prev - measured) > 2 ? measured : prev));
       }
     };
     updateHeight();
