@@ -310,9 +310,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             hasSubcategories ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 translate-x-16 pointer-events-none'
           }`}
         >
-          <div 
-            className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0"
-          >
+          {hasSubcategories && displayCategory && (
+            <div 
+              className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0"
+            >
             {displayCategory && (
               <div key={displayCategory.id} className="flex flex-col h-full animate-fade-in">
                 <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-zinc-900 shrink-0">
@@ -368,7 +369,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 2. MAIN CARD: Responsive Form */}
@@ -906,9 +908,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             activeRightPanel ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'
           }`}
         >
-          <div 
-            className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 shadow-2xl h-full font-mono shrink-0"
-          >
+          {activeRightPanel && (
+            <div 
+              className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 shadow-2xl h-full font-mono shrink-0"
+            >
             {activeRightPanel === 'datetime' && (
               <div className="flex flex-col h-full animate-fade-in space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-zinc-900 shrink-0">
@@ -1072,7 +1075,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 4. Mobile Quick Wallet Modal */}

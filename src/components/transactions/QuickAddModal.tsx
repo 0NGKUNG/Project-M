@@ -49,10 +49,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
   // Selector state for Right Side Panel on PC / Modal on Mobile
   const [activeRightPanel, setActiveRightPanel] = useState<'datetime' | 'account' | null>(null);
-  const [lastRightPanel, setLastRightPanel] = useState<'datetime' | 'account'>('account');
 
   const openRightPanel = (panel: 'datetime' | 'account' | null) => {
-    if (panel) setLastRightPanel(panel);
     setActiveRightPanel(panel);
   };
 
@@ -384,9 +382,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             hasSubcategories ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 translate-x-16 pointer-events-none'
           }`}
         >
-          <div 
-            className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0"
-          >
+          {hasSubcategories && displayCategory && (
+            <div 
+              className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0"
+            >
             {displayCategory && (
               <div key={displayCategory.id} className="flex flex-col h-full animate-fade-in">
                 <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-zinc-900 shrink-0">
@@ -442,7 +441,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 2. MAIN CARD: Category Grid (3 cols on PC), Amount Display, Note Input, Save Button (Elevated z-20 so side panels emerge behind it) */}
@@ -877,10 +877,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             activeRightPanel ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'
           }`}
         >
-          <div 
-            className="w-60 lg:w-64 flex flex-col gap-3 overflow-y-auto no-scrollbar h-full font-mono shrink-0"
-          >
-            {(activeRightPanel || lastRightPanel) === 'datetime' ? (
+          {activeRightPanel && (
+            <div 
+              className="w-60 lg:w-64 flex flex-col gap-3 overflow-y-auto no-scrollbar h-full font-mono shrink-0"
+            >
+              {activeRightPanel === 'datetime' ? (
               <div key="datetime" className="flex flex-col gap-3 h-full animate-fade-in">
                 
                 {/* 1. TOP CARD: Calendar Card (Separate Card with Fixed 6-Row Grid) */}
@@ -1041,7 +1042,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                 })}
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
 
       </div>

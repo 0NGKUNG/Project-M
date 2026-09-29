@@ -41,7 +41,7 @@ export const WheelColumn: React.FC<WheelColumnProps> = ({
     if (!el) return;
     const updateHeight = () => {
       if (el.clientHeight > 0) {
-        setContainerHeight(el.clientHeight);
+        setContainerHeight((prev) => (Math.abs(prev - el.clientHeight) > 2 ? el.clientHeight : prev));
       }
     };
     updateHeight();
@@ -117,11 +117,10 @@ export const WheelColumn: React.FC<WheelColumnProps> = ({
     }
   }, [active]);
 
-  // Instant positioning on initial open (before paint) or smooth scroll for external updates (e.g. Set to Now)
+  // Instant positioning on initial open (before paint)
   useLayoutEffect(() => {
-    if (active && containerRef.current && !isDraggingRef.current) {
+    if (active && containerRef.current) {
       if (isFirstActiveRef.current) {
-        // Initial open: instantaneous positioning with zero delay or visible change
         isProgrammaticScrollRef.current = true;
         containerRef.current.scrollTop = selectedIndex * 32;
         lastActiveIndexRef.current = selectedIndex;
@@ -130,17 +129,35 @@ export const WheelColumn: React.FC<WheelColumnProps> = ({
           isProgrammaticScrollRef.current = false;
         });
         return () => cancelAnimationFrame(frame);
-      } else if (selectedIndex !== lastActiveIndexRef.current) {
-        // External update while already open (e.g. "Set to Now"): smooth animate
+      }
+    }
+  }, [active]);
+
+  // Smooth scroll for external updates (e.g. Set to Now)
+  useEffect(() => {
+    if (active && containerRef.current && !isFirstActiveRef.current && !isDraggingRef.current) {
+      if (selectedIndex !== lastActiveIndexRef.current) {
         lastActiveIndexRef.current = selectedIndex;
         animateTo(selectedIndex * 32);
       }
     }
-  }, [active, selectedIndex, containerHeight]);
+  }, [selectedIndex, active]);
+
+  // Keep centered when container height stabilizes after opening animation
+  useLayoutEffect(() => {
+    if (active && containerRef.current && !isFirstActiveRef.current && !isDraggingRef.current && !rafIdRef.current) {
+      isProgrammaticScrollRef.current = true;
+      containerRef.current.scrollTop = lastActiveIndexRef.current * 32;
+      const frame = requestAnimationFrame(() => {
+        isProgrammaticScrollRef.current = false;
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [containerHeight]);
 
   // Scroll listener: only for passive native scroll events when not animating or dragging
   const handleScroll = () => {
-    if (isProgrammaticScrollRef.current || isDraggingRef.current || !containerRef.current) return;
+    if (!active || isProgrammaticScrollRef.current || isDraggingRef.current || !containerRef.current) return;
     const currentScroll = containerRef.current.scrollTop;
     const rawIndex = Math.round(currentScroll / 32);
     const clampedIndex = Math.max(0, Math.min(items.length - 1, rawIndex));
