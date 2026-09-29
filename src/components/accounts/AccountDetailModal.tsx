@@ -8,8 +8,7 @@ import {
   Edit2, 
   Trash2, 
   Plus, 
-  Wallet,
-  ArrowRight
+  Wallet
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -41,9 +40,6 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
   useBackButton(Boolean(account), onClose);
   const { state, accountBalances, updateAccount, deleteAccount } = useFinance();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-
-  // Mobile View Toggle: Overview vs History
-  const [mobileTab, setMobileTab] = useState<'overview' | 'history'>('overview');
 
   // Chart Timeframe
   const [timeRange, setTimeRange] = useState<TimeRange>('30D');
@@ -219,9 +215,9 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     }
 
     const W = 360;
-    const H = 130;
-    const padTop = 16;
-    const padBottom = 20;
+    const H = 95;
+    const padTop = 10;
+    const padBottom = 14;
     const usableH = H - padTop - padBottom;
 
     const diff = maxBal - minBal;
@@ -254,7 +250,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     return (
       <div className="relative w-full h-full flex flex-col justify-between select-none">
         {/* Active hover tooltip display */}
-        <div className="flex items-center justify-between px-1 mb-1 text-[11px] font-mono">
+        <div className="flex items-center justify-between px-0.5 mb-1 text-[10px] font-mono">
           <div className="text-zinc-400">
             {activePoint ? activePoint.label : 'Balance Trend'}
           </div>
@@ -264,19 +260,29 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
         </div>
 
         {/* SVG Curve Container */}
-        <div className="relative h-28 w-full">
+        <div className="relative h-20 sm:h-24 w-full touch-none">
           <svg 
             className="w-full h-full overflow-visible" 
             viewBox={`0 0 ${W} ${H}`} 
             preserveAspectRatio="none"
             onPointerLeave={() => setActiveHoverPoint(null)}
+            onPointerMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const touchX = e.clientX - rect.left;
+              const ratio = Math.max(0, Math.min(1, touchX / rect.width));
+              const closestIdx = Math.round(ratio * (coords.length - 1));
+              if (coords[closestIdx]) setActiveHoverPoint(coords[closestIdx]);
+            }}
           >
             <defs>
               <linearGradient id={`grad-account-${account.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
-                <stop offset="70%" stopColor="#ffffff" stopOpacity="0.04" />
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.20" />
+                <stop offset="60%" stopColor="#ffffff" stopOpacity="0.04" />
                 <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
               </linearGradient>
+              <filter id={`glow-${account.id}`} x="-10%" y="-20%" width="120%" height="150%">
+                <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodColor="#ffffff" floodOpacity="0.25" />
+              </filter>
             </defs>
 
             {/* Gradient Area */}
@@ -295,14 +301,15 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
               />
             )}
 
-            {/* Main Smooth Stroke */}
+            {/* Main Smooth Stroke with subtle drop glow */}
             <path 
               d={pathD} 
               fill="none" 
               stroke="#ffffff" 
-              strokeWidth="2.2" 
+              strokeWidth="2" 
               strokeLinecap="round" 
               strokeLinejoin="round" 
+              filter={`url(#glow-${account.id})`}
             />
 
             {/* Active Highlight Dot */}
@@ -311,22 +318,22 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                 <circle 
                   cx={activeCoord.x} 
                   cy={activeCoord.y} 
-                  r="7" 
+                  r="6" 
                   fill="#ffffff" 
-                  fillOpacity="0.2" 
+                  fillOpacity="0.25" 
                 />
                 <circle 
                   cx={activeCoord.x} 
                   cy={activeCoord.y} 
-                  r="3.5" 
+                  r="3" 
                   fill="#ffffff" 
                   stroke="#0c0c10" 
-                  strokeWidth="2" 
+                  strokeWidth="1.5" 
                 />
               </g>
             )}
 
-            {/* Touch / Mouse Scrubbing invisible hitboxes */}
+            {/* Touch / Mouse Scrubbing hitboxes */}
             {coords.map((c, i) => {
               const segW = W / coords.length;
               return (
@@ -348,12 +355,12 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
         {/* Steady balance indicator or min/max summary */}
         {isSteady ? (
-          <div className="flex items-center justify-center gap-1.5 py-1 text-[10px] font-mono text-zinc-500 bg-zinc-900/40 rounded-lg mt-2">
+          <div className="flex items-center justify-center gap-1.5 py-0.5 text-[9px] font-mono text-zinc-500 bg-zinc-900/30 rounded-md mt-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
-            <span>Steady balance · No fluctuation in this period</span>
+            <span>Steady balance · No fluctuation</span>
           </div>
         ) : (
-          <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 pt-1 border-t border-zinc-800/40 mt-1">
+          <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 pt-0.5 border-t border-zinc-800/40 mt-1">
             <span>Min: {formatCurrency(minBal, state.settings.currencySymbol)}</span>
             <span>Max: {formatCurrency(maxBal, state.settings.currencySymbol)}</span>
           </div>
@@ -364,6 +371,132 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
   if (!account) return null;
 
+  // ── Card 1: Compact Balance & Cashflow ──
+  const renderBalanceCard = () => (
+    <div className="bg-[#121218] rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 border border-zinc-800/60 shadow-sm flex items-center justify-between gap-3 shrink-0">
+      <div className="min-w-0">
+        <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
+          Total Balance
+        </div>
+        <div className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums tracking-tight truncate">
+          {formatCurrency(currentBalance, state.settings.currencySymbol)}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Income Chip */}
+        <div className="flex items-center gap-1.5 bg-emerald-950/25 border border-emerald-800/30 px-2 py-1 rounded-xl">
+          <TrendingUp size={11} className="text-emerald-400 shrink-0" />
+          <div className="text-right">
+            <div className="text-[8px] text-zinc-400 uppercase font-mono leading-none">Income</div>
+            <div className="text-[11px] font-mono font-bold text-emerald-400 tabular-nums leading-tight">
+              +{formatCurrency(totalIncome, state.settings.currencySymbol)}
+            </div>
+          </div>
+        </div>
+
+        {/* Expense Chip */}
+        <div className="flex items-center gap-1.5 bg-rose-950/25 border border-rose-800/30 px-2 py-1 rounded-xl">
+          <TrendingDown size={11} className="text-rose-400 shrink-0" />
+          <div className="text-right">
+            <div className="text-[8px] text-zinc-400 uppercase font-mono leading-none">Expense</div>
+            <div className="text-[11px] font-mono font-bold text-rose-400 tabular-nums leading-tight">
+              -{formatCurrency(totalExpenses, state.settings.currencySymbol)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Card 2: Compact Balance Trend Chart ──
+  const renderChartCard = () => (
+    <div className="bg-[#121218] rounded-2xl p-3 border border-zinc-800/60 shadow-sm space-y-1.5 shrink-0">
+      {/* Range Filters */}
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+          Balance History
+        </span>
+        <div className="flex items-center gap-0.5 bg-[#181822] p-0.5 rounded-lg border border-zinc-800/80">
+          {(['7D', '30D', '90D', 'ALL'] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setTimeRange(r)}
+              className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                timeRange === r
+                  ? 'bg-white text-black shadow-xs'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Render Chart */}
+      <div className="h-28 sm:h-32 w-full">
+        {renderSmoothChart()}
+      </div>
+    </div>
+  );
+
+  // ── Scrollable Transaction List ──
+  const renderTransactionList = () => {
+    if (filteredTransactions.length === 0) {
+      return (
+        <div className="bg-[#121218] rounded-xl p-8 text-center text-xs text-zinc-500 font-mono border border-zinc-800/40">
+          No {historyFilter === 'all' ? '' : historyFilter} transactions recorded for this account.
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-[#121218] rounded-2xl border border-zinc-800/50 divide-y divide-zinc-800/60 overflow-hidden">
+        {filteredTransactions.map((tx) => {
+          const isIncoming =
+            tx.type === 'income' ||
+            (tx.type === 'transfer' && tx.toAccountId === account.id);
+          const cat = getCategory(tx.categoryId);
+          return (
+            <div
+              key={tx.id}
+              onClick={() => setEditingTransaction(tx)}
+              className="px-3.5 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between hover:bg-white/[0.04] transition-colors cursor-pointer group active:bg-zinc-800/60"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    isIncoming ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+                  }`}
+                >
+                  <CategoryIcon name={cat?.icon || 'Receipt'} size={15} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-white group-hover:text-zinc-200 truncate">
+                    {tx.type === 'transfer' ? 'Transfer' : cat?.name || 'Other'}
+                  </div>
+                  <div className="text-[10px] text-zinc-500 font-mono mt-0.5 truncate">
+                    {tx.date}
+                    {tx.time && ` · ${tx.time}`}
+                    {tx.note && ` · ${tx.note}`}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right font-mono font-bold text-xs tabular-nums shrink-0 ml-2">
+                <span className={isIncoming ? 'text-emerald-400' : 'text-white'}>
+                  {isIncoming ? '+' : '-'}
+                  {formatCurrency(tx.amount, state.settings.currencySymbol)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in select-none"
@@ -371,357 +504,200 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     >
       {/* Modal shell — Full screen on mobile (100dvh), polished card on desktop */}
       <div
-        className="w-full lg:max-w-5xl 2xl:max-w-6xl h-[100dvh] lg:h-auto lg:max-h-[90vh] bg-[#0c0c10] border-t lg:border border-zinc-800/80 rounded-none lg:rounded-3xl flex flex-col lg:flex-row overflow-hidden shadow-2xl cursor-default safe-bottom"
+        className="w-full lg:max-w-5xl 2xl:max-w-6xl h-[100dvh] lg:h-auto lg:max-h-[90vh] bg-[#0c0c10] border-t lg:border border-zinc-800/80 rounded-none lg:rounded-3xl flex flex-col overflow-hidden shadow-2xl cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ═══════════════════════════════════════════════════════════════════
-            TOP MOBILE HEADER & VIEW TOGGLE (Mobile only)
+            MOBILE VIEW (lg:hidden) - Unified Compact Dashboard
+            Header, Balance Card, Chart & Actions are pinned;
+            ONLY the Transaction List scrolls!
         ═══════════════════════════════════════════════════════════════════ */}
-        <div className="lg:hidden shrink-0 border-b border-zinc-800/80 bg-[#0e0e14] px-4 pt-3 pb-3 space-y-3 safe-top">
-          {/* Top handle on mobile */}
-          <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto" />
-
-          {/* Account name + actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-2xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
-                {account.type === 'cash' ? <Wallet size={17} /> : <CreditCard size={17} />}
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-bold text-white truncate">{account.name}</h3>
-                <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
-                  {account.type}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={handleStartEdit}
-                title="Edit Account"
-                className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <Edit2 size={14} />
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={isDeleting}
-                title="Delete Account"
-                className="p-2 rounded-xl bg-zinc-900 hover:bg-rose-950/50 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
-              >
-                <Trash2 size={14} />
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Segmented View Switcher: Overview vs History */}
-          <div className="grid grid-cols-2 p-1 bg-zinc-900/90 rounded-2xl border border-zinc-800/80">
-            <button
-              type="button"
-              onClick={() => setMobileTab('overview')}
-              className={`py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
-                mobileTab === 'overview'
-                  ? 'bg-white text-black shadow-md'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileTab('history')}
-              className={`py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
-                mobileTab === 'history'
-                  ? 'bg-white text-black shadow-md'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Transactions ({filteredTransactions.length})
-            </button>
-          </div>
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            LEFT COLUMN — Overview (Balance, Chart, Controls)
-            Visible on desktop always; visible on mobile when mobileTab === 'overview'
-        ═══════════════════════════════════════════════════════════════════ */}
-        <div 
-          className={`flex-col lg:w-[440px] 2xl:w-[480px] lg:shrink-0 lg:border-r border-zinc-800/80 overflow-y-auto ${
-            mobileTab === 'overview' ? 'flex flex-1 min-h-0' : 'hidden lg:flex'
-          }`}
-        >
-          {/* Desktop Header */}
-          <div className="hidden lg:flex items-center justify-between px-6 pt-6 pb-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
-                {account.type === 'cash' ? <Wallet size={19} /> : <CreditCard size={19} />}
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white leading-tight">{account.name}</h3>
-                <p className="text-xs text-zinc-500 uppercase font-mono tracking-wider">
-                  {account.type} account
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={handleStartEdit}
-                title="Edit Account"
-                className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <Edit2 size={15} />
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={isDeleting}
-                title="Delete Account"
-                className="p-2 rounded-xl bg-zinc-900 hover:bg-rose-950/60 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
-              >
-                <Trash2 size={15} />
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer ml-0.5"
-              >
-                <X size={17} />
-              </button>
-            </div>
-          </div>
-
-          <div className="px-4 sm:px-6 space-y-3 py-4 lg:py-2 pb-6">
-            {/* ── Card 1 · Balance + Income / Expenses ── */}
-            <div className="bg-[#121218] rounded-2xl p-4 sm:p-5 space-y-4 border border-zinc-800/60 shadow-sm">
-              <div>
-                <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
-                  Total Balance
-                </div>
-                <div className="text-2xl sm:text-3xl font-mono font-bold text-white mt-1 tabular-nums">
-                  {formatCurrency(currentBalance, state.settings.currencySymbol)}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-zinc-800/60">
-                {/* Income */}
-                <div className="flex items-center gap-2.5 bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
-                    <TrendingUp size={15} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[9px] text-zinc-500 uppercase font-mono tracking-wider">Income</div>
-                    <div className="text-xs sm:text-sm font-mono font-bold text-emerald-400 tabular-nums truncate">
-                      +{formatCurrency(totalIncome, state.settings.currencySymbol)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expenses */}
-                <div className="flex items-center gap-2.5 bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/40">
-                  <div className="w-8 h-8 rounded-lg bg-rose-500/15 flex items-center justify-center text-rose-400 shrink-0">
-                    <TrendingDown size={15} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[9px] text-zinc-500 uppercase font-mono tracking-wider">Expenses</div>
-                    <div className="text-xs sm:text-sm font-mono font-bold text-rose-400 tabular-nums truncate">
-                      -{formatCurrency(totalExpenses, state.settings.currencySymbol)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Card 2 · Smooth Balance Trend Chart ── */}
-            <div className="bg-[#121218] rounded-2xl p-4 border border-zinc-800/60 shadow-sm space-y-3">
-              {/* Range Filters */}
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
-                  Balance History
-                </span>
-                <div className="flex items-center gap-1 bg-[#181822] p-0.5 rounded-xl border border-zinc-800/80">
-                  {(['7D', '30D', '90D', 'ALL'] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setTimeRange(r)}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                        timeRange === r
-                          ? 'bg-white text-black shadow-xs'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Render Chart */}
-              <div className="h-44 w-full">
-                {renderSmoothChart()}
-              </div>
-            </div>
-
-            {/* ── Add Transaction button ── */}
-            <button
-              onClick={() => {
-                onClose();
-                onOpenQuickAddWithAccount(account.id);
-              }}
-              className="w-full py-3.5 rounded-2xl bg-white hover:bg-zinc-200 active:scale-[0.98] text-black text-xs font-bold font-mono flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-all"
-            >
-              <Plus size={16} strokeWidth={2.8} />
-              <span>Add Transaction To This Account</span>
-            </button>
-
-            {/* Mobile-only recent activity snippet in Overview */}
-            <div className="lg:hidden pt-2 space-y-2">
-              <div className="flex items-center justify-between text-xs font-mono text-zinc-400 px-1">
-                <span>Recent Activity</span>
-                {accountTransactions.length > 0 && (
-                  <button
-                    onClick={() => setMobileTab('history')}
-                    className="text-zinc-300 hover:text-white flex items-center gap-1 text-[11px] cursor-pointer"
-                  >
-                    View all ({accountTransactions.length}) <ArrowRight size={12} />
-                  </button>
-                )}
-              </div>
-
-              {accountTransactions.slice(0, 3).map((tx) => {
-                const isIncoming = tx.type === 'income' || (tx.type === 'transfer' && tx.toAccountId === account.id);
-                const cat = getCategory(tx.categoryId);
-                return (
-                  <div
-                    key={tx.id}
-                    onClick={() => setEditingTransaction(tx)}
-                    className="p-3 rounded-xl bg-[#121218] border border-zinc-800/40 flex items-center justify-between cursor-pointer active:bg-zinc-800/50"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        isIncoming ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
-                      }`}>
-                        <CategoryIcon name={cat?.icon || 'Receipt'} size={15} />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-white">
-                          {tx.type === 'transfer' ? 'Transfer' : cat?.name || 'Other'}
-                        </div>
-                        <div className="text-[10px] text-zinc-500 font-mono">
-                          {tx.date}
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`text-xs font-mono font-bold tabular-nums ${isIncoming ? 'text-emerald-400' : 'text-white'}`}>
-                      {isIncoming ? '+' : '-'}{formatCurrency(tx.amount, state.settings.currencySymbol)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            RIGHT COLUMN — Full Transactions History
-            Visible on desktop always; visible on mobile when mobileTab === 'history'
-        ═══════════════════════════════════════════════════════════════════ */}
-        <div 
-          className={`flex-col flex-1 min-h-0 overflow-hidden ${
-            mobileTab === 'history' ? 'flex flex-1 min-h-0' : 'hidden lg:flex'
-          }`}
-        >
-          {/* Header & View Filter Tabs */}
-          <div className="px-5 pt-4 pb-3 shrink-0 border-b border-zinc-800/70 space-y-3 bg-[#0c0c10]">
+        <div className="lg:hidden flex flex-col h-full w-full overflow-hidden">
+          {/* Compact Mobile Header */}
+          <div className="shrink-0 border-b border-zinc-800/80 bg-[#0e0e14] px-3.5 pt-2 pb-2 safe-top">
+            <div className="w-8 h-1 bg-zinc-700/80 rounded-full mx-auto mb-1.5" />
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase font-bold tracking-wider text-zinc-400">
-                History ({filteredTransactions.length})
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
+                  {account.type === 'cash' ? <Wallet size={14} /> : <CreditCard size={14} />}
+                </div>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <h3 className="text-xs font-bold text-white truncate max-w-[130px] sm:max-w-none">{account.name}</h3>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-400 font-mono uppercase tracking-wider shrink-0">
+                    {account.type}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={handleStartEdit}
+                  title="Edit Account"
+                  className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Edit2 size={13} />
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                  title="Delete Account"
+                  className="p-1.5 rounded-lg bg-zinc-900 hover:bg-rose-950/50 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer ml-0.5"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Main Body */}
+          <div className="flex-1 min-h-0 flex flex-col p-3 space-y-2 overflow-hidden safe-bottom">
+            {/* Card 1: Balance & Cashflow (Compact, Pinned) */}
+            {renderBalanceCard()}
+
+            {/* Card 2: Chart (Compact, Pinned) */}
+            {renderChartCard()}
+
+            {/* Action & Filter Bar (Pinned) */}
+            <div className="flex items-center justify-between gap-2 pt-0.5 shrink-0">
               <button
                 onClick={() => {
                   onClose();
                   onOpenQuickAddWithAccount(account.id);
                 }}
-                className="hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold font-mono shadow cursor-pointer transition-all active:scale-95"
+                className="flex-1 py-1.5 px-3 rounded-xl bg-white hover:bg-zinc-200 active:scale-[0.98] text-black text-xs font-bold font-mono flex items-center justify-center gap-1.5 shadow cursor-pointer transition-all"
               >
-                <Plus size={14} strokeWidth={2.8} />
+                <Plus size={13} strokeWidth={2.8} />
                 <span>Add Transaction</span>
               </button>
-            </div>
 
-            {/* Filter Tabs: All | Income | Expenses */}
-            <div className="flex items-center gap-1.5 bg-[#121218] p-1 rounded-xl border border-zinc-800/70">
-              {(['all', 'income', 'expense'] as const).map((f) => {
-                const isAct = historyFilter === f;
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setHistoryFilter(f)}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-mono capitalize transition-all cursor-pointer text-center ${
-                      isAct ? 'bg-white text-black font-bold shadow-xs' : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    {f === 'all' ? 'All' : f === 'income' ? 'Income' : 'Expenses'}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Transaction list — scrollable */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6 pt-3 space-y-1">
-            {filteredTransactions.length === 0 ? (
-              <div className="bg-[#121218] rounded-2xl p-10 text-center text-xs text-zinc-500 mt-2 font-mono border border-zinc-800/40">
-                No {historyFilter === 'all' ? '' : historyFilter} transactions recorded for this account.
-              </div>
-            ) : (
-              <div className="bg-[#121218] rounded-2xl border border-zinc-800/50 divide-y divide-zinc-800/60 overflow-hidden">
-                {filteredTransactions.map((tx) => {
-                  const isIncoming =
-                    tx.type === 'income' ||
-                    (tx.type === 'transfer' && tx.toAccountId === account.id);
-                  const cat = getCategory(tx.categoryId);
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-0.5 bg-[#121218] p-0.5 rounded-xl border border-zinc-800/70 shrink-0">
+                {(['all', 'income', 'expense'] as const).map((f) => {
+                  const isAct = historyFilter === f;
                   return (
-                    <div
-                      key={tx.id}
-                      onClick={() => setEditingTransaction(tx)}
-                      className="px-4 py-3 flex items-center justify-between hover:bg-white/[0.04] transition-colors cursor-pointer group active:bg-zinc-800/60"
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setHistoryFilter(f)}
+                      className={`py-1 px-2.5 rounded-lg text-[10px] font-mono capitalize transition-all cursor-pointer text-center ${
+                        isAct ? 'bg-white text-black font-bold shadow-xs' : 'text-zinc-400 hover:text-white'
+                      }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                            isIncoming ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
-                          }`}
-                        >
-                          <CategoryIcon name={cat?.icon || 'Receipt'} size={17} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-white group-hover:text-zinc-200 truncate">
-                            {tx.type === 'transfer' ? 'Transfer' : cat?.name || 'Other'}
-                          </div>
-                          <div className="text-[10px] text-zinc-500 font-mono mt-0.5 truncate">
-                            {tx.date}
-                            {tx.time && ` · ${tx.time}`}
-                            {tx.note && ` · ${tx.note}`}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right font-mono font-bold text-xs tabular-nums shrink-0 ml-3">
-                        <span className={isIncoming ? 'text-emerald-400' : 'text-white'}>
-                          {isIncoming ? '+' : '-'}
-                          {formatCurrency(tx.amount, state.settings.currencySymbol)}
-                        </span>
-                      </div>
-                    </div>
+                      {f === 'all' ? 'All' : f === 'income' ? 'Income' : 'Exp'}
+                    </button>
                   );
                 })}
               </div>
-            )}
+            </div>
+
+            {/* Scrollable Transaction Section (ONLY this scrolls!) */}
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-1 overscroll-y-contain pr-0.5">
+              {renderTransactionList()}
+            </div>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            DESKTOP VIEW (hidden lg:flex) - Two Column Master-Detail
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="hidden lg:flex flex-row flex-1 min-h-0 overflow-hidden">
+          {/* Left Column (Overview) */}
+          <div className="w-[420px] 2xl:w-[460px] shrink-0 border-r border-zinc-800/80 p-5 space-y-3.5 flex flex-col justify-between overflow-y-auto">
+            <div className="space-y-3.5">
+              {/* Desktop Header */}
+              <div className="flex items-center justify-between pb-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
+                    {account.type === 'cash' ? <Wallet size={18} /> : <CreditCard size={18} />}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white leading-tight">{account.name}</h3>
+                    <p className="text-[10px] text-zinc-500 uppercase font-mono tracking-wider">
+                      {account.type} account
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleStartEdit}
+                    title="Edit Account"
+                    className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                    title="Delete Account"
+                    className="p-1.5 rounded-xl bg-zinc-900 hover:bg-rose-950/60 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="p-1.5 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer ml-0.5"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 1: Balance & Cashflow */}
+              {renderBalanceCard()}
+
+              {/* Card 2: Chart */}
+              {renderChartCard()}
+            </div>
+
+            {/* Desktop Add Transaction Button */}
+            <button
+              onClick={() => {
+                onClose();
+                onOpenQuickAddWithAccount(account.id);
+              }}
+              className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-200 active:scale-[0.98] text-black text-xs font-bold font-mono flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-all"
+            >
+              <Plus size={15} strokeWidth={2.8} />
+              <span>Add Transaction To This Account</span>
+            </button>
+          </div>
+
+          {/* Right Column (History) */}
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {/* Header & Filter Tabs */}
+            <div className="px-5 pt-4 pb-3 shrink-0 border-b border-zinc-800/70 flex items-center justify-between bg-[#0c0c10]">
+              <span className="text-xs font-mono uppercase font-bold tracking-wider text-zinc-400">
+                History ({filteredTransactions.length})
+              </span>
+              <div className="flex items-center gap-1 bg-[#121218] p-1 rounded-xl border border-zinc-800/70">
+                {(['all', 'income', 'expense'] as const).map((f) => {
+                  const isAct = historyFilter === f;
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setHistoryFilter(f)}
+                      className={`py-1 px-3 rounded-lg text-xs font-mono capitalize transition-all cursor-pointer text-center ${
+                        isAct ? 'bg-white text-black font-bold shadow-xs' : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {f === 'all' ? 'All' : f === 'income' ? 'Income' : 'Expenses'}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Scrollable Transaction List */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-1">
+              {renderTransactionList()}
+            </div>
           </div>
         </div>
       </div>
