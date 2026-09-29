@@ -463,9 +463,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         )}
 
         {/* ─── Bottom Reference Layout: Keypad (Left) + Quick Attributes (Right) ─── */}
-        <div className="p-3 bg-[#0a0a0d] border-t border-zinc-900 flex gap-2">
-          {/* Keypad (Hideable on PC/Laptop) */}
-          {showNumpad ? (
+        {showNumpad ? (
+          <div className="p-3 bg-[#0a0a0d] border-t border-zinc-900 flex gap-2">
+            {/* Keypad */}
             <div className="flex-[3] grid grid-cols-4 gap-1.5">
               {['1', '2', '3'].map((k) => (
                 <button
@@ -557,53 +557,88 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                 <Check size={20} strokeWidth={3} />
               </button>
             </div>
-          ) : (
-            <div className="flex-[3] bg-[#121218] rounded-2xl p-4 border border-zinc-800 flex flex-col justify-center gap-2">
-              <div className="text-xs font-mono text-zinc-400">
-                Keyboard Mode Active (Type amount on keyboard & press Enter)
+
+            {/* Quick Attribute Tiles (Right Column) */}
+            <div className="flex-1 flex flex-col gap-1.5">
+              {/* 1. Date & Time Pill */}
+              <button
+                type="button"
+                onClick={() => setShowDateTimePicker(true)}
+                className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 hover:border-zinc-700 transition-colors cursor-pointer text-center flex-1"
+              >
+                <CalendarIcon size={14} className="text-zinc-400 mb-0.5" />
+                <span className="text-[10px] font-mono font-bold text-white truncate max-w-full">
+                  {isToday ? 'Today' : date.slice(5)}
+                </span>
+                <span className="text-[8px] font-mono text-zinc-500">{time}</span>
+              </button>
+
+              {/* 2. Target Wallet Pill */}
+              <button
+                type="button"
+                onClick={() => setShowAccountPicker(!showAccountPicker)}
+                className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 hover:border-zinc-700 transition-colors cursor-pointer text-center flex-1"
+              >
+                <WalletIcon size={14} className="text-zinc-400 mb-0.5" />
+                <span className="text-[10px] font-mono font-bold text-white truncate max-w-full">
+                  {selectedAccount?.name || 'Wallet'}
+                </span>
+              </button>
+
+              {/* 3. Category Quick Peek */}
+              <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 text-center flex-1">
+                <CategoryIcon name={selectedCategory?.icon || 'Tag'} size={14} className="text-zinc-400 mb-0.5" />
+                <span className="text-[9px] font-mono font-bold text-zinc-400 truncate max-w-full">
+                  {selectedSub?.name || selectedCategory?.name || 'Category'}
+                </span>
               </div>
-              <div className="text-[11px] font-mono text-zinc-500">
-                Date: <span className="text-white font-bold">{date}</span> | Time: <span className="text-white font-bold">{time}</span> | Wallet: <span className="text-white font-bold">{selectedAccount?.name}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Attribute Tiles (Right Column) */}
-          <div className="flex-1 flex flex-col gap-1.5">
-            {/* 1. Date & Time Pill with Custom Selector Modal */}
-            <button
-              type="button"
-              onClick={() => setShowDateTimePicker(true)}
-              className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 hover:border-zinc-700 transition-colors cursor-pointer text-center flex-1"
-            >
-              <CalendarIcon size={14} className="text-zinc-400 mb-0.5" />
-              <span className="text-[10px] font-mono font-bold text-white truncate max-w-full">
-                {isToday ? 'Today' : date.slice(5)}
-              </span>
-              <span className="text-[8px] font-mono text-zinc-500">{time}</span>
-            </button>
-
-            {/* 2. Target Wallet Pill */}
-            <button
-              type="button"
-              onClick={() => setShowAccountPicker(!showAccountPicker)}
-              className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 hover:border-zinc-700 transition-colors cursor-pointer text-center flex-1"
-            >
-              <WalletIcon size={14} className="text-zinc-400 mb-0.5" />
-              <span className="text-[10px] font-mono font-bold text-white truncate max-w-full">
-                {selectedAccount?.name || 'Wallet'}
-              </span>
-            </button>
-
-            {/* 3. Category/Subcategory Quick Peek */}
-            <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-[#14141a] border border-zinc-800/80 text-center flex-1">
-              <CategoryIcon name={selectedCategory?.icon || 'Tag'} size={14} className="text-zinc-400 mb-0.5" />
-              <span className="text-[9px] font-mono font-bold text-zinc-400 truncate max-w-full">
-                {selectedSub?.name || selectedCategory?.name || 'Category'}
-              </span>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-3 bg-[#0a0a0d] border-t border-zinc-900 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {/* Date & Time Pill */}
+              <button
+                type="button"
+                onClick={() => setShowDateTimePicker(true)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#14141a] border border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer"
+              >
+                <CalendarIcon size={14} className="text-zinc-400" />
+                <div className="text-left font-mono">
+                  <div className="text-[11px] font-bold text-white leading-tight">
+                    {isToday ? 'Today' : date}
+                  </div>
+                  <div className="text-[9px] text-zinc-500 leading-tight">{time}</div>
+                </div>
+              </button>
+
+              {/* Wallet Pill */}
+              <button
+                type="button"
+                onClick={() => setShowAccountPicker(!showAccountPicker)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#14141a] border border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer"
+              >
+                <WalletIcon size={14} className="text-zinc-400" />
+                <div className="text-left font-mono">
+                  <div className="text-[11px] font-bold text-white leading-tight">
+                    {selectedAccount?.name || 'Wallet'}
+                  </div>
+                  <div className="text-[9px] text-zinc-500 leading-tight">Account</div>
+                </div>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={executeSubmit}
+              disabled={parseFormattedNumber(amountStr) <= 0}
+              className="px-5 py-2.5 bg-white hover:bg-zinc-200 text-black font-mono text-xs font-bold rounded-xl cursor-pointer shadow-md transition-all flex items-center gap-2 disabled:opacity-30"
+            >
+              <Check size={16} strokeWidth={3} />
+              <span>Save Transaction</span>
+            </button>
+          </div>
+        )}
 
         {/* Popups & Modals */}
         {/* 1. Subcategory Picker Modal (Reference screenshot 2) */}
