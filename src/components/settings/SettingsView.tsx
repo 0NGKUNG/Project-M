@@ -355,13 +355,33 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
         return (
           <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
             onClick={() => setSelectedGoal(null)}
           >
             <div
-              className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#101014] rounded-t-2xl sm:rounded-2xl md:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-300"
+              className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl border-t sm:border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-300 safe-bottom"
               onClick={(e) => e.stopPropagation()}
             >
+              <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+                    <Target size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white font-mono">{selectedGoal.name || 'Spending Goal'}</h3>
+                    <p className="text-[10px] text-zinc-500 font-mono uppercase">{selectedGoal.period} target</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedGoal(null)}
+                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
               {/* Overalls Big Highlight Card */}
               <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between shadow-xs">
                 <div>
@@ -432,8 +452,8 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
               </div>
 
-              {/* Action Buttons: Delete | Edit | Close */}
-              <div className="flex items-center gap-2 pt-2">
+              {/* Action Buttons: Delete | Edit */}
+              <div className="flex items-center gap-2.5 pt-3 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={() => {
@@ -442,21 +462,14 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   }}
                   className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer text-center"
                 >
-                  Delete
+                  Delete Goal
                 </button>
                 <button
                   type="button"
                   onClick={() => openEditModal(selectedGoal)}
-                  className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-mono font-bold transition-all cursor-pointer text-center"
+                  className="flex-1 py-2.5 rounded-xl bg-white text-black hover:bg-zinc-200 text-xs font-mono font-bold transition-all cursor-pointer text-center shadow-md active:scale-95"
                 >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedGoal(null)}
-                  className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold transition-all cursor-pointer text-center"
-                >
-                  Close
+                  Edit Goal
                 </button>
               </div>
             </div>
@@ -467,14 +480,31 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* Create Spending Goal Modal */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
           onClick={() => setShowCreateModal(false)}
         >
           <div
-            className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl bg-[#101014] rounded-t-2xl sm:rounded-2xl md:rounded-3xl border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-300"
+            className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl border-t sm:border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-300 safe-bottom"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base sm:text-lg font-bold text-white font-mono">Create Spending Goal</h3>
+            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+                  <Target size={16} />
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white font-mono">
+                  {editingBudgetId ? 'Edit Spending Goal' : 'Create Spending Goal'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
 
             <form onSubmit={handleSaveGoal} className="space-y-3">
               {/* Name */}
@@ -610,17 +640,17 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
 
               {/* Form Actions */}
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer active:scale-95 transition-all"
+                  className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
                 >
                   Save Goal
                 </button>
@@ -787,24 +817,34 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* Parent Category Action Modal (Matching 3rd reference screenshot) */}
       {selectedParentCat && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
           onClick={() => setSelectedParentCat(null)}
         >
           <div
-            className="w-full max-w-xs bg-[#101014] rounded-2xl p-5 border border-zinc-800 shadow-2xl space-y-4 cursor-default animate-scale-in"
+            className="w-full sm:max-w-md bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 border-t sm:border border-zinc-800 shadow-2xl space-y-4 cursor-default animate-scale-in safe-bottom"
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
             {/* Category Banner Card */}
-            <div className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
-                <CategoryIcon name={selectedParentCat.icon || 'Tag'} size={18} />
-              </div>
-              <div className="truncate">
-                <div className="text-xs font-bold text-white truncate">{selectedParentCat.name}</div>
-                <div className="text-[10px] text-zinc-500 font-mono uppercase">
-                  {selectedParentCat.type} Category
+            <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
+                  <CategoryIcon name={selectedParentCat.icon || 'Tag'} size={18} />
+                </div>
+                <div className="truncate">
+                  <div className="text-sm font-bold text-white truncate">{selectedParentCat.name}</div>
+                  <div className="text-[10px] text-zinc-500 font-mono uppercase">
+                    {selectedParentCat.type} Category
+                  </div>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setSelectedParentCat(null)}
+                className="p-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white cursor-pointer transition-colors"
+              >
+                <X size={15} />
+              </button>
             </div>
 
             {/* Subcategories list inside */}
@@ -815,23 +855,25 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <div className="text-[10px] font-mono uppercase text-zinc-500 font-bold px-1">
                     Subcategories ({subs.length})
                   </div>
-                  <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                  <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
                     {subs.map((sub) => (
                       <div
                         key={sub.id}
-                        className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#16161d] border border-zinc-800/60 text-xs"
+                        className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-[#14141c] border border-zinc-800/60 text-xs"
                       >
                         <span className="text-zinc-200 truncate">{sub.name}</span>
                         <button
                           onClick={() => deleteCategory(sub.id)}
                           className="text-zinc-600 hover:text-rose-400 p-1 cursor-pointer transition-colors"
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     ))}
                     {subs.length === 0 && (
-                      <div className="text-[11px] text-zinc-600 italic py-2 px-1">No subcategories added yet</div>
+                      <div className="text-[11px] text-zinc-500 italic py-3 text-center bg-[#14141c]/50 rounded-xl border border-zinc-800/40">
+                        No subcategories added yet
+                      </div>
                     )}
                   </div>
                 </div>
@@ -844,25 +886,25 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 setNewCatName('');
                 setShowAddSubModal(true);
               }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#16161d] hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-white transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#14141c] hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-white transition-all cursor-pointer font-mono"
             >
               <Plus size={14} /> Add Subcategory
             </button>
 
             {/* Modal Bottom Actions (Delete vs Done) */}
-            <div className="flex items-center gap-2 pt-1 border-t border-zinc-900">
+            <div className="flex items-center gap-2.5 pt-2 border-t border-zinc-800/80">
               <button
                 onClick={() => {
                   deleteCategory(selectedParentCat.id);
                   setSelectedParentCat(null);
                 }}
-                className="flex-1 py-2 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer"
               >
-                Delete
+                Delete Category
               </button>
               <button
                 onClick={() => setSelectedParentCat(null)}
-                className="flex-1 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold transition-all cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold transition-all cursor-pointer shadow-md"
               >
                 Done
               </button>
@@ -874,37 +916,47 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* Add Subcategory Inline Modal */}
       {showAddSubModal && selectedParentCat && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
           onClick={() => setShowAddSubModal(false)}
         >
           <div
-            className="w-full max-w-xs bg-[#101014] rounded-2xl p-5 border border-zinc-800 shadow-2xl space-y-3 cursor-default"
+            className="w-full sm:max-w-sm bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 border-t sm:border border-zinc-800 shadow-2xl space-y-4 cursor-default safe-bottom"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xs font-bold text-white font-mono">
-              Add to {selectedParentCat.name}
-            </h3>
-            <form onSubmit={handleCreateSubcategory} className="space-y-3">
+            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+              <h3 className="text-sm font-bold text-white font-mono">
+                Add to {selectedParentCat.name}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddSubModal(false)}
+                className="p-1 rounded-full text-zinc-400 hover:text-white"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateSubcategory} className="space-y-4">
               <input
                 type="text"
                 placeholder="Subcategory name (e.g. Coffee, Taxi)"
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
                 autoFocus
-                className="w-full bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white focus:outline-none border border-zinc-800/60"
+                className="w-full bg-[#14141c] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-500 font-mono"
                 required
               />
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2.5 pt-2 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={() => setShowAddSubModal(false)}
-                  className="px-3 py-1.5 text-xs text-zinc-400 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
+                  className="px-5 py-2 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 shadow-md"
                 >
                   Add
                 </button>
@@ -917,16 +969,32 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* Add Top-Level Category Modal */}
       {showAddParentModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
           onClick={() => setShowAddParentModal(false)}
         >
           <div
-            className="w-full max-w-sm sm:max-w-md md:max-w-lg bg-[#101014] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-8 border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300"
+            className="w-full sm:max-w-md md:max-w-lg bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 md:p-8 border-t sm:border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300 safe-bottom"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base sm:text-lg font-bold text-white font-mono capitalize">
-              New {tab} Category
-            </h3>
+            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+                  <Tag size={16} />
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white font-mono capitalize">
+                  New {tab} Category
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddParentModal(false)}
+                className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
             <form onSubmit={handleCreateParent} className="space-y-4">
               <div>
                 <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
@@ -938,7 +1006,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
                   autoFocus
-                  className="w-full bg-[#16161d] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none border border-zinc-800/60"
+                  className="w-full bg-[#14141c] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-500 font-mono"
                   required
                 />
               </div>
@@ -947,7 +1015,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                   Icon
                 </label>
-                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 gap-1.5 max-h-40 overflow-y-auto p-1.5 bg-[#16161d] rounded-xl border border-zinc-800/60">
+                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 gap-1.5 max-h-40 overflow-y-auto p-2 bg-[#14141c] rounded-xl border border-zinc-800/60">
                   {availableIcons.map((ic) => (
                     <button
                       key={ic}
@@ -965,19 +1033,19 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={() => setShowAddParentModal(false)}
-                  className="px-3 py-1.5 text-xs text-zinc-400 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
+                  className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
                 >
-                  Create
+                  Create Category
                 </button>
               </div>
             </form>

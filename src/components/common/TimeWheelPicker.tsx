@@ -249,18 +249,25 @@ export const WheelColumn: React.FC<WheelColumnProps> = ({
       }
     }
 
-    // Momentum projection if flicked, otherwise settle cleanly to closest item
-    const momentumDistance = -velocity * 180;
-    const projectedScroll = el.scrollTop + momentumDistance;
-    const targetIndex = Math.max(0, Math.min(items.length - 1, Math.round(projectedScroll / 32)));
+    // Tactile flick physics: clamp momentum to at most 1-3 items so it never wildly skips
+    const currentIndex = Math.round(el.scrollTop / 32);
+    const maxStep = isPeriod ? 1 : 3;
+    let stepDelta = 0;
+    if (Math.abs(velocity) > 0.18) {
+      const rawStep = Math.round(-velocity * 1.2);
+      stepDelta = Math.max(-maxStep, Math.min(maxStep, rawStep));
+    }
+
+    const targetIndex = Math.max(0, Math.min(items.length - 1, currentIndex + stepDelta));
 
     lastActiveIndexRef.current = targetIndex;
     triggerHaptic();
     onSelect(targetIndex);
 
-    // Single deterministic ease-out glide to target without any CSS snap oscillation
+    // Single deterministic ease-out glide to target without oscillation
     animateTo(targetIndex * 32);
   };
+
 
   const handleItemClick = (idx: number) => {
     if (hasMovedRef.current) return;

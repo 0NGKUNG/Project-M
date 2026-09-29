@@ -4,6 +4,8 @@ import {
   Plus, 
   RefreshCw,
   Users,
+  CreditCard,
+  X,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
@@ -255,27 +257,42 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       {/* Quick Account Add Modal */}
       {showAddModal && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs animate-fade-in cursor-pointer"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
           onClick={() => setShowAddModal(false)}
         >
           <div 
-            className="w-full max-w-sm sm:max-w-md md:max-w-xl lg:max-w-2xl bg-[#101014] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-8 border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300"
+            className="w-full sm:max-w-lg md:max-w-xl bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 md:p-8 border-t sm:border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300 max-h-[92vh] overflow-y-auto safe-bottom"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base sm:text-lg font-bold text-white font-mono">Create New Account</h3>
+            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+                  <CreditCard size={16} />
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white font-mono">Create New Account</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
 
             <form onSubmit={handleCreateAccount} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                <div className="sm:col-span-2 md:col-span-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="sm:col-span-2">
                   <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
                     Account Name
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Kasikorn Bank, Wallet"
+                    placeholder="e.g. Kasikorn Bank, Main Wallet"
                     value={newAccName}
                     onChange={(e) => setNewAccName(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                    className="w-full h-11 bg-[#14141c] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-500 transition-colors"
                     autoFocus
                     required
                   />
@@ -307,22 +324,22 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     type="number"
                     value={newAccBalance}
                     onChange={(e) => setNewAccBalance(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                    className="w-full h-11 bg-[#14141c] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-500 transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2.5 pt-2">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-white text-black text-xs font-bold rounded-xl cursor-pointer hover:bg-zinc-200 transition-colors"
+                  className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
                 >
                   Save Account
                 </button>

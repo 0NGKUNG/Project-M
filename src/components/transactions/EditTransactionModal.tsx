@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import type { Transaction, TransactionType } from '../../types/finance';
-import { CategoryIcon } from '../common/Icons';
+import { CategoryIcon, formatCurrency } from '../common/Icons';
 import { formatAmountDisplay, evaluateAmountExpression, parseFormattedNumber } from '../common/CurrencyInput';
 import { TimeWheelPicker } from '../common/TimeWheelPicker';
 import { useBackButton } from '../../hooks/useBackButton';
@@ -39,7 +39,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   onClose,
 }) => {
   useBackButton(true, onClose);
-  const { state, updateTransaction, deleteTransaction, triggerHaptic } = useFinance();
+  const { state, accountBalances, updateTransaction, deleteTransaction, triggerHaptic } = useFinance();
+
 
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [amountStr, setAmountStr] = useState<string>(() => String(transaction.amount));
@@ -373,7 +374,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
         </div>
 
         {/* 2. MAIN CARD: Responsive Form */}
-        <div className="relative z-20 w-full sm:max-w-2xl md:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-900 rounded-t-3xl sm:rounded-2xl md:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0 max-h-[92vh] sm:max-h-none">
+        <div className="relative z-20 w-full h-[100dvh] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl md:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-900 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0">
           
           {/* Top Bar: Back/Close + Type Switcher Pills + Inline Delete Button */}
           <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">
@@ -444,9 +445,9 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             </button>
           </div>
 
-          {/* Category Grid (2 columns on mobile, 3 columns on PC) */}
+          {/* Category Grid or Transfer Flow (flex-1 fill so card height never changes) */}
           {type !== 'transfer' ? (
-            <div className="px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-[220px] sm:min-h-[260px] md:min-h-[300px] overflow-y-auto">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-0 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3.5">
                 {parentCategories.map((cat) => {
                   const isSelected = selectedCategoryId === cat.id;
@@ -481,15 +482,11 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                         <div className="text-[11px] sm:text-xs font-bold truncate leading-snug" title={cat.name}>
                           {cat.name}
                         </div>
-                        {isSelected && selectedSub ? (
+                        {isSelected && selectedSub && (
                           <div className="text-[9px] sm:text-[10px] text-zinc-700 truncate leading-tight font-medium mt-0.5" title={selectedSub.name}>
                             {selectedSub.name}
                           </div>
-                        ) : hasSubs ? (
-                          <div className={`text-[9px] sm:text-[10px] truncate leading-tight mt-0.5 ${isSelected ? 'text-zinc-600' : 'text-zinc-500 font-mono'}`}>
-                            {subs.length} sub
-                          </div>
-                        ) : null}
+                        )}
                       </div>
 
                       {/* Mobile dropdown arrow for subcategories */}
@@ -570,32 +567,91 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               )}
             </div>
           ) : (
-            /* Transfer Wallet to Wallet selector */
-            <div className="px-4 sm:px-6 py-4 space-y-3 flex-1 min-h-[200px]">
-              <div className="text-[10px] font-mono uppercase text-zinc-400 font-bold tracking-wider">
-                Transfer Between Wallets
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#14141a] p-3 rounded-2xl border border-zinc-850">
-                  <span className="text-[9px] text-zinc-500 font-mono uppercase block mb-1.5 font-bold">From Wallet</span>
+            /* Redesigned Transfer Section: Top Account -> Down Arrow -> Bottom Account */
+            <div className="px-4 sm:px-6 py-6 flex-1 min-h-0 overflow-y-auto flex flex-col justify-center space-y-3 font-mono">
+              {/* From Wallet Card */}
+              <div className="w-full bg-[#14141a] p-3.5 sm:p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2 flex items-center justify-between">
+                  <span>From Wallet</span>
+                  <span className="text-zinc-600 font-normal">Source</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-white shrink-0">
+                      <WalletIcon size={18} />
+                    </div>
+                    <div className="truncate">
+                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === selectedAccountId)?.name || 'Wallet'}</div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">
+                        Balance: {formatCurrency(accountBalances[selectedAccountId] ?? 0, state.settings.currencySymbol)}
+                      </div>
+                    </div>
+                  </div>
                   <select
                     value={selectedAccountId}
-                    onChange={(e) => setSelectedAccountId(e.target.value)}
-                    className="w-full bg-[#101014] rounded-xl px-3 py-2 text-xs text-white border border-zinc-800 focus:outline-none font-mono"
+                    onChange={(e) => {
+                      triggerHaptic();
+                      const val = e.target.value;
+                      setSelectedAccountId(val);
+                      if (val === toAccountId) {
+                        const other = state.accounts.find(a => a.id !== val)?.id || '';
+                        setToAccountId(other);
+                      }
+                    }}
+                    className="bg-zinc-900 border border-zinc-700/80 text-white rounded-xl px-2.5 py-1.5 text-xs font-mono cursor-pointer focus:outline-none"
                   >
-                    {state.accounts.map((a) => (
+                    {state.accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name}</option>
                     ))}
                   </select>
                 </div>
-                <div className="bg-[#14141a] p-3 rounded-2xl border border-zinc-850">
-                  <span className="text-[9px] text-zinc-500 font-mono uppercase block mb-1.5 font-bold">To Wallet</span>
+              </div>
+
+              {/* Swap Button with Down Arrow */}
+              <div className="flex justify-center -my-1 relative z-10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    const from = selectedAccountId;
+                    const to = toAccountId;
+                    setSelectedAccountId(to);
+                    setToAccountId(from);
+                  }}
+                  className="w-10 h-10 rounded-full bg-[#1b1b22] border border-zinc-700 hover:border-zinc-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all cursor-pointer group"
+                  title="Swap Wallets"
+                >
+                  <ArrowDownRight className="rotate-45 text-zinc-300 group-hover:text-white transition-transform" size={17} />
+                </button>
+              </div>
+
+              {/* To Wallet Card */}
+              <div className="w-full bg-[#14141a] p-3.5 sm:p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2 flex items-center justify-between">
+                  <span>To Wallet</span>
+                  <span className="text-zinc-600 font-normal">Destination</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-white shrink-0">
+                      <WalletIcon size={18} />
+                    </div>
+                    <div className="truncate">
+                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === toAccountId)?.name || 'Wallet'}</div>
+                      <div className="text-[11px] text-zinc-400 mt-0.5">
+                        Balance: {formatCurrency(accountBalances[toAccountId] ?? 0, state.settings.currencySymbol)}
+                      </div>
+                    </div>
+                  </div>
                   <select
                     value={toAccountId}
-                    onChange={(e) => setToAccountId(e.target.value)}
-                    className="w-full bg-[#101014] rounded-xl px-3 py-2 text-xs text-white border border-zinc-800 focus:outline-none font-mono"
+                    onChange={(e) => {
+                      triggerHaptic();
+                      setToAccountId(e.target.value);
+                    }}
+                    className="bg-zinc-900 border border-zinc-700/80 text-white rounded-xl px-2.5 py-1.5 text-xs font-mono cursor-pointer focus:outline-none"
                   >
-                    {state.accounts.filter(a => a.id !== selectedAccountId).map((a) => (
+                    {state.accounts.filter(a => a.id !== selectedAccountId).map(a => (
                       <option key={a.id} value={a.id}>{a.name}</option>
                     ))}
                   </select>
@@ -609,9 +665,6 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             <div className="flex items-center justify-between gap-3 sm:gap-4">
               {/* Left: Amount Label & Value Input */}
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-wider mb-0.5">
-                  {type === 'expense' ? 'Amount' : type === 'income' ? 'Received' : 'Transfer'}
-                </div>
                 <div className="flex items-center gap-1.5 font-mono text-zinc-200">
                   <span className="text-2xl sm:text-3xl font-bold text-zinc-400">{state.settings.currencySymbol}</span>
                   {!showNumpad ? (
@@ -680,9 +733,6 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                     <div className={`text-xs font-bold leading-tight ${activeRightPanel === 'datetime' ? 'text-black' : 'text-white'}`}>
                       {isToday ? 'Today' : date}
                     </div>
-                    <div className={`hidden sm:block text-[10px] leading-tight mt-0.5 ${activeRightPanel === 'datetime' ? 'text-zinc-700' : 'text-zinc-500'}`}>
-                      {time}
-                    </div>
                   </div>
                 </button>
 
@@ -705,14 +755,12 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                     <div className={`text-xs font-bold leading-tight truncate max-w-[85px] sm:max-w-none ${activeRightPanel === 'account' ? 'text-black' : 'text-white'}`}>
                       {selectedAccount?.name || 'Wallet'}
                     </div>
-                    <div className={`hidden sm:block text-[10px] leading-tight mt-0.5 ${activeRightPanel === 'account' ? 'text-zinc-700' : 'text-zinc-500'}`}>
-                      Account
-                    </div>
                   </div>
                 </button>
               </div>
             </div>
           </div>
+
 
           {/* Note / Memo Section */}
           <div className="px-4 sm:px-6 py-2 sm:py-3 bg-[#0c0c10] border-t border-zinc-900/80">
