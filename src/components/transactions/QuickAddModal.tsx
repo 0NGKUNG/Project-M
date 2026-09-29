@@ -17,6 +17,7 @@ import { CategoryIcon, formatCurrency } from '../common/Icons';
 import { parseFormattedNumber, formatAmountDisplay } from '../common/CurrencyInput';
 import { TimeWheelPicker } from '../common/TimeWheelPicker';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useDelayedUnmount } from '../../hooks/useDelayedUnmount';
 
 
 interface QuickAddModalProps {
@@ -198,8 +199,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, amountStr, type, selectedCategoryId, selectedSubcategoryId, selectedAccountId, toAccountId, date, note]);
 
-  if (!isOpen) return null;
-
   // Helper to evaluate simple expressions like "100 - 50" or "100 + 50"
   const evaluateAmountExpression = (expr: string): string => {
     try {
@@ -338,6 +337,13 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
   const displayCategory = hasSubcategories ? selectedCategory : (lastCategoryWithSubsRef.current || selectedCategory);
   const displaySubcategories = displayCategory ? getSubcategories(displayCategory.id) : [];
 
+  // Panels stay mounted for the length of their collapse so they slide back behind the main
+  // card instead of vanishing the instant selection changes.
+  const renderedRightPanel = useDelayedUnmount(activeRightPanel);
+  const renderedLeftCategory = useDelayedUnmount(
+    hasSubcategories && displayCategory ? displayCategory.id : null
+  );
+
   // Quick Date format for badge
   const isToday = date === new Date().toISOString().split('T')[0];
 
@@ -359,6 +365,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div 
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-xs animate-fade-in p-0 sm:p-4"
@@ -378,11 +386,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       >
         {/* 1. LEFT SIDE PANEL: Subcategories (Behind Main Card z-10) */}
         <div 
-          className={`hidden md:flex justify-end relative z-10 overflow-hidden transition-all duration-300 ease-out ${
-            hasSubcategories ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 translate-x-16 pointer-events-none'
+          className={`hidden md:flex relative z-10 overflow-hidden transition-[width] duration-300 ease-out ${
+            hasSubcategories ? 'w-60 lg:w-64 pointer-events-auto' : 'w-0 pointer-events-none'
           }`}
         >
-          {hasSubcategories && displayCategory && (
+          {renderedLeftCategory && (
             <div 
               className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0"
             >
@@ -484,7 +492,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
           {/* Category Pill Grid or Transfer Flow (flex-1 fill so card height never changes) */}
           {type !== 'transfer' ? (
-            <div className="px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-0 overflow-y-auto">
+            /* Distinct keys: the two branches must not share a DOM node, otherwise React morphs
+               the category grid into the transfer cards (and back), animating their geometry. */
+            <div key="category-grid" className="px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-0 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3.5">
                 {parentCategories.map((cat) => {
                   const isSelected = selectedCategoryId === cat.id;
@@ -551,9 +561,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             </div>
           ) : (
             /* Redesigned Transfer Section: Top Account -> Clean Swap Row (No Overlap) -> Bottom Account */
-            <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto flex flex-col justify-start sm:justify-center font-mono space-y-0">
+            <div key="transfer-flow" className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto flex flex-col justify-start sm:justify-center font-mono space-y-0">
               {/* From Wallet Card */}
-              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
+              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-colors">
                 <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2">
                   From
                 </div>
@@ -608,7 +618,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
               </div>
 
               {/* To Wallet Card */}
-              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
+              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-colors">
                 <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2">
                   To
                 </div>
@@ -876,15 +886,15 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             definite height. Without it the wheel's own content inflates the panel, which inflates
             the centering padding and breaks the whole modal layout (runaway resize loop). */}
         <div 
-          className={`hidden md:flex relative z-10 overflow-hidden transition-all duration-300 ease-out sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] ${
-            activeRightPanel ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'
+          className={`hidden md:flex justify-end relative z-10 overflow-hidden transition-[width] duration-300 ease-out sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] ${
+            activeRightPanel ? 'w-60 lg:w-64 pointer-events-auto' : 'w-0 pointer-events-none'
           }`}
         >
-          {activeRightPanel && (
+          {renderedRightPanel && (
             <div 
               className="w-60 lg:w-64 flex flex-col gap-3 overflow-y-auto no-scrollbar h-full font-mono shrink-0"
             >
-              {activeRightPanel === 'datetime' ? (
+              {renderedRightPanel === 'datetime' ? (
               <div key="datetime" className="flex flex-col gap-3 h-full animate-fade-in">
                 
                 {/* 1. TOP CARD: Calendar Card (Separate Card with Fixed 6-Row Grid) */}

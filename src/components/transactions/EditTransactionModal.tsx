@@ -22,6 +22,7 @@ import { CategoryIcon, formatCurrency } from '../common/Icons';
 import { formatAmountDisplay, evaluateAmountExpression, parseFormattedNumber } from '../common/CurrencyInput';
 import { TimeWheelPicker } from '../common/TimeWheelPicker';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useDelayedUnmount } from '../../hooks/useDelayedUnmount';
 
 interface EditTransactionModalProps {
   transaction: Transaction;
@@ -267,6 +268,13 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   const displayCategory = hasSubcategories ? selectedCategory : (lastCategoryWithSubsRef.current || selectedCategory);
   const displaySubcategories = displayCategory ? getSubcategories(displayCategory.id) : [];
 
+  // Panels stay mounted for the length of their collapse so they slide back behind the main
+  // card instead of vanishing the instant selection changes.
+  const renderedRightPanel = useDelayedUnmount(activeRightPanel);
+  const renderedLeftCategory = useDelayedUnmount(
+    hasSubcategories && displayCategory ? displayCategory.id : null
+  );
+
   const isToday = date === new Date().toISOString().split('T')[0];
 
   const handleOpenDateTime = () => {
@@ -306,11 +314,11 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       >
         {/* 1. LEFT PANEL: Subcategories (Desktop) */}
         <div 
-          className={`hidden md:flex justify-end relative z-10 overflow-hidden transition-all duration-300 ease-out ${
-            hasSubcategories ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 translate-x-16 pointer-events-none'
+          className={`hidden md:flex relative z-10 overflow-hidden transition-[width] duration-300 ease-out ${
+            hasSubcategories ? 'w-60 lg:w-64 pointer-events-auto' : 'w-0 pointer-events-none'
           }`}
         >
-          {hasSubcategories && displayCategory && (
+          {renderedLeftCategory && (
             <div 
               className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0"
             >
@@ -447,7 +455,9 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
           {/* Category Grid or Transfer Flow (flex-1 fill so card height never changes) */}
           {type !== 'transfer' ? (
-            <div className="px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-0 overflow-y-auto">
+            /* Distinct keys: the two branches must not share a DOM node, otherwise React morphs
+               the category grid into the transfer cards (and back), animating their geometry. */
+            <div key="category-grid" className="px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-0 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3.5">
                 {parentCategories.map((cat) => {
                   const isSelected = selectedCategoryId === cat.id;
@@ -568,9 +578,9 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             </div>
           ) : (
             /* Redesigned Transfer Section: Top Account -> Clean Swap Row (No Overlap) -> Bottom Account */
-            <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto flex flex-col justify-start sm:justify-center font-mono space-y-0">
+            <div key="transfer-flow" className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto flex flex-col justify-start sm:justify-center font-mono space-y-0">
               {/* From Wallet Card */}
-              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
+              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-colors">
                 <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2">
                   From
                 </div>
@@ -625,7 +635,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               </div>
 
               {/* To Wallet Card */}
-              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
+              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-colors">
                 <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2">
                   To
                 </div>
@@ -906,15 +916,15 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
         {/* Height is pinned to the main card so nested h-full/flex-1 content (e.g. the time wheel)
             always resolves against a definite height instead of its own content. */}
         <div 
-          className={`hidden md:flex relative z-10 overflow-hidden transition-all duration-300 ease-out sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] ${
-            activeRightPanel ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'
+          className={`hidden md:flex justify-end relative z-10 overflow-hidden transition-[width] duration-300 ease-out sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] ${
+            activeRightPanel ? 'w-60 lg:w-64 pointer-events-auto' : 'w-0 pointer-events-none'
           }`}
         >
-          {activeRightPanel && (
+          {renderedRightPanel && (
             <div 
               className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 shadow-2xl h-full font-mono shrink-0"
             >
-            {activeRightPanel === 'datetime' && (
+            {renderedRightPanel === 'datetime' && (
               <div className="flex flex-col h-full animate-fade-in space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-zinc-900 shrink-0">
                   <div className="flex items-center gap-2 text-white">
@@ -1033,7 +1043,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               </div>
             )}
 
-            {activeRightPanel === 'account' && (
+            {renderedRightPanel === 'account' && (
               <div className="flex flex-col h-full animate-fade-in space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-zinc-900 shrink-0">
                   <div className="flex items-center gap-2 text-white">
