@@ -449,7 +449,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         </div>
 
         {/* 2. MAIN CARD: Category Grid (3 cols on PC), Amount Display, Note Input, Save Button (Elevated z-20 so side panels emerge behind it) */}
-        <div className="relative z-20 w-full h-[100dvh] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl md:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-900 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0">
+        <div className="relative z-20 w-full h-[100dvh] sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] sm:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-900 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0">
           
           {/* Top App Bar: Back icon + Type Switcher Pills */}
           <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">

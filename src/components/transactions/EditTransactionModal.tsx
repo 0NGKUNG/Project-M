@@ -375,7 +375,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
         </div>
 
         {/* 2. MAIN CARD: Responsive Form */}
-        <div className="relative z-20 w-full h-[100dvh] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl md:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-900 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0">
+        <div className="relative z-20 w-full h-[100dvh] sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] sm:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-900 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0">
           
           {/* Top Bar: Back/Close + Type Switcher Pills + Inline Delete Button */}
           <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">
