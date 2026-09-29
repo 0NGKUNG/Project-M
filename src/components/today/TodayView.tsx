@@ -9,8 +9,10 @@ import {
   Target,
   AlertCircle,
   RefreshCw,
-  HandCoins
+  HandCoins,
+  X
 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
@@ -30,6 +32,8 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, onOpenMana
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(() => String(state.settings.goals?.daily || ''));
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [isEditingGoalInModal, setIsEditingGoalInModal] = useState(false);
 
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
@@ -63,6 +67,22 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, onOpenMana
   const goalProgress = dailyGoal > 0 ? Math.min(100, Math.round((dayExpense / dailyGoal) * 100)) : 0;
   const isOverGoal = dailyGoal > 0 && dayExpense > dailyGoal;
 
+  // Today's live figures — the goal pill always reflects the real calendar day,
+  // even while the Day Activity feed below is browsing another date.
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayTotals = useMemo(() => {
+    let inc = 0;
+    let exp = 0;
+    state.transactions.forEach((tx) => {
+      if (tx.date !== todayStr) return;
+      if (tx.type === 'income') inc += tx.amount;
+      if (tx.type === 'expense') exp += tx.amount;
+    });
+    return { inc, exp };
+  }, [state.transactions, todayStr]);
+  const todayGoalProgress = dailyGoal > 0 ? Math.min(100, Math.round((todayTotals.exp / dailyGoal) * 100)) : 0;
+  const todayIsOverGoal = dailyGoal > 0 && todayTotals.exp > dailyGoal;
+
   const handleSaveGoal = (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseFormattedNumber(goalInput) || undefined;
@@ -73,6 +93,8 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, onOpenMana
       },
     });
     setIsEditingGoal(false);
+    setIsEditingGoalInModal(false);
+    setShowGoalModal(false);
   };
 
   const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
@@ -106,50 +128,177 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, onOpenMana
 
   return (
     <div className="space-y-3 pb-24 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
-      {/* Top Day Switcher */}
+      {/* Header — page title + quick-glance icon actions */}
       <div className="h-8 flex items-center justify-between pt-1">
+        <h2 className="text-xl font-bold tracking-tight text-white font-mono">TODAY</h2>
+
         <div className="flex items-center gap-2">
+          {/* Daily budget at-a-glance: mini % pill, tap for full goal sheet */}
           <button
-            onClick={() => handleShiftDay(-1)}
-            className="w-8 h-8 rounded-xl bg-[#101014] hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
-            aria-label="Previous day"
+            onClick={() => setShowGoalModal(true)}
+            className="flex items-center gap-1.5 h-8 pl-2 pr-2.5 rounded-xl bg-[#101014] border border-zinc-900 hover:border-zinc-700 active:scale-95 transition-all cursor-pointer"
+            aria-label="Daily budget"
+            title="Daily budget"
           >
-            <ChevronLeft size={16} />
+            {dailyGoal > 0 ? (
+              <>
+                <div className="w-8 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      todayIsOverGoal ? 'bg-rose-500' : todayGoalProgress > 80 ? 'bg-amber-400' : 'bg-white'
+                    }`}
+                    style={{ width: `${Math.min(100, todayGoalProgress)}%` }}
+                  />
+                </div>
+                <span className={`text-[10px] font-mono font-bold ${todayIsOverGoal ? 'text-rose-400' : 'text-zinc-300'}`}>
+                  {todayGoalProgress}%
+                </span>
+              </>
+            ) : (
+              <>
+                <Target size={13} className="text-zinc-400" />
+                <span className="text-[10px] font-mono font-bold text-zinc-500">Set</span>
+              </>
+            )}
           </button>
-          
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#101014] border border-zinc-900">
-            <CalendarIcon size={14} className="text-zinc-500" />
-            <span className="text-xs font-mono font-bold text-white tracking-wide">
-              {isToday ? 'TODAY' : selectedDate}
-            </span>
-          </div>
 
           <button
-            onClick={() => handleShiftDay(1)}
-            className="w-8 h-8 rounded-xl bg-[#101014] hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
-            aria-label="Next day"
+            onClick={() => onOpenManager?.('recurring')}
+            className="w-8 h-8 rounded-xl bg-[#101014] border border-zinc-900 hover:border-zinc-700 active:scale-95 flex items-center justify-center text-zinc-400 hover:text-white transition-all cursor-pointer relative"
+            aria-label="Recurring"
+            title="Recurring"
           >
-            <ChevronRight size={16} />
+            <RefreshCw size={13} />
+            {(state.recurring || []).some((r) => r.isActive) && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-white/80" />
+            )}
           </button>
 
-          {!isToday && (
-            <button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-              className="text-[11px] text-zinc-500 hover:text-white font-mono transition-colors ml-1 cursor-pointer"
-            >
-              Reset to Today
-            </button>
-          )}
+          <button
+            onClick={() => onOpenManager?.('debts')}
+            className="w-8 h-8 rounded-xl bg-[#101014] border border-zinc-900 hover:border-zinc-700 active:scale-95 flex items-center justify-center text-zinc-400 hover:text-white transition-all cursor-pointer relative"
+            aria-label="Borrow & Lend"
+            title="Borrow & Lend"
+          >
+            <HandCoins size={13} />
+            {activeDebts.length > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-white/80" />
+            )}
+          </button>
+
+          {/* Desktop keeps the explicit Add; mobile uses the bottom-nav FAB */}
+          <button
+            onClick={() => onOpenQuickAdd()}
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.12)]"
+          >
+            <Plus size={14} strokeWidth={2.8} />
+            <span>Add</span>
+          </button>
         </div>
-
-        <button
-          onClick={() => onOpenQuickAdd()}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.12)]"
-        >
-          <Plus size={14} strokeWidth={2.8} />
-          <span>Add</span>
-        </button>
       </div>
+
+      {/* Daily Budget Sheet — goal summary + inline edit */}
+      {showGoalModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            onClick={() => setShowGoalModal(false)}
+          >
+            <div
+              className="w-full sm:max-w-sm h-[100dvh] sm:h-auto bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-zinc-800/80 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+                    <Target size={16} />
+                  </div>
+                  <h3 className="text-sm font-bold text-white font-mono">Daily Budget</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowGoalModal(false)}
+                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {dailyGoal > 0 ? (
+                  <>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <div className="text-[10px] font-mono uppercase font-bold tracking-wider text-zinc-500">Spent today</div>
+                        <div className={`text-2xl font-bold font-mono mt-1 ${todayIsOverGoal ? 'text-rose-400' : 'text-white'}`}>
+                          {formatCurrency(todayTotals.exp, state.settings.currencySymbol)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-xl font-bold font-mono ${todayIsOverGoal ? 'text-rose-400' : todayGoalProgress > 80 ? 'text-amber-400' : 'text-white'}`}>
+                          {todayGoalProgress}%
+                        </div>
+                        <div className="text-[10px] font-mono text-zinc-500">
+                          of {formatCurrency(dailyGoal, state.settings.currencySymbol)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-2.5 rounded-full bg-zinc-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          todayIsOverGoal ? 'bg-rose-500' : todayGoalProgress > 80 ? 'bg-amber-400' : 'bg-white'
+                        }`}
+                        style={{ width: `${Math.min(100, todayGoalProgress)}%` }}
+                      />
+                    </div>
+
+                    {todayIsOverGoal && (
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-rose-400">
+                        <AlertCircle size={12} />
+                        <span>
+                          Over budget by {formatCurrency(todayTotals.exp - dailyGoal, state.settings.currencySymbol)}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-zinc-500">
+                    No daily budget set yet. Add one to track and cap your daily spending.
+                  </p>
+                )}
+
+                {isEditingGoalInModal ? (
+                  <form onSubmit={handleSaveGoal} className="flex gap-2">
+                    <CurrencyInput
+                      currencySymbol={state.settings.currencySymbol}
+                      type="number"
+                      placeholder="e.g. 500"
+                      value={goalInput}
+                      onChange={(e) => setGoalInput(e.target.value)}
+                      className="flex-1 bg-[#16161d] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="px-3 py-2 bg-white text-black text-xs font-bold rounded-xl cursor-pointer"
+                    >
+                      Save
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => setIsEditingGoalInModal(true)}
+                    className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono font-bold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {dailyGoal > 0 ? 'Edit Budget' : '+ Set Budget'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Summary Cards & Spending Goal Section */}
       <div className="space-y-3">
@@ -336,9 +485,35 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, onOpenMana
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase">
             Day Activity ({dayTransactions.length})
           </span>
-          <span className="text-[10px] text-zinc-500 font-mono">
-            {selectedDate}
-          </span>
+          <div className="flex items-center gap-2">
+            {!isToday && (
+              <button
+                onClick={() => setSelectedDate(todayStr)}
+                className="text-[10px] text-zinc-500 hover:text-white font-mono transition-colors cursor-pointer"
+              >
+                Back to today
+              </button>
+            )}
+            <span className="text-[10px] text-zinc-500 font-mono">
+              {isToday ? 'Today' : selectedDate}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handleShiftDay(-1)}
+                className="w-6 h-6 rounded-lg bg-[#101014] border border-zinc-900 hover:border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                aria-label="Previous day"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              <button
+                onClick={() => handleShiftDay(1)}
+                className="w-6 h-6 rounded-lg bg-[#101014] border border-zinc-900 hover:border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                aria-label="Next day"
+              >
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          </div>
         </div>
 
         {dayTransactions.length === 0 ? (
