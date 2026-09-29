@@ -719,19 +719,17 @@ export const StatsView: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                           <div
-                            className={`text-xs font-bold font-mono ${
+                            className={`text-xs sm:text-sm font-bold font-mono tabular-nums ${
                               isExpense ? 'text-rose-400' : isIncome ? 'text-emerald-400' : 'text-blue-400'
                             }`}
                           >
                             {isExpense ? '-' : isIncome ? '+' : ''}
                             {formatCurrency(tx.amount, state.settings.currencySymbol)}
                           </div>
-                          {timeDisplay && (
-                            <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{timeDisplay}</div>
-                          )}
                         </div>
+
                       </div>
                     );
                   })}

@@ -70,8 +70,8 @@ export const TransactionListView: React.FC = () => {
           />
         </div>
 
-        <div className="flex gap-2">
-          <div className="flex gap-1 bg-[#101014] p-1 rounded-2xl">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+          <div className="flex gap-1 bg-[#101014] p-1 rounded-2xl overflow-x-auto no-scrollbar shrink-0">
             {(['all', 'expense', 'income', 'transfer'] as const).map((t) => (
               <button
                 key={t}
@@ -97,7 +97,7 @@ export const TransactionListView: React.FC = () => {
                 label: acc.name,
               })),
             ]}
-            className="min-w-[130px]"
+            className="min-w-[130px] flex-1 sm:flex-initial"
           />
         </div>
       </div>
@@ -119,7 +119,7 @@ export const TransactionListView: React.FC = () => {
 
             return (
               <div key={dateString} className="space-y-2">
-                <div className="flex items-center justify-between px-2">
+                <div className="sticky top-0 z-10 bg-[#060608]/90 backdrop-blur-md py-1.5 flex items-center justify-between px-2">
                   <span className="text-xs font-mono font-semibold text-zinc-400 uppercase tracking-wider">
                     {displayDate}
                   </span>
@@ -129,6 +129,7 @@ export const TransactionListView: React.FC = () => {
                     </span>
                   )}
                 </div>
+
 
                 <div className="bg-[#101014] rounded-2xl divide-y divide-zinc-900 overflow-hidden shadow-sm">
                     {txList.map((tx) => {

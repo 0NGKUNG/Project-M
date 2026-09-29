@@ -60,6 +60,43 @@ export function formatAmountDisplay(value: string | number | undefined | null): 
   return endsWithSpace ? `${formatted} ` : formatted;
 }
 
+export function evaluateAmountExpression(expr: string): string {
+  try {
+    const sanitized = expr.replace(/[^0-9.+\-]/g, '');
+    if (!sanitized) return '0';
+    const tokens = sanitized.match(/(\d+\.?\d*|\.\d+)|([+-])/g);
+    if (!tokens || tokens.length === 0) return '0';
+
+    let result = 0;
+    let currentOp = '+';
+    let startIndex = 0;
+
+    if (tokens[0] === '+' || tokens[0] === '-') {
+      currentOp = tokens[0];
+      startIndex = 1;
+    } else {
+      result = parseFloat(tokens[0]) || 0;
+      startIndex = 1;
+    }
+
+    for (let i = startIndex; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (token === '+' || token === '-') {
+        currentOp = token;
+      } else {
+        const val = parseFloat(token) || 0;
+        if (currentOp === '+') result += val;
+        if (currentOp === '-') result -= val;
+      }
+    }
+
+    return String(Math.max(0, parseFloat(result.toFixed(2))));
+  } catch {
+    return expr;
+  }
+}
+
+
 interface CurrencyInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'className' | 'onChange'> {
   currencySymbol: string;
   className?: string;
