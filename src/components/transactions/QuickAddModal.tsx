@@ -375,20 +375,17 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
       {/* Outer Wrapper for Side Panels & Main Card on Desktop */}
       <div 
-        className="flex items-stretch justify-center sm:gap-3 w-full max-w-full sm:max-w-4xl lg:max-w-6xl"
+        className="flex items-stretch justify-center sm:gap-3 w-full max-w-full sm:max-w-4xl lg:max-w-6xl transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 1. LEFT SIDE PANEL: Subcategories (Behind Main Card z-10) */}
         <div 
           className={`hidden md:flex justify-end relative z-10 transition-all duration-300 ease-out ${
-            hasSubcategories ? 'w-60 lg:w-64 opacity-100 pointer-events-auto' : 'w-0 opacity-0 pointer-events-none'
+            hasSubcategories ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 translate-x-16 pointer-events-none'
           }`}
         >
           <div 
-            style={{
-              transform: hasSubcategories ? 'translateX(0)' : 'translateX(calc(100% + 12px))'
-            }}
-            className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0 transition-transform duration-300 ease-out"
+            className="w-60 lg:w-64 bg-[#0c0c10] border border-zinc-900 rounded-3xl flex flex-col p-4 overflow-y-auto shadow-2xl h-full font-mono shrink-0"
           >
             {displayCategory && (
               <div key={displayCategory.id} className="flex flex-col h-full animate-fade-in">
@@ -877,14 +874,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         {/* 3. RIGHT SIDE PANEL: Date & Time or Account Selector (Behind Main Card z-10) */}
         <div 
           className={`hidden md:flex relative z-10 transition-all duration-300 ease-out ${
-            activeRightPanel ? 'w-60 lg:w-64 opacity-100 pointer-events-auto' : 'w-0 opacity-0 pointer-events-none'
+            activeRightPanel ? 'w-60 lg:w-64 opacity-100 translate-x-0 pointer-events-auto' : 'w-0 opacity-0 -translate-x-12 pointer-events-none'
           }`}
         >
           <div 
-            style={{
-              transform: activeRightPanel ? 'translateX(0)' : 'translateX(calc(-100% - 12px))'
-            }}
-            className="w-60 lg:w-64 flex flex-col gap-3 overflow-y-auto no-scrollbar h-full font-mono shrink-0 transition-transform duration-300 ease-out"
+            className="w-60 lg:w-64 flex flex-col gap-3 overflow-y-auto no-scrollbar h-full font-mono shrink-0"
           >
             {(activeRightPanel || lastRightPanel) === 'datetime' ? (
               <div key="datetime" className="flex flex-col gap-3 h-full animate-fade-in">
