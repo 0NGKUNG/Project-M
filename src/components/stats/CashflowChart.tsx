@@ -37,7 +37,15 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
 
   // Build sequential data points based on timeRange
   const chartData = useMemo(() => {
-    const points: { label: string; date: string; income: number; expense: number; balance: number }[] = [];
+    const points: {
+      label: string;
+      date: string;
+      income: number;
+      expense: number;
+      cumulativeIncome: number;
+      cumulativeExpense: number;
+      balance: number;
+    }[] = [];
     const now = new Date();
 
     if (timeRange === 'day') {
@@ -67,6 +75,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
           date: `${todayStr} ${label}`,
           income: inc,
           expense: exp,
+          cumulativeIncome: 0,
+          cumulativeExpense: 0,
           balance: inc - exp,
         });
       }
@@ -93,6 +103,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
           date: prefix,
           income: inc,
           expense: exp,
+          cumulativeIncome: 0,
+          cumulativeExpense: 0,
           balance: inc - exp,
         });
       }
@@ -122,6 +134,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
           date: dateStr,
           income: inc,
           expense: exp,
+          cumulativeIncome: 0,
+          cumulativeExpense: 0,
           balance: inc - exp,
         });
       }
@@ -133,6 +147,16 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
     for (let i = points.length - 1; i >= 0; i--) {
       points[i].balance = runningBalance;
       runningBalance -= (points[i].income - points[i].expense);
+    }
+
+    // Compute cumulative income and expense across the period
+    let runInc = 0;
+    let runExp = 0;
+    for (let i = 0; i < points.length; i++) {
+      runInc += points[i].income;
+      runExp += points[i].expense;
+      points[i].cumulativeIncome = runInc;
+      points[i].cumulativeExpense = runExp;
     }
 
     return points;
@@ -150,8 +174,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
   const innerWidth = width - paddingX * 2;
   const innerHeight = height - paddingTop - paddingBottom;
 
-  // Determine scaling
-  const allValues = chartData.flatMap((d) => [d.income, d.expense, d.balance]);
+  // Determine scaling based on cumulative values and net balance
+  const allValues = chartData.flatMap((d) => [d.cumulativeIncome, d.cumulativeExpense, d.balance]);
   const minVal = Math.min(0, ...allValues);
   const maxVal = Math.max(10, ...allValues);
   const range = maxVal - minVal || 1;
@@ -218,8 +242,8 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
     return d;
   };
 
-  const incomePath = generateSmoothPath(chartData.map((d) => d.income));
-  const expensePath = generateSmoothPath(chartData.map((d) => d.expense));
+  const incomePath = generateSmoothPath(chartData.map((d) => d.cumulativeIncome));
+  const expensePath = generateSmoothPath(chartData.map((d) => d.cumulativeExpense));
   const balancePath = generateSmoothPath(chartData.map((d) => d.balance));
 
   // Area under balance line: from start to end down to bottom line
@@ -492,22 +516,26 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
                   <span className="w-1 h-1 rounded-full bg-white" />
                 </div>
 
-                {activePoint.income > 0 && (
+                {activePoint.cumulativeIncome > 0 && (
                   <span
-                    className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-emerald-500 z-10"
-                    style={{ left: `${posXPercent}%`, top: `${(getY(activePoint.income) / height) * 100}%` }}
+                    className={`absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-emerald-500 z-10 transition-transform ${
+                      activePoint.income > 0 ? 'ring-2 ring-emerald-400/80 scale-125' : ''
+                    }`}
+                    style={{ left: `${posXPercent}%`, top: `${(getY(activePoint.cumulativeIncome) / height) * 100}%` }}
                   />
                 )}
-                {activePoint.expense > 0 && (
+                {activePoint.cumulativeExpense > 0 && (
                   <span
-                    className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-rose-500 z-10"
-                    style={{ left: `${posXPercent}%`, top: `${(getY(activePoint.expense) / height) * 100}%` }}
+                    className={`absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black bg-rose-500 z-10 transition-transform ${
+                      activePoint.expense > 0 ? 'ring-2 ring-rose-400/80 scale-125' : ''
+                    }`}
+                    style={{ left: `${posXPercent}%`, top: `${(getY(activePoint.cumulativeExpense) / height) * 100}%` }}
                   />
                 )}
 
                 {/* Floating Tooltip Box directly above / beside the active point */}
                 <div
-                  className={`absolute font-mono px-2.5 py-1.5 rounded-xl border border-zinc-700/80 bg-[#16161df2] backdrop-blur-md shadow-xl text-left pointer-events-none transition-all duration-75 z-30 ${
+                  className={`absolute font-mono px-3 py-2 rounded-xl border border-zinc-700/80 bg-[#14141cf5] backdrop-blur-md shadow-2xl text-left pointer-events-none transition-all duration-75 z-30 min-w-[140px] ${
                     isNearRight
                       ? '-translate-x-full -ml-3'
                       : isNearLeft
@@ -516,30 +544,61 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({
                   }`}
                   style={{
                     left: `${posXPercent}%`,
-                    top: Math.max(8, Math.min(posYPercent - 42, 60)) + '%',
+                    top: Math.max(6, Math.min(posYPercent - 48, 55)) + '%',
                   }}
                 >
-                  <div className="text-[11px] text-zinc-400 font-medium mb-1">
+                  <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mb-1.5 pb-1 border-b border-zinc-800">
                     {activePoint.label}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-white whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+
+                  {/* Net Worth */}
+                  <div className="flex items-center justify-between gap-3 text-[11px] font-bold text-white whitespace-nowrap mb-1">
+                    <span className="flex items-center gap-1.5 text-zinc-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                      Net
+                    </span>
                     <span className="text-blue-400">
                       {formatCurrency(activePoint.balance, state.settings.currencySymbol)}
                     </span>
                   </div>
+
+                  {/* Cumulative Total In & Out */}
+                  <div className="flex items-center justify-between gap-3 text-[10px] whitespace-nowrap text-zinc-400">
+                    <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                      Total In
+                    </span>
+                    <span className="text-emerald-400 font-bold">
+                      +{formatCurrency(activePoint.cumulativeIncome, state.settings.currencySymbol)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 text-[10px] whitespace-nowrap text-zinc-400 mt-0.5">
+                    <span className="flex items-center gap-1 text-rose-400 font-medium">
+                      <span className="w-1 h-1 rounded-full bg-rose-500" />
+                      Total Out
+                    </span>
+                    <span className="text-rose-400 font-bold">
+                      -{formatCurrency(activePoint.cumulativeExpense, state.settings.currencySymbol)}
+                    </span>
+                  </div>
+
+                  {/* Single-day transaction highlight if anything occurred on this specific day */}
                   {(activePoint.income > 0 || activePoint.expense > 0) && (
-                    <div className="flex items-center gap-2 mt-1 text-[11px] whitespace-nowrap border-t border-zinc-800/80 pt-1">
-                      {activePoint.income > 0 && (
-                        <span className="text-emerald-400 font-bold">
-                          +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
-                        </span>
-                      )}
-                      {activePoint.expense > 0 && (
-                        <span className="text-rose-400 font-bold">
-                          -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
-                        </span>
-                      )}
+                    <div className="mt-1.5 pt-1.5 border-t border-zinc-800/80 text-[10px] whitespace-nowrap flex items-center justify-between gap-2">
+                      <span className="text-zinc-500">This Day</span>
+                      <div className="flex items-center gap-1.5 font-bold">
+                        {activePoint.income > 0 && (
+                          <span className="text-emerald-400">
+                            +{formatCurrency(activePoint.income, state.settings.currencySymbol)}
+                          </span>
+                        )}
+                        {activePoint.expense > 0 && (
+                          <span className="text-rose-400">
+                            -{formatCurrency(activePoint.expense, state.settings.currencySymbol)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

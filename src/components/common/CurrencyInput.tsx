@@ -7,7 +7,10 @@ export function formatNumberWithCommas(value: string | number | undefined | null
   const unsigned = isNegative ? str.slice(1) : str;
 
   const parts = unsigned.split('.');
-  const integerPart = parts[0].replace(/\D/g, '');
+  let integerPart = parts[0].replace(/\D/g, '');
+  if (integerPart.length > 1) {
+    integerPart = integerPart.replace(/^0+([1-9])/, '$1').replace(/^0+(0)$/, '$1');
+  }
   const decimalPart = parts.length > 1 ? parts.slice(1).join('').replace(/\D/g, '') : undefined;
 
   const formattedInteger = integerPart
@@ -32,6 +35,29 @@ export function parseFormattedNumber(value: string | number | undefined | null):
   const cleaned = String(value).replace(/,/g, '').trim();
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
+}
+
+export function formatAmountDisplay(value: string | number | undefined | null): string {
+  if (value === undefined || value === null || value === '') return '0';
+  const val = String(value);
+  if (!/[+-]/.test(val)) {
+    return formatNumberWithCommas(val);
+  }
+
+  const endsWithSpace = val.endsWith(' ');
+  const parts = val.split(/([+-])/);
+  const formatted = parts.map((part) => {
+    const trimmed = part.trim();
+    if (trimmed === '+' || trimmed === '-') {
+      return ` ${trimmed} `;
+    }
+    if (!trimmed) return '';
+    const isTrailingDot = trimmed.endsWith('.');
+    const f = formatNumberWithCommas(trimmed);
+    return isTrailingDot && !f.endsWith('.') ? `${f}.` : f;
+  }).join('').replace(/\s+/g, ' ').trim();
+
+  return endsWithSpace ? `${formatted} ` : formatted;
 }
 
 interface CurrencyInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'className' | 'onChange'> {
