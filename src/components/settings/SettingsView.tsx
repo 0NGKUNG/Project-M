@@ -1,4 +1,5 @@
 import React, { useRef, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Download,
   Upload,
@@ -23,6 +24,7 @@ import { supabase } from '../../db/supabaseClient';
 import { CustomSelect } from '../common/CustomSelect';
 import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import { CategoryIcon, formatCurrency } from '../common/Icons';
+import { CustomDateInput } from '../common/CustomDatePicker';
 import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
 import { RecurringManager } from '../recurring/RecurringManager';
 import { useBackButton } from '../../hooks/useBackButton';
@@ -353,23 +355,22 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         const daysLeft = Math.max(1, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) + 1);
         const dailyAllowance = (remaining / daysLeft).toFixed(2);
 
-        return (
+        return createPortal(
           <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
             onClick={() => setSelectedGoal(null)}
           >
             <div
-              className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl border-t sm:border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-300 safe-bottom"
+              className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
                     <Target size={16} />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white font-mono">{selectedGoal.name || 'Spending Goal'}</h3>
+                    <h3 className="text-sm sm:text-base font-bold text-white font-mono">{selectedGoal.name || 'Spending Goal'}</h3>
                     <p className="text-[10px] text-zinc-500 font-mono uppercase">{selectedGoal.period} target</p>
                   </div>
                 </div>
@@ -382,78 +383,80 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </button>
               </div>
 
-              {/* Overalls Big Highlight Card */}
-              <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between shadow-xs">
-                <div>
-                  <div className="text-xs sm:text-sm font-bold text-white font-mono">Overalls</div>
-                  <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                    {formatCurrency(selectedGoal.amount, state.settings.currencySymbol)}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                {/* Overalls Big Highlight Card */}
+                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between shadow-xs">
+                  <div>
+                    <div className="text-xs sm:text-sm font-bold text-white font-mono">Overalls</div>
+                    <div className="text-xs text-zinc-400 font-mono mt-0.5">
+                      {formatCurrency(selectedGoal.amount, state.settings.currencySymbol)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs sm:text-sm font-bold text-white font-mono">{percent}%</div>
+                    <div className="text-xs text-zinc-400 font-mono mt-0.5">
+                      {formatCurrency(totalSpent, state.settings.currencySymbol)}
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs sm:text-sm font-bold text-white font-mono">{percent}%</div>
-                  <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                    {formatCurrency(totalSpent, state.settings.currencySymbol)}
+
+                {/* Category Breakdown list (Reference style cards) */}
+                {selectedGoal.categories && selectedGoal.categories.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedGoal.categories.map((c) => {
+                      const cat = state.categories.find((item) => item.id === c.categoryId);
+                      const spent = categorySpent[c.categoryId] || 0;
+                      const catPct = Math.min(100, Math.round((spent / c.amount) * 100));
+
+                      return (
+                        <div
+                          key={c.categoryId}
+                          className="p-3.5 rounded-2xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between text-xs"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-200">
+                              <CategoryIcon name={cat?.icon || 'Tag'} size={15} />
+                            </div>
+                            <div className="font-bold text-white">{cat?.name || 'Category'}</div>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="font-mono font-bold text-white text-xs">{catPct}%</div>
+                            <div className="text-[11px] text-zinc-400 font-mono">
+                              {formatCurrency(c.amount, state.settings.currencySymbol)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-              </div>
+                )}
 
-              {/* Category Breakdown list (Reference style cards) */}
-              {selectedGoal.categories && selectedGoal.categories.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {selectedGoal.categories.map((c) => {
-                    const cat = state.categories.find((item) => item.id === c.categoryId);
-                    const spent = categorySpent[c.categoryId] || 0;
-                    const catPct = Math.min(100, Math.round((spent / c.amount) * 100));
-
-                    return (
-                      <div
-                        key={c.categoryId}
-                        className="p-3.5 rounded-2xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between text-xs"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-200">
-                            <CategoryIcon name={cat?.icon || 'Tag'} size={15} />
-                          </div>
-                          <div className="font-bold text-white">{cat?.name || 'Category'}</div>
-                        </div>
-
-                        <div className="text-right">
-                          <div className="font-mono font-bold text-white text-xs">{catPct}%</div>
-                          <div className="text-[11px] text-zinc-400 font-mono">
-                            {formatCurrency(c.amount, state.settings.currencySymbol)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Stats Footer (Days Remaining, Daily Remaining) */}
-              <div className="pt-3 border-t border-zinc-900 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-zinc-400">
-                <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
-                  <span>Period</span>
-                  <span className="text-white capitalize">{selectedGoal.period}</span>
-                </div>
-                <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
-                  <span>Date Range</span>
-                  <span className="text-white">{selectedGoal.startDate} ━ {selectedGoal.endDate}</span>
-                </div>
-                <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
-                  <span>Days Remaining</span>
-                  <span className="text-white font-bold">{daysLeft} days</span>
-                </div>
-                <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
-                  <span>Daily Allowance</span>
-                  <span className="text-emerald-400 font-bold">
-                    {state.settings.currencySymbol}{dailyAllowance} / day
-                  </span>
+                {/* Stats Footer (Days Remaining, Daily Remaining) */}
+                <div className="pt-3 border-t border-zinc-900 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-zinc-400">
+                  <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
+                    <span>Period</span>
+                    <span className="text-white capitalize">{selectedGoal.period}</span>
+                  </div>
+                  <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
+                    <span>Date Range</span>
+                    <span className="text-white">{selectedGoal.startDate} ━ {selectedGoal.endDate}</span>
+                  </div>
+                  <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
+                    <span>Days Remaining</span>
+                    <span className="text-white font-bold">{daysLeft} days</span>
+                  </div>
+                  <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
+                    <span>Daily Allowance</span>
+                    <span className="text-emerald-400 font-bold">
+                      {state.settings.currencySymbol}{dailyAllowance} / day
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Action Buttons: Delete | Edit */}
-              <div className="flex items-center gap-2.5 pt-3 border-t border-zinc-800/80">
+              <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex items-center gap-2.5 shrink-0 safe-bottom">
                 <button
                   type="button"
                   onClick={() => {
@@ -473,192 +476,188 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
       {/* Create Spending Goal Modal */}
-      {showCreateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
-          onClick={() => setShowCreateModal(false)}
-        >
+      {showCreateModal &&
+        createPortal(
           <div
-            className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl border-t sm:border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5 transition-all duration-300 safe-bottom"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            onClick={() => setShowCreateModal(false)}
           >
-            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
-                  <Target size={16} />
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-white font-mono">
-                  {editingBudgetId ? 'Edit Spending Goal' : 'Create Spending Goal'}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(false)}
-                className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveGoal} className="space-y-3">
-              {/* Name */}
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Goal Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. October Budget, Holiday Trip"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                  required
-                />
-              </div>
-
-              {/* Period selection */}
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Range Period</label>
-                <div className="flex bg-[#16161d] p-1 rounded-xl border border-zinc-800/60 gap-1">
-                  {(['daily', 'weekly', 'monthly', 'custom'] as const).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => handlePeriodChange(p)}
-                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono capitalize transition-all cursor-pointer ${
-                        period === p ? 'bg-white text-black font-bold shadow-sm' : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Date Pickers */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Total Overall Amount */}
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                  Total Overall Limit
-                </label>
-                <CurrencyInput
-                  currencySymbol={state.settings.currencySymbol}
-                  type="number"
-                  placeholder="e.g. 8000"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-sm text-white font-mono font-bold focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                  required
-                />
-              </div>
-
-              {/* Category Breakdown Allocation Builder */}
-              <div className="pt-2 border-t border-zinc-900 space-y-2">
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block">
-                  Category Limits (Optional)
-                </label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <CustomSelect
-                      value={tempCatId}
-                      onChange={(val) => setTempCatId(val)}
-                      options={expenseCategories.map((c) => ({ value: c.id, label: c.name }))}
-                    />
+            <div
+              className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+                    <Target size={16} />
                   </div>
-                  <CurrencyInput
-                    currencySymbol={state.settings.currencySymbol}
-                    type="number"
-                    placeholder="Limit"
-                    value={tempCatAmount}
-                    onChange={(e) => setTempCatAmount(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                    containerClassName="w-28 shrink-0"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCategoryAllocation}
-                    className="px-4 h-11 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition-colors"
-                  >
-                    Add
-                  </button>
+                  <h3 className="text-sm sm:text-base font-bold text-white font-mono">
+                    {editingBudgetId ? 'Edit Spending Goal' : 'Create Spending Goal'}
+                  </h3>
                 </div>
-
-                {categoryAllocations.length > 0 && (
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                    {categoryAllocations.map((alloc) => {
-                      const cat = state.categories.find((c) => c.id === alloc.categoryId);
-                      return (
-                        <div
-                          key={alloc.categoryId}
-                          className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#16161d] border border-zinc-800/60 text-xs"
-                        >
-                          <span className="text-zinc-200 font-medium truncate">{cat?.name}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-white">
-                              {formatCurrency(alloc.amount, state.settings.currencySymbol)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveCategoryAllocation(alloc.categoryId)}
-                              className="text-zinc-600 hover:text-rose-400 p-0.5 cursor-pointer"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
-                >
-                  Save Goal
+                  <X size={16} />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <form onSubmit={handleSaveGoal} className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                  {/* Name */}
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Goal Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. October Budget, Holiday Trip"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                      required
+                    />
+                  </div>
+
+                  {/* Period selection */}
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Range Period</label>
+                    <div className="flex bg-[#16161d] p-1 rounded-xl border border-zinc-800/60 gap-1">
+                      {(['daily', 'weekly', 'monthly', 'custom'] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => handlePeriodChange(p)}
+                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono capitalize transition-all cursor-pointer ${
+                            period === p ? 'bg-white text-black font-bold shadow-sm' : 'text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Date Pickers */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <CustomDateInput
+                      label="Start Date"
+                      value={startDate}
+                      onChange={setStartDate}
+                      required
+                    />
+                    <CustomDateInput
+                      label="End Date"
+                      value={endDate}
+                      onChange={setEndDate}
+                      required
+                    />
+                  </div>
+
+                  {/* Total Overall Amount */}
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+                      Total Overall Limit
+                    </label>
+                    <CurrencyInput
+                      currencySymbol={state.settings.currencySymbol}
+                      type="number"
+                      placeholder="e.g. 8000"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-sm text-white font-mono font-bold focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                      required
+                    />
+                  </div>
+
+                  {/* Category Breakdown Allocation Builder */}
+                  <div className="pt-2 border-t border-zinc-900 space-y-2">
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block">
+                      Category Limits (Optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <CustomSelect
+                          value={tempCatId}
+                          onChange={(val) => setTempCatId(val)}
+                          options={expenseCategories.map((c) => ({ value: c.id, label: c.name }))}
+                        />
+                      </div>
+                      <CurrencyInput
+                        currencySymbol={state.settings.currencySymbol}
+                        type="number"
+                        placeholder="Limit"
+                        value={tempCatAmount}
+                        onChange={(e) => setTempCatAmount(e.target.value)}
+                        className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                        containerClassName="w-28 shrink-0"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCategoryAllocation}
+                        className="px-4 h-11 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
+
+                    {categoryAllocations.length > 0 && (
+                      <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                        {categoryAllocations.map((alloc) => {
+                          const cat = state.categories.find((c) => c.id === alloc.categoryId);
+                          return (
+                            <div
+                              key={alloc.categoryId}
+                              className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#16161d] border border-zinc-800/60 text-xs"
+                            >
+                              <span className="text-zinc-200 font-medium truncate">{cat?.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-white">
+                                  {formatCurrency(alloc.amount, state.settings.currencySymbol)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveCategoryAllocation(alloc.categoryId)}
+                                  className="text-zinc-600 hover:text-rose-400 p-0.5 cursor-pointer"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex justify-end gap-2.5 shrink-0 safe-bottom">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
+                  >
+                    Save Goal
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
@@ -815,243 +814,254 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       )}
 
       {/* Parent Category Action Modal (Matching 3rd reference screenshot) */}
-      {selectedParentCat && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
-          onClick={() => setSelectedParentCat(null)}
-        >
+      {selectedParentCat &&
+        createPortal(
           <div
-            className="w-full sm:max-w-md bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 border-t sm:border border-zinc-800 shadow-2xl space-y-4 cursor-default animate-scale-in safe-bottom"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            onClick={() => setSelectedParentCat(null)}
           >
-            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
-            {/* Category Banner Card */}
-            <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
-                  <CategoryIcon name={selectedParentCat.icon || 'Tag'} size={18} />
-                </div>
-                <div className="truncate">
-                  <div className="text-sm font-bold text-white truncate">{selectedParentCat.name}</div>
-                  <div className="text-[10px] text-zinc-500 font-mono uppercase">
-                    {selectedParentCat.type} Category
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedParentCat(null)}
-                className="p-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white cursor-pointer transition-colors"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            {/* Subcategories list inside */}
-            {(() => {
-              const subs = getSubcategories(selectedParentCat.id);
-              return (
-                <div className="space-y-1.5">
-                  <div className="text-[10px] font-mono uppercase text-zinc-500 font-bold px-1">
-                    Subcategories ({subs.length})
-                  </div>
-                  <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                    {subs.map((sub) => (
-                      <div
-                        key={sub.id}
-                        className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-[#14141c] border border-zinc-800/60 text-xs"
-                      >
-                        <span className="text-zinc-200 truncate">{sub.name}</span>
-                        <button
-                          onClick={() => deleteCategory(sub.id)}
-                          className="text-zinc-600 hover:text-rose-400 p-1 cursor-pointer transition-colors"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    ))}
-                    {subs.length === 0 && (
-                      <div className="text-[11px] text-zinc-500 italic py-3 text-center bg-[#14141c]/50 rounded-xl border border-zinc-800/40">
-                        No subcategories added yet
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Add Subcategory Trigger Button */}
-            <button
-              onClick={() => {
-                setNewCatName('');
-                setShowAddSubModal(true);
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#14141c] hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-white transition-all cursor-pointer font-mono"
+            <div
+              className="w-full sm:max-w-md h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              onClick={(e) => e.stopPropagation()}
             >
-              <Plus size={14} /> Add Subcategory
-            </button>
+              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-white shrink-0">
+                    <CategoryIcon name={selectedParentCat.icon || 'Tag'} size={17} />
+                  </div>
+                  <div className="truncate">
+                    <div className="text-sm font-bold text-white truncate">{selectedParentCat.name}</div>
+                    <div className="text-[10px] text-zinc-500 font-mono uppercase">
+                      {selectedParentCat.type} Category
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedParentCat(null)}
+                  className="p-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                >
+                  <X size={15} />
+                </button>
+              </div>
 
-            {/* Modal Bottom Actions (Delete vs Done) */}
-            <div className="flex items-center gap-2.5 pt-2 border-t border-zinc-800/80">
-              <button
-                onClick={() => {
-                  deleteCategory(selectedParentCat.id);
-                  setSelectedParentCat(null);
-                }}
-                className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer"
-              >
-                Delete Category
-              </button>
-              <button
-                onClick={() => setSelectedParentCat(null)}
-                className="flex-1 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold transition-all cursor-pointer shadow-md"
-              >
-                Done
-              </button>
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                {/* Subcategories list inside */}
+                {(() => {
+                  const subs = getSubcategories(selectedParentCat.id);
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono uppercase text-zinc-500 font-bold px-1">
+                        Subcategories ({subs.length})
+                      </div>
+                      <div className="space-y-1 pr-1">
+                        {subs.map((sub) => (
+                          <div
+                            key={sub.id}
+                            className="flex items-center justify-between py-2 px-3.5 rounded-xl bg-[#14141c] border border-zinc-800/60 text-xs"
+                          >
+                            <span className="text-zinc-200 truncate">{sub.name}</span>
+                            <button
+                              onClick={() => deleteCategory(sub.id)}
+                              className="text-zinc-600 hover:text-rose-400 p-1 cursor-pointer transition-colors"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
+                        {subs.length === 0 && (
+                          <div className="text-[11px] text-zinc-500 italic py-3 text-center bg-[#14141c]/50 rounded-xl border border-zinc-800/40">
+                            No subcategories added yet
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Add Subcategory Trigger Button */}
+                <button
+                  onClick={() => {
+                    setNewCatName('');
+                    setShowAddSubModal(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#14141c] hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-white transition-all cursor-pointer font-mono"
+                >
+                  <Plus size={14} /> Add Subcategory
+                </button>
+              </div>
+
+              {/* Modal Bottom Actions (Delete vs Done) */}
+              <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex items-center gap-2.5 shrink-0 safe-bottom">
+                <button
+                  onClick={() => {
+                    deleteCategory(selectedParentCat.id);
+                    setSelectedParentCat(null);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer"
+                >
+                  Delete Category
+                </button>
+                <button
+                  onClick={() => setSelectedParentCat(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold transition-all cursor-pointer shadow-md"
+                >
+                  Done
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Add Subcategory Inline Modal */}
-      {showAddSubModal && selectedParentCat && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
-          onClick={() => setShowAddSubModal(false)}
-        >
+      {showAddSubModal && selectedParentCat &&
+        createPortal(
           <div
-            className="w-full sm:max-w-sm bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 border-t sm:border border-zinc-800 shadow-2xl space-y-4 cursor-default safe-bottom"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            onClick={() => setShowAddSubModal(false)}
           >
-            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
-              <h3 className="text-sm font-bold text-white font-mono">
-                Add to {selectedParentCat.name}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowAddSubModal(false)}
-                className="p-1 rounded-full text-zinc-400 hover:text-white"
-              >
-                <X size={15} />
-              </button>
-            </div>
-            <form onSubmit={handleCreateSubcategory} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Subcategory name (e.g. Coffee, Taxi)"
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-                autoFocus
-                className="w-full bg-[#14141c] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-500 font-mono"
-                required
-              />
-              <div className="flex justify-end gap-2.5 pt-2 border-t border-zinc-800/80">
+            <div
+              className="w-full sm:max-w-sm h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
+                <h3 className="text-sm font-bold text-white font-mono">
+                  Add to {selectedParentCat.name}
+                </h3>
                 <button
                   type="button"
                   onClick={() => setShowAddSubModal(false)}
-                  className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  className="p-1 rounded-full text-zinc-400 hover:text-white cursor-pointer"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 shadow-md"
-                >
-                  Add
+                  <X size={15} />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <form onSubmit={handleCreateSubcategory} className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
+                    Subcategory Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Coffee, Taxi, Internet"
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    autoFocus
+                    className="w-full h-11 bg-[#14141c] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-500 font-mono"
+                    required
+                  />
+                </div>
+                <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex justify-end gap-2.5 shrink-0 safe-bottom">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddSubModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 shadow-md"
+                  >
+                    Add Subcategory
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Add Top-Level Category Modal */}
-      {showAddParentModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
-          onClick={() => setShowAddParentModal(false)}
-        >
+      {showAddParentModal &&
+        createPortal(
           <div
-            className="w-full sm:max-w-md md:max-w-lg bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 md:p-8 border-t sm:border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300 safe-bottom"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            onClick={() => setShowAddParentModal(false)}
           >
-            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
-                  <Tag size={16} />
+            <div
+              className="w-full sm:max-w-md md:max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+                    <Tag size={16} />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-white font-mono capitalize">
+                    New {tab} Category
+                  </h3>
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-white font-mono capitalize">
-                  New {tab} Category
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddParentModal(false)}
-                className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateParent} className="space-y-4">
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                  Category Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Essentials, Savings, Entertainment"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  autoFocus
-                  className="w-full bg-[#14141c] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-500 font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                  Icon
-                </label>
-                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 gap-1.5 max-h-40 overflow-y-auto p-2 bg-[#14141c] rounded-xl border border-zinc-800/60">
-                  {availableIcons.map((ic) => (
-                    <button
-                      key={ic}
-                      type="button"
-                      onClick={() => setNewCatIcon(ic)}
-                      className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-                        newCatIcon === ic
-                          ? 'bg-white text-black font-bold shadow-xs'
-                          : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                      }`}
-                    >
-                      <CategoryIcon name={ic} size={15} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={() => setShowAddParentModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
-                >
-                  Create Category
+                  <X size={16} />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <form onSubmit={handleCreateParent} className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                      Category Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Essentials, Savings, Entertainment"
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      autoFocus
+                      className="w-full h-11 bg-[#14141c] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-500 font-mono"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                      Icon
+                    </label>
+                    <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-2 bg-[#14141c] rounded-xl border border-zinc-800/60">
+                      {availableIcons.map((ic) => (
+                        <button
+                          key={ic}
+                          type="button"
+                          onClick={() => setNewCatIcon(ic)}
+                          className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                            newCatIcon === ic
+                              ? 'bg-white text-black font-bold shadow-xs'
+                              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                          }`}
+                        >
+                          <CategoryIcon name={ic} size={15} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex justify-end gap-2.5 shrink-0 safe-bottom">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddParentModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
+                  >
+                    Create Category
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

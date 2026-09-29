@@ -8,7 +8,8 @@ import {
   ChevronDown, 
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  ArrowUpDown
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import type { TransactionType } from '../../types/finance';
@@ -374,7 +375,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
       {/* Outer Wrapper for Side Panels & Main Card on Desktop */}
       <div 
-        className="flex items-stretch justify-center gap-3 w-full max-w-full sm:max-w-4xl lg:max-w-6xl transition-all duration-300"
+        className="flex items-stretch justify-center sm:gap-3 w-full max-w-full sm:max-w-4xl lg:max-w-6xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 1. LEFT SIDE PANEL: Subcategories (Behind Main Card z-10) */}
@@ -552,13 +553,12 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
               </div>
             </div>
           ) : (
-            /* Redesigned Transfer Section: Top Account -> Down Arrow -> Bottom Account */
-            <div className="px-4 sm:px-6 py-6 flex-1 min-h-0 overflow-y-auto flex flex-col justify-center space-y-3 font-mono">
+            /* Redesigned Transfer Section: Top Account -> Clean Swap Row (No Overlap) -> Bottom Account */
+            <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto flex flex-col justify-start sm:justify-center font-mono space-y-0">
               {/* From Wallet Card */}
-              <div className="w-full bg-[#14141a] p-3.5 sm:p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
-                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2 flex items-center justify-between">
-                  <span>From Wallet</span>
-                  <span className="text-zinc-600 font-normal">Source</span>
+              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2">
+                  From
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -592,8 +592,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                 </div>
               </div>
 
-              {/* Swap Button with Down Arrow */}
-              <div className="flex justify-center -my-1 relative z-10">
+              {/* Clean Swap Button Row - No negative margins, no overlapping borders */}
+              <div className="flex items-center justify-center py-2.5 z-10">
                 <button
                   type="button"
                   onClick={() => {
@@ -603,18 +603,17 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                     setSelectedAccountId(to);
                     setToAccountId(from);
                   }}
-                  className="w-10 h-10 rounded-full bg-[#1b1b22] border border-zinc-700 hover:border-zinc-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all cursor-pointer group"
+                  className="w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-zinc-300 hover:text-white flex items-center justify-center shadow-md active:scale-90 transition-all cursor-pointer"
                   title="Swap Wallets"
                 >
-                  <ChevronDown className="text-zinc-300 group-hover:text-white transition-transform" size={17} />
+                  <ArrowUpDown size={15} />
                 </button>
               </div>
 
               {/* To Wallet Card */}
-              <div className="w-full bg-[#14141a] p-3.5 sm:p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
-                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2 flex items-center justify-between">
-                  <span>To Wallet</span>
-                  <span className="text-zinc-600 font-normal">Destination</span>
+              <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-all">
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2">
+                  To
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">

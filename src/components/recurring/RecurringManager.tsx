@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   RefreshCw, 
   Plus, 
@@ -229,23 +230,22 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
       )}
 
       {/* Add Recurring Modal */}
-      {showAddModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
-          onClick={() => { resetForm(); setShowAddModal(false); }}
-        >
+      {showAddModal &&
+        createPortal(
           <div
-            className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl border-t sm:border border-zinc-800 shadow-2xl cursor-default max-h-[92vh] overflow-y-auto transition-all duration-300 safe-bottom"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            onClick={() => { resetForm(); setShowAddModal(false); }}
           >
-            <div className="p-5 sm:p-6 md:p-8 space-y-5">
-              <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+            <div
+              className="w-full sm:max-w-xl md:max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
                     <RefreshCw size={16} />
                   </div>
-                  <h3 className="text-base sm:text-lg font-bold text-white font-mono">New Recurring Item</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-white font-mono">New Recurring Item</h3>
                 </div>
                 <button
                   type="button"
@@ -256,7 +256,8 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                 </button>
               </div>
 
-              <form onSubmit={handleCreate} className="space-y-4">
+              <form onSubmit={handleCreate} className="flex-1 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
                 {/* 2-Column Grid on md+ */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Title */}
@@ -435,8 +436,10 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
+                </div>
+
+                {/* Actions (Sticky bottom bar) */}
+                <div className="p-4 sm:px-6 border-t border-zinc-800/80 bg-[#0c0c10] flex justify-end gap-2.5 shrink-0">
                   <button
                     type="button"
                     onClick={() => { resetForm(); setShowAddModal(false); }}
@@ -453,9 +456,9 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                 </div>
               </form>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

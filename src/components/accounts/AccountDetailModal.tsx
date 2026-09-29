@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   CreditCard, 
@@ -361,9 +362,11 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     );
   };
 
-  return (
+  if (!account) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-black/80 backdrop-blur-md"
+      className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in select-none"
       onClick={onClose}
     >
       {/* Modal shell — Full screen on mobile (100dvh), polished card on desktop */}
@@ -374,7 +377,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
         {/* ═══════════════════════════════════════════════════════════════════
             TOP MOBILE HEADER & VIEW TOGGLE (Mobile only)
         ═══════════════════════════════════════════════════════════════════ */}
-        <div className="lg:hidden shrink-0 border-b border-zinc-800/80 bg-[#0e0e14] px-4 pt-3 pb-3 space-y-3">
+        <div className="lg:hidden shrink-0 border-b border-zinc-800/80 bg-[#0e0e14] px-4 pt-3 pb-3 space-y-3 safe-top">
           {/* Top handle on mobile */}
           <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto" />
 
@@ -823,6 +826,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };

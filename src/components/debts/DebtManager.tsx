@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Users, 
   Plus, 
@@ -10,6 +11,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
 import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
+import { CustomDateInput } from '../common/CustomDatePicker';
 import type { DebtItem } from '../../types/finance';
 import { useBackButton } from '../../hooks/useBackButton';
 
@@ -217,130 +219,130 @@ export const DebtManager: React.FC = () => {
       )}
 
       {/* Add Debt / Loan Modal */}
-      {showAddModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
-          onClick={() => setShowAddModal(false)}
-        >
+      {showAddModal &&
+        createPortal(
           <div 
-            className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl bg-[#0c0c10] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 md:p-8 border-t sm:border border-zinc-800 shadow-2xl space-y-4 sm:space-y-5 cursor-default transition-all duration-300 max-h-[92vh] overflow-y-auto safe-bottom"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            onClick={() => setShowAddModal(false)}
           >
-            <div className="w-10 h-1 bg-zinc-700/80 rounded-full mx-auto sm:hidden mb-1" />
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
-                  <Users size={16} />
+            <div 
+              className="w-full sm:max-w-xl md:max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+                    <Users size={16} />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-white font-mono">Track Borrow or Loan</h3>
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-white font-mono">Track Borrow or Loan</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setType('lend')}
-                  className={`py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
-                    type === 'lend' ? 'bg-emerald-500 text-black font-bold shadow-sm' : 'bg-[#16161d] text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  I Lent Money
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('borrow')}
-                  className={`py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
-                    type === 'borrow' ? 'bg-rose-500 text-white font-bold shadow-sm' : 'bg-[#16161d] text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  I Borrowed Money
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                    Person Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Alex, Mom, Landlord"
-                    value={personName}
-                    onChange={(e) => setPersonName(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                    autoFocus
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                    Amount
-                  </label>
-                  <CurrencyInput
-                    currencySymbol={state.settings.currencySymbol}
-                    type="number"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                    Due Date (optional)
-                  </label>
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
-                    Note / Reason
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Dinner split, emergency ticket"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
-                >
-                  Save Entry
+                  <X size={16} />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <form onSubmit={handleCreate} className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setType('lend')}
+                      className={`py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+                        type === 'lend' ? 'bg-emerald-500 text-black font-bold shadow-sm' : 'bg-[#16161d] text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      I Lent Money
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setType('borrow')}
+                      className={`py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+                        type === 'borrow' ? 'bg-rose-500 text-white font-bold shadow-sm' : 'bg-[#16161d] text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      I Borrowed Money
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                        Person Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Alex, Mom, Landlord"
+                        value={personName}
+                        onChange={(e) => setPersonName(e.target.value)}
+                        className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                        autoFocus
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                        Amount
+                      </label>
+                      <CurrencyInput
+                        currencySymbol={state.settings.currencySymbol}
+                        type="number"
+                        placeholder="0.00"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <CustomDateInput
+                        label="Due Date (optional)"
+                        value={dueDate}
+                        onChange={setDueDate}
+                        placeholder="Select due date"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">
+                        Note / Reason
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dinner split, emergency ticket"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex justify-end gap-2.5 shrink-0 safe-bottom">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
+                  >
+                    Save Entry
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
