@@ -248,9 +248,9 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
     const activeCoord = coords.find((c) => c.date === activePoint?.date) || coords[coords.length - 1];
 
     return (
-      <div className="relative w-full h-full flex flex-col justify-between select-none">
+      <div className="relative w-full h-full flex flex-col select-none gap-1">
         {/* Active hover tooltip display */}
-        <div className="flex items-center justify-between px-0.5 mb-1 text-[10px] font-mono">
+        <div className="flex items-center justify-between px-0.5 text-[10px] font-mono shrink-0">
           <div className="text-zinc-400">
             {activePoint ? activePoint.label : 'Balance Trend'}
           </div>
@@ -259,10 +259,10 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
           </div>
         </div>
 
-        {/* SVG Curve Container */}
-        <div className="relative h-20 sm:h-24 w-full touch-none">
+        {/* SVG Curve Container — flex-1 so it fills remaining space */}
+        <div className="relative flex-1 min-h-0 w-full touch-none">
           <svg 
-            className="w-full h-full overflow-visible" 
+            className="w-full h-full" 
             viewBox={`0 0 ${W} ${H}`} 
             preserveAspectRatio="none"
             onPointerLeave={() => setActiveHoverPoint(null)}
@@ -275,20 +275,17 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
             }}
           >
             <defs>
-              <linearGradient id={`grad-account-${account.id}`} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="grad-account-line" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#ffffff" stopOpacity="0.20" />
                 <stop offset="60%" stopColor="#ffffff" stopOpacity="0.04" />
                 <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
               </linearGradient>
-              <filter id={`glow-${account.id}`} x="-10%" y="-20%" width="120%" height="150%">
-                <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodColor="#ffffff" floodOpacity="0.25" />
-              </filter>
             </defs>
 
             {/* Gradient Area */}
-            <path d={areaD} fill={`url(#grad-account-${account.id})`} />
+            <path d={areaD} fill="url(#grad-account-line)" />
 
-            {/* Subtle Guide Line for steady state */}
+            {/* Steady guide line */}
             {isSteady && (
               <line 
                 x1="0" 
@@ -298,6 +295,7 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
                 stroke="#52525b" 
                 strokeWidth="1" 
                 strokeDasharray="4 4" 
+                vectorEffect="non-scaling-stroke"
               />
             )}
 
@@ -306,9 +304,10 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
               d={pathD} 
               fill="none" 
               stroke="#ffffff" 
-              strokeWidth="2" 
+              strokeWidth="2.5" 
               strokeLinecap="round" 
               strokeLinejoin="round" 
+              vectorEffect="non-scaling-stroke"
             />
 
             {/* Active Highlight Dot */}
@@ -354,12 +353,12 @@ export const AccountDetailModal: React.FC<AccountDetailModalProps> = ({
 
         {/* Steady balance indicator or min/max summary */}
         {isSteady ? (
-          <div className="flex items-center justify-center gap-1.5 py-0.5 text-[9px] font-mono text-zinc-500 bg-zinc-900/30 rounded-md mt-1">
+          <div className="flex items-center justify-center gap-1.5 py-0.5 text-[9px] font-mono text-zinc-500 bg-zinc-900/30 rounded-md shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
             <span>Steady balance · No fluctuation</span>
           </div>
         ) : (
-          <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 pt-0.5 border-t border-zinc-800/40 mt-1">
+          <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 border-t border-zinc-800/40 pt-0.5 shrink-0">
             <span>Min: {formatCurrency(minBal, state.settings.currencySymbol)}</span>
             <span>Max: {formatCurrency(maxBal, state.settings.currencySymbol)}</span>
           </div>
