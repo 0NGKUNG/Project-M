@@ -386,8 +386,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
       >
         {/* 1. LEFT SIDE PANEL: Subcategories (Behind Main Card z-10) */}
         <div 
-          className={`hidden md:flex relative z-10 overflow-hidden transition-[width] duration-300 ease-out ${
-            hasSubcategories ? 'w-60 lg:w-64 pointer-events-auto' : 'w-0 pointer-events-none'
+          className={`hidden md:flex relative z-10 overflow-hidden transition-[width] ${
+            hasSubcategories
+              ? 'w-60 lg:w-64 duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)] pointer-events-auto'
+              : 'w-0 duration-[240ms] ease-[cubic-bezier(0.4,0,0.2,1)] pointer-events-none'
           }`}
         >
           {renderedLeftCategory && (
@@ -494,7 +496,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
           {type !== 'transfer' ? (
             /* Distinct keys: the two branches must not share a DOM node, otherwise React morphs
                the category grid into the transfer cards (and back), animating their geometry. */
-            <div key="category-grid" className="px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-0 overflow-y-auto">
+            <div key={`category-grid-${type}`} className="animate-content-swap px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-0 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3.5">
                 {parentCategories.map((cat) => {
                   const isSelected = selectedCategoryId === cat.id;
@@ -561,7 +563,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             </div>
           ) : (
             /* Redesigned Transfer Section: Top Account -> Clean Swap Row (No Overlap) -> Bottom Account */
-            <div key="transfer-flow" className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto flex flex-col justify-start sm:justify-center font-mono space-y-0">
+            <div key="transfer-flow" className="animate-content-swap px-4 sm:px-6 py-4 sm:py-5 flex-1 min-h-0 overflow-y-auto flex flex-col font-mono space-y-0">
               {/* From Wallet Card */}
               <div className="w-full bg-[#14141a] p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700 transition-colors">
                 <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-2">
@@ -886,8 +888,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
             definite height. Without it the wheel's own content inflates the panel, which inflates
             the centering padding and breaks the whole modal layout (runaway resize loop). */}
         <div 
-          className={`hidden md:flex justify-end relative z-10 overflow-hidden transition-[width] duration-300 ease-out sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] ${
-            activeRightPanel ? 'w-60 lg:w-64 pointer-events-auto' : 'w-0 pointer-events-none'
+          className={`hidden md:flex justify-end relative z-10 overflow-hidden transition-[width] sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] ${
+            activeRightPanel
+              ? 'w-60 lg:w-64 duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)] pointer-events-auto'
+              : 'w-0 duration-[240ms] ease-[cubic-bezier(0.4,0,0.2,1)] pointer-events-none'
           }`}
         >
           {renderedRightPanel && (
