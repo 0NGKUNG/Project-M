@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import { 
   Wallet, 
   Plus, 
-  RefreshCw,
-  Users,
   CreditCard,
   X,
 } from 'lucide-react';
@@ -13,11 +11,7 @@ import { formatCurrency } from '../common/Icons';
 import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import { CustomSelect } from '../common/CustomSelect';
 import type { Account } from '../../types/finance';
-import { RecurringManager } from '../recurring/RecurringManager';
-import { DebtManager } from '../debts/DebtManager';
 import { useBackButton } from '../../hooks/useBackButton';
-
-type AccountsSubTab = 'wallets' | 'recurring' | 'debts';
 
 interface AccountsViewProps {
   onSelectAccount: (account: Account) => void;
@@ -28,13 +22,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   onSelectAccount,
 }) => {
   const { state, totalNetWorth, accountBalances, addAccount } = useFinance();
-  const [currentSubTab, setCurrentSubTab] = useState<AccountsSubTab>('wallets');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  useBackButton(Boolean(showAddModal || currentSubTab !== 'wallets'), () => {
-    if (showAddModal) setShowAddModal(false);
-    else if (currentSubTab !== 'wallets') setCurrentSubTab('wallets');
-  });
+  useBackButton(showAddModal, () => setShowAddModal(false));
 
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<Account['type']>('bank');
@@ -88,42 +78,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         </button>
       </div>
 
-      {/* View sub-tabs */}
-      <div className="flex bg-[#0d0d10] p-1 rounded-2xl border border-zinc-800/80 gap-1 overflow-x-auto no-scrollbar shadow-sm">
-        <button
-          onClick={() => setCurrentSubTab('wallets')}
-          className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-            currentSubTab === 'wallets' ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
-          }`}
-        >
-          <Wallet size={13} />
-          <span>Wallets ({accountStats.length})</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentSubTab('recurring')}
-          className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-            currentSubTab === 'recurring' ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
-          }`}
-        >
-          <RefreshCw size={13} />
-          <span>Recurring ({state.recurring?.length || 0})</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentSubTab('debts')}
-          className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] sm:text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-            currentSubTab === 'debts' ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
-          }`}
-        >
-          <Users size={13} />
-          <span>Debts ({state.debts?.length || 0})</span>
-        </button>
-      </div>
-
-      {/* Tab 1: Wallets & Asset Distribution */}
-      {currentSubTab === 'wallets' && (
-        <div className="space-y-3 animate-fade-in">
+      {/* Wallets & Asset Distribution */}
+      <div className="space-y-3 animate-fade-in">
           {/* Net Worth Hero Card */}
           <div className="bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-5 sm:p-7 border border-zinc-800/80 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
@@ -239,21 +195,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Tab 2: Recurring & Subscriptions */}
-      {currentSubTab === 'recurring' && (
-        <div className="animate-fade-in">
-          <RecurringManager />
-        </div>
-      )}
-
-      {/* Tab 3: Borrow & Lend */}
-      {currentSubTab === 'debts' && (
-        <div className="animate-fade-in">
-          <DebtManager />
-        </div>
-      )}
 
       {/* Quick Account Add Modal */}
       {showAddModal &&

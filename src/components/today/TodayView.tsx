@@ -7,7 +7,9 @@ import {
   ArrowDownLeft, 
   Calendar as CalendarIcon,
   Target,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  HandCoins
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -18,9 +20,11 @@ import type { Transaction } from '../../types/finance';
 interface TodayViewProps {
   onOpenQuickAdd: (preselectedAccId?: string) => void;
   onNavigateTab: (tab: 'stats' | 'accounts') => void;
+  /** Opens the Recurring / Borrow & Lend sheet — the "see it" half, since Settings is the "set it up" half. */
+  onOpenManager?: (manager: 'recurring' | 'debts') => void;
 }
 
-export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
+export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, onOpenManager }) => {
   const { state, updateSettings } = useFinance();
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
@@ -73,6 +77,32 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
 
   const getCategory = (catId: string) => state.categories.find((c) => c.id === catId);
   const getAccount = (accId: string) => state.accounts.find((a) => a.id === accId);
+
+  // Next scheduled bills/income, soonest first
+  const upcomingRecurring = useMemo(() => {
+    return [...(state.recurring || [])]
+      .filter((r) => r.isActive)
+      .sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate))
+      .slice(0, 3);
+  }, [state.recurring]);
+
+  // Outstanding borrow/lend balances (settled entries drop off)
+  const activeDebts = (state.debts || []).filter((d) => d.status === 'active');
+  const owedToYou = activeDebts.filter((d) => d.type === 'lend').reduce((sum, d) => sum + d.remainingAmount, 0);
+  const youOwe = activeDebts.filter((d) => d.type === 'borrow').reduce((sum, d) => sum + d.remainingAmount, 0);
+
+  const dueLabel = (dueDate: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(`${dueDate}T00:00:00`);
+    if (isNaN(due.getTime())) return dueDate;
+    const days = Math.round((due.getTime() - today.getTime()) / 86400000);
+    if (days === 0) return 'Due today';
+    if (days === 1) return 'Due tomorrow';
+    if (days < 0) return `${Math.abs(days)}d overdue`;
+    if (days <= 7) return `Due in ${days} days`;
+    return `Due ${due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  };
 
   return (
     <div className="space-y-3 pb-24 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
@@ -205,7 +235,99 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd }) => {
             No daily budget set. Tap '+ Set Budget' to track and cap your daily spending.
           </p>
         )}
-      </div>
+        </div>
+
+        {/* Up Next — scheduled bills & income */}
+        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-white">
+              <RefreshCw size={15} className="text-zinc-400" />
+              <span>Up Next</span>
+            </div>
+            <button
+              onClick={() => onOpenManager?.('recurring')}
+              className="text-[10px] font-mono text-zinc-400 hover:text-white cursor-pointer"
+            >
+              {upcomingRecurring.length > 0 ? 'Manage' : '+ Add'}
+            </button>
+          </div>
+
+          {upcomingRecurring.length === 0 ? (
+            <p className="text-[11px] text-zinc-500">
+              No scheduled bills yet. Add rent, subscriptions or salary to see what's coming.
+            </p>
+          ) : (
+            <div className="space-y-0.5">
+              {upcomingRecurring.map((item) => {
+                const cat = getCategory(item.categoryId);
+                const isIncome = item.type === 'income';
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onOpenManager?.('recurring')}
+                    className="w-full flex items-center justify-between gap-3 py-1.5 px-2 -mx-2 rounded-xl hover:bg-white/[0.04] transition-colors cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
+                        <CategoryIcon name={cat?.icon || 'Repeat'} size={13} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-white truncate">{item.name}</div>
+                        <div className="text-[10px] text-zinc-500 font-mono">{dueLabel(item.nextDueDate)}</div>
+                      </div>
+                    </div>
+                    <span className={`text-[11px] font-bold font-mono tabular-nums shrink-0 ${isIncome ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {isIncome ? '+' : '-'}{formatCurrency(item.amount, state.settings.currencySymbol)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Borrow & Lend — outstanding balances with friends */}
+        <div className="bg-[#101014] rounded-2xl p-4 border border-zinc-900/60 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-white">
+              <HandCoins size={15} className="text-zinc-400" />
+              <span>Borrow &amp; Lend</span>
+            </div>
+            <button
+              onClick={() => onOpenManager?.('debts')}
+              className="text-[10px] font-mono text-zinc-400 hover:text-white cursor-pointer"
+            >
+              {activeDebts.length > 0 ? 'Manage' : '+ Add Entry'}
+            </button>
+          </div>
+
+          {activeDebts.length === 0 ? (
+            <p className="text-[11px] text-zinc-500">
+              Nothing owed in either direction right now.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => onOpenManager?.('debts')}
+                className="rounded-xl bg-[#0c0c10] border border-zinc-900/60 px-3 py-2 text-left hover:border-zinc-800 transition-colors cursor-pointer"
+              >
+                <div className="text-[10px] uppercase font-mono font-bold text-zinc-500 tracking-wider">Owed to you</div>
+                <div className="text-xs font-bold font-mono text-emerald-400 truncate mt-0.5">
+                  {formatCurrency(owedToYou, state.settings.currencySymbol)}
+                </div>
+              </button>
+              <button
+                onClick={() => onOpenManager?.('debts')}
+                className="rounded-xl bg-[#0c0c10] border border-zinc-900/60 px-3 py-2 text-left hover:border-zinc-800 transition-colors cursor-pointer"
+              >
+                <div className="text-[10px] uppercase font-mono font-bold text-zinc-500 tracking-wider">You owe</div>
+                <div className="text-xs font-bold font-mono text-rose-400 truncate mt-0.5">
+                  {formatCurrency(youOwe, state.settings.currencySymbol)}
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Day Transaction Timeline Feed */}

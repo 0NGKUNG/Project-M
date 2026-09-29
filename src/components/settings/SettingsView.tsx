@@ -18,6 +18,7 @@ import {
   CalendarDays,
   X,
   RefreshCw,
+  HandCoins,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { supabase } from '../../db/supabaseClient';
@@ -26,10 +27,14 @@ import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
 import { CategoryIcon, formatCurrency } from '../common/Icons';
 import { CustomDateInput } from '../common/CustomDatePicker';
 import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
-import { RecurringManager } from '../recurring/RecurringManager';
 import { useBackButton } from '../../hooks/useBackButton';
 
-type SettingsSubPage = null | 'goals' | 'categories' | 'recurring';
+type SettingsSubPage = null | 'goals' | 'categories';
+
+interface SettingsViewProps {
+  /** Opens the Recurring / Borrow & Lend sheet so those screens have a single home. */
+  onOpenManager?: (manager: 'recurring' | 'debts') => void;
+}
 
 // ─── Row components ───────────────────────────────────────────────
 
@@ -1068,7 +1073,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 // ─── Main Settings View ───────────────────────────────────────────
 
-export const SettingsView: React.FC = () => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => {
   const {
     state,
     updateSettings,
@@ -1131,13 +1136,6 @@ export const SettingsView: React.FC = () => {
     return (
       <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
         <CategoriesSubPage onBack={() => setSubPage(null)} />
-      </div>
-    );
-
-  if (subPage === 'recurring')
-    return (
-      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
-        <RecurringManager onBack={() => setSubPage(null)} />
       </div>
     );
 
@@ -1255,7 +1253,13 @@ export const SettingsView: React.FC = () => {
           icon={<RefreshCw size={15} />}
           title={`Recurring & Subscriptions (${state.recurring?.length || 0})`}
           subtitle="Manage scheduled bills, salaries & subscriptions"
-          onClick={() => setSubPage('recurring')}
+          onClick={() => onOpenManager?.('recurring')}
+        />
+        <Row
+          icon={<HandCoins size={15} />}
+          title={`Borrow & Lend (${state.debts?.filter((d) => d.status === 'active').length || 0})`}
+          subtitle="Track money lent to friends or borrowed amounts"
+          onClick={() => onOpenManager?.('debts')}
         />
         <Row
           icon={<Wallet size={15} />}

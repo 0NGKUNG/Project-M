@@ -9,10 +9,15 @@ import { AccountsView } from './components/accounts/AccountsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { QuickAddModal } from './components/transactions/QuickAddModal';
 import { AccountDetailModal } from './components/accounts/AccountDetailModal';
+import { ManagerSheet } from './components/common/ManagerSheet';
+import { RecurringManager } from './components/recurring/RecurringManager';
+import { DebtManager } from './components/debts/DebtManager';
 import type { Account } from './types/finance';
 import { AuthGate } from './components/auth/AuthGate';
 
 const TABS: NavTab[] = ['today', 'stats', 'accounts', 'settings'];
+
+export type ManagerSheetKind = 'recurring' | 'debts';
 
 export const AppContent: React.FC = () => {
   const { state } = useFinance();
@@ -20,6 +25,10 @@ export const AppContent: React.FC = () => {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [preselectedAccountId, setPreselectedAccountId] = useState<string | undefined>(undefined);
+
+  // Recurring & Borrow/Lend live in a sheet so they can be viewed from Today, Accounts or Settings.
+  const [managerSheet, setManagerSheet] = useState<ManagerSheetKind | null>(null);
+  const openManagerSheet = (kind: ManagerSheetKind) => setManagerSheet(kind);
 
   // Sidebar collapsed state — persisted across sessions
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -129,6 +138,7 @@ export const AppContent: React.FC = () => {
               <TodayView
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigateTab={handleTabChange}
+                onOpenManager={openManagerSheet}
               />
             )}
             {currentTab === 'stats' && <StatsView />}
@@ -138,7 +148,7 @@ export const AppContent: React.FC = () => {
                 onOpenQuickAddWithAccount={handleOpenQuickAdd}
               />
             )}
-            {currentTab === 'settings' && <SettingsView />}
+            {currentTab === 'settings' && <SettingsView onOpenManager={openManagerSheet} />}
           </main>
 
           {/* Mobile display: Horizontal swipe/drag scroll snap container with 1-page snap lock */}
@@ -152,6 +162,7 @@ export const AppContent: React.FC = () => {
               <TodayView
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigateTab={handleTabChange}
+                onOpenManager={openManagerSheet}
               />
             </div>
 
@@ -170,7 +181,7 @@ export const AppContent: React.FC = () => {
 
             {/* View 4: Settings */}
             <div className="w-full h-full shrink-0 page-carousel-item overflow-y-auto overscroll-y-contain pt-3">
-              <SettingsView />
+              <SettingsView onOpenManager={openManagerSheet} />
             </div>
           </div>
 
@@ -188,6 +199,14 @@ export const AppContent: React.FC = () => {
           onClose={() => setSelectedAccount(null)}
           onOpenQuickAddWithAccount={(accId) => handleOpenQuickAdd(accId)}
         />
+
+        {/* Recurring & Borrow/Lend — viewable from anywhere, set up from Settings */}
+        <ManagerSheet isOpen={managerSheet === 'recurring'} onClose={() => setManagerSheet(null)}>
+          <RecurringManager />
+        </ManagerSheet>
+        <ManagerSheet isOpen={managerSheet === 'debts'} onClose={() => setManagerSheet(null)}>
+          <DebtManager />
+        </ManagerSheet>
 
         {/* Quick Fast-Entry Drawer */}
         <QuickAddModal
