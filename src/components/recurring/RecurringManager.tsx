@@ -133,19 +133,19 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
   }, [frequency, repeatEvery]);
 
   return (
-    <div className="space-y-4 min-h-full flex flex-col">
+    <div className="space-y-3 animate-fade-in min-h-full flex flex-col flex-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="h-8 flex items-center justify-between pt-1">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
               onClick={onBack}
-              className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors"
+              className="hidden sm:flex w-8 h-8 rounded-xl bg-zinc-900 items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors"
             >
               <ArrowLeft size={16} />
             </button>
           )}
-          <span className="text-base font-bold tracking-tight text-white font-mono uppercase block">
+          <span className="text-xl font-bold tracking-tight text-white font-mono uppercase block">
             RECURRING ({recurringList.length})
           </span>
         </div>
@@ -153,18 +153,24 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-sm"
         >
-          <Plus size={14} strokeWidth={2.8} />
-          <span>New</span>
+          <Plus size={13} strokeWidth={2.8} />
+          New
         </button>
       </div>
 
       {recurringList.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/40 text-center space-y-2 flex-1 flex flex-col items-center justify-center">
+        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/60 text-center space-y-2 flex-1 flex flex-col items-center justify-center">
           <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
             <RefreshCw size={18} />
           </div>
           <div className="text-xs text-zinc-400 font-medium">No recurring items yet</div>
-          <p className="text-[10px] text-zinc-600">Track rent, Spotify, Netflix, gym memberships, or routine income.</p>
+          <p className="text-[10px] text-zinc-600 max-w-xs mx-auto">Track rent, Spotify, Netflix, gym memberships, or routine income.</p>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-black text-xs font-bold cursor-pointer"
+          >
+            <Plus size={13} /> New Recurring
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:flex-1 lg:content-start">
@@ -176,14 +182,14 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
             return (
               <div
                 key={item.id}
-                className={`p-4 rounded-2xl bg-[#101014] border transition-all flex flex-col justify-between ${
+                className={`p-3 rounded-2xl bg-[#101014] border transition-all flex flex-col justify-between group active:scale-98 shadow-sm hover:border-zinc-700 ${
                   item.isActive ? 'border-zinc-900/60' : 'border-zinc-900/30 opacity-60'
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300">
+                      <div className="w-9 h-9 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 group-hover:text-white transition-colors shrink-0">
                         <CategoryIcon name={cat?.icon || 'Repeat'} size={16} />
                       </div>
                       <div>
@@ -232,11 +238,11 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
       {showAddModal &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
             onClick={() => { resetForm(); setShowAddModal(false); }}
           >
             <div
-              className="w-full sm:max-w-xl md:max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              className="w-full sm:max-w-xl md:max-w-2xl max-h-[85dvh] bg-[#0c0c10] border border-zinc-800 rounded-3xl flex flex-col shadow-2xl overflow-hidden cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center px-4 sm:px-6 pt-4 pb-3 border-b border-zinc-800/80 shrink-0">

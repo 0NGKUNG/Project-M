@@ -44,7 +44,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const getAccount = (accId: string) => state.accounts.find((a) => a.id === accId);
 
   return (
-    <div className="space-y-6 pb-24 md:pb-12 safe-top px-4 md:px-8 w-full animate-fade-in">
+    <div className="space-y-6 pb-[calc(82px+env(safe-area-inset-bottom))] md:pb-8 safe-top px-4 md:px-8 w-full animate-fade-in">
       {/* Top Header */}
       <div className="flex items-center justify-between pt-1">
         <div>

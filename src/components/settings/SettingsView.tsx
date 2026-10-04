@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Download,
@@ -22,19 +22,21 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { supabase } from '../../db/supabaseClient';
+import { RecurringManager } from '../recurring/RecurringManager';
+import { DebtManager } from '../debts/DebtManager';
 import { CustomSelect } from '../common/CustomSelect';
+import { BudgetsPage } from '../budgets/BudgetsPage';
+import { FloatingClose } from '../common/FloatingClose';
 import { CurrencyInput, parseFormattedNumber } from '../common/CurrencyInput';
-import { CategoryIcon, formatCurrency } from '../common/Icons';
-import { CustomDateInput } from '../common/CustomDatePicker';
-import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
+import { CategoryIcon } from '../common/Icons';
+import type { Account, Category } from '../../types/finance';
 import { useBackButton } from '../../hooks/useBackButton';
-import { getBudgetSpending, getBudgetPercent, getBudgetDaysLeft, getCategoryAllocPercent } from '../../utils/budgetMath';
 
-type SettingsSubPage = null | 'goals' | 'categories';
+type SettingsSubPage = null | 'goals' | 'categories' | 'recurring' | 'debts';
 
 interface SettingsViewProps {
-  /** Opens the Recurring / Borrow & Lend sheet so those screens have a single home. */
-  onOpenManager?: (manager: 'recurring' | 'debts') => void;
+  /** Whether Settings is the visible tab — the mobile carousel keeps all views mounted, so fixed overlays must be gated on this. */
+  isActive?: boolean;
 }
 
 // ─── Row components ───────────────────────────────────────────────
@@ -85,562 +87,6 @@ const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 // ─── Sub-page 1: Spending Goals (Range + Category breakdown) ──────────
-
-const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { state, addBudget, updateBudget, deleteBudget } = useFinance();
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState<Budget | null>(null);
-
-  useBackButton(Boolean(showCreateModal || selectedGoal), () => {
-    if (showCreateModal) setShowCreateModal(false);
-    else if (selectedGoal) setSelectedGoal(null);
-  });
-
-  // Form state
-  const [name, setName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [period, setPeriod] = useState<Budget['period']>('monthly');
-  const [startDate, setStartDate] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  });
-  const [endDate, setEndDate] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-  });
-  const [categoryAllocations, setCategoryAllocations] = useState<BudgetCategoryAllocation[]>([]);
-  const [tempCatId, setTempCatId] = useState('');
-  const [tempCatAmount, setTempCatAmount] = useState('');
-
-  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
-
-  const expenseCategories = useMemo(
-    () => state.categories.filter((c) => c.type === 'expense' && !c.parentId),
-    [state.categories]
-  );
-
-  const openCreateModal = () => {
-    const now = new Date();
-    setEditingBudgetId(null);
-    setName('Monthly Budget');
-    setPeriod('monthly');
-    setAmount('');
-    setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]);
-    setEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]);
-    setCategoryAllocations([]);
-    setTempCatId(expenseCategories[0]?.id || '');
-    setTempCatAmount('');
-    setShowCreateModal(true);
-  };
-
-  const openEditModal = (b: Budget) => {
-    setEditingBudgetId(b.id);
-    setName(b.name || 'Monthly Budget');
-    setPeriod(b.period || 'monthly');
-    setAmount(String(b.amount));
-    setStartDate(b.startDate || new Date().toISOString().split('T')[0]);
-    setEndDate(b.endDate || new Date().toISOString().split('T')[0]);
-    setCategoryAllocations(b.categories || []);
-    setTempCatId(expenseCategories[0]?.id || '');
-    setTempCatAmount('');
-    setSelectedGoal(null);
-    setShowCreateModal(true);
-  };
-
-  const handlePeriodChange = (newPeriod: Budget['period']) => {
-    setPeriod(newPeriod);
-    const now = new Date();
-    if (newPeriod === 'daily') {
-      const todayStr = now.toISOString().split('T')[0];
-      setStartDate(todayStr);
-      setEndDate(todayStr);
-    } else if (newPeriod === 'weekly') {
-      const day = now.getDay();
-      const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(now.setDate(diffToMonday));
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      setStartDate(monday.toISOString().split('T')[0]);
-      setEndDate(sunday.toISOString().split('T')[0]);
-    } else if (newPeriod === 'monthly') {
-      setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]);
-      setEndDate(new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]);
-    }
-  };
-
-  const handleAddCategoryAllocation = () => {
-    const amt = parseFormattedNumber(tempCatAmount);
-    if (!tempCatId || !amt || amt <= 0) return;
-    setCategoryAllocations((prev) => {
-      const existing = prev.filter((a) => a.categoryId !== tempCatId);
-      return [...existing, { categoryId: tempCatId, amount: amt }];
-    });
-    setTempCatAmount('');
-  };
-
-  const handleRemoveCategoryAllocation = (catId: string) => {
-    setCategoryAllocations((prev) => prev.filter((a) => a.categoryId !== catId));
-  };
-
-  const handleSaveGoal = (e: React.FormEvent) => {
-    e.preventDefault();
-    const totalAmount = parseFormattedNumber(amount);
-    if (!totalAmount || totalAmount <= 0) return;
-
-    if (editingBudgetId) {
-      updateBudget({
-        id: editingBudgetId,
-        name: name.trim() || 'Monthly Budget',
-        amount: totalAmount,
-        period,
-        startDate,
-        endDate,
-        categories: categoryAllocations,
-      });
-    } else {
-      addBudget({
-        name: name.trim() || 'Monthly Budget',
-        amount: totalAmount,
-        period,
-        startDate,
-        endDate,
-        categories: categoryAllocations,
-      });
-    }
-
-    setShowCreateModal(false);
-    setEditingBudgetId(null);
-  };
-
-  // Budget math comes from the shared utils/budgetMath helper (same numbers as Today's budget sheet)
-  const getBudgetSpendingFor = (budget: Budget) => getBudgetSpending(budget, state.transactions);
-
-  return (
-    <div className="space-y-3 animate-fade-in min-h-full flex flex-col flex-1">
-      {/* Top Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <h2 className="text-base font-bold text-white font-mono">BUDGETS</h2>
-        </div>
-
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-200 active:scale-95 text-black text-xs font-bold transition-all cursor-pointer shadow-sm"
-        >
-          <Plus size={13} strokeWidth={2.8} />
-          New Budget
-        </button>
-      </div>
-
-      {/* List of Budgets matching reference 1 & 2 */}
-      {state.budgets.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/60 text-center space-y-2 flex-1 flex flex-col items-center justify-center">
-          <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
-            <Target size={18} />
-          </div>
-          <div className="text-xs text-zinc-400 font-medium">No budgets set</div>
-          <p className="text-[10px] text-zinc-600 max-w-xs mx-auto">
-            Create a date range budget and allocate limits for categories like Food, Essentials, or Savings.
-          </p>
-          <button
-            onClick={openCreateModal}
-            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-black text-xs font-bold cursor-pointer"
-          >
-            <Plus size={13} /> Add Budget
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {state.budgets.map((b) => {
-            const { totalSpent, categorySpent } = getBudgetSpendingFor(b);
-            const percent = getBudgetPercent(b, totalSpent);
-
-            return (
-              <div
-                key={b.id}
-                onClick={() => setSelectedGoal(b)}
-                className="space-y-2 cursor-pointer active:scale-99 transition-all"
-              >
-                {/* Header row: Red-tinted period name (e.g. Monthly) + Date range */}
-                <div className="flex items-center justify-between text-xs font-mono px-1">
-                  <span className="font-bold text-rose-400">
-                    {b.period === 'daily' ? 'Daily' : b.period === 'weekly' ? 'Weekly' : b.period === 'monthly' ? 'Monthly' : 'Custom Range'}
-                  </span>
-                  <span className="text-[11px] text-zinc-400 font-bold">
-                    {b.startDate} ━ {b.endDate}
-                  </span>
-                </div>
-
-                {/* Overalls banner card (Reference styling) */}
-                <div className="p-3.5 rounded-2xl bg-[#16161f] border border-zinc-800/80 flex items-center justify-between shadow-xs">
-                  <div>
-                    <div className="text-xs font-bold text-white font-mono">Overalls</div>
-                    <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                      {formatCurrency(b.amount, state.settings.currencySymbol)}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-white font-mono">{percent}%</div>
-                    <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                      {formatCurrency(totalSpent, state.settings.currencySymbol)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Subcategory mini chips row (Reference styling) */}
-                {b.categories && b.categories.length > 0 && (
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-0.5">                      {b.categories.map((catAlloc) => {
-                        const cat = state.categories.find((c) => c.id === catAlloc.categoryId);
-                        const catPercent = getCategoryAllocPercent(catAlloc, categorySpent);
-
-                      return (
-                        <div
-                          key={catAlloc.categoryId}
-                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-[#121218] border border-zinc-800/60 shrink-0 text-xs shadow-xs"
-                        >
-                          <div className="w-7 h-7 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-200">
-                            <CategoryIcon name={cat?.icon || 'Tag'} size={13} />
-                          </div>
-                          <div>
-                            <div className="text-[9px] font-bold text-zinc-300 font-mono">{catPercent}%</div>
-                            <div className="text-[10px] text-white font-bold font-mono">
-                              {formatCurrency(catAlloc.amount, state.settings.currencySymbol)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Goal Detail & Action Sheet Modal (Matching 1st reference screenshot) */}
-      {selectedGoal && (() => {
-        const { totalSpent, categorySpent } = getBudgetSpendingFor(selectedGoal);
-        const percent = getBudgetPercent(selectedGoal, totalSpent);
-        const remaining = Math.max(0, selectedGoal.amount - totalSpent);
-
-        // Days left calculation
-        const daysLeft = getBudgetDaysLeft(selectedGoal);
-        const dailyAllowance = (remaining / daysLeft).toFixed(2);
-
-        return createPortal(
-          <div
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
-            onClick={() => setSelectedGoal(null)}
-          >
-            <div
-              className="w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
-                    <Target size={16} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-bold text-white font-mono">{selectedGoal.name || 'Monthly Budget'}</h3>
-                    <p className="text-[10px] text-zinc-500 font-mono uppercase">{selectedGoal.period} budget</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedGoal(null)}
-                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                {/* Overalls Big Highlight Card */}
-                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between shadow-xs">
-                  <div>
-                    <div className="text-xs sm:text-sm font-bold text-white font-mono">Overalls</div>
-                    <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                      {formatCurrency(selectedGoal.amount, state.settings.currencySymbol)}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs sm:text-sm font-bold text-white font-mono">{percent}%</div>
-                    <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                      {formatCurrency(totalSpent, state.settings.currencySymbol)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Category Breakdown list (Reference style cards) */}
-                {selectedGoal.categories && selectedGoal.categories.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedGoal.categories.map((c) => {
-                      const cat = state.categories.find((item) => item.id === c.categoryId);
-                      const catPct = getCategoryAllocPercent(c, categorySpent);
-
-                      return (
-                        <div
-                          key={c.categoryId}
-                          className="p-3.5 rounded-2xl bg-[#16161d] border border-zinc-800/60 flex items-center justify-between text-xs"
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-200">
-                              <CategoryIcon name={cat?.icon || 'Tag'} size={15} />
-                            </div>
-                            <div className="font-bold text-white">{cat?.name || 'Category'}</div>
-                          </div>
-
-                          <div className="text-right">
-                            <div className="font-mono font-bold text-white text-xs">{catPct}%</div>
-                            <div className="text-[11px] text-zinc-400 font-mono">
-                              {formatCurrency(c.amount, state.settings.currencySymbol)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Stats Footer (Days Remaining, Daily Remaining) */}
-                <div className="pt-3 border-t border-zinc-900 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-zinc-400">
-                  <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
-                    <span>Period</span>
-                    <span className="text-white capitalize">{selectedGoal.period}</span>
-                  </div>
-                  <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
-                    <span>Date Range</span>
-                    <span className="text-white">{selectedGoal.startDate} ━ {selectedGoal.endDate}</span>
-                  </div>
-                  <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
-                    <span>Days Remaining</span>
-                    <span className="text-white font-bold">{daysLeft} days</span>
-                  </div>
-                  <div className="flex justify-between p-2 rounded-xl bg-[#16161d]/50">
-                    <span>Daily Allowance</span>
-                    <span className="text-emerald-400 font-bold">
-                      {state.settings.currencySymbol}{dailyAllowance} / day
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons: Delete | Edit */}
-              <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex items-center gap-2.5 shrink-0 safe-bottom">
-                <button
-                  type="button"
-                  onClick={() => {
-                    deleteBudget(selectedGoal.id);
-                    setSelectedGoal(null);
-                  }}
-                  className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-400 text-xs font-mono font-bold transition-colors cursor-pointer text-center"
-                >
-                  Delete Budget
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openEditModal(selectedGoal)}
-                  className="flex-1 py-2.5 rounded-xl bg-white text-black hover:bg-zinc-200 text-xs font-mono font-bold transition-all cursor-pointer text-center shadow-md active:scale-95"
-                >
-                  Edit Budget
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        );
-      })()}
-
-      {/* Create Spending Goal Modal */}
-      {showCreateModal &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
-            onClick={() => setShowCreateModal(false)}
-          >
-            <div
-              className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
-                    <Target size={16} />
-                  </div>
-                  <h3 className="text-sm sm:text-base font-bold text-white font-mono">
-                    {editingBudgetId ? 'Edit Budget' : 'Create Budget'}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveGoal} className="flex-1 flex flex-col min-h-0">
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                  {/* Name */}
-                  <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Budget Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. October Budget, Holiday Trip"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                      required
-                    />
-                  </div>
-
-                  {/* Period selection */}
-                  <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">Range Period</label>
-                    <div className="flex bg-[#16161d] p-1 rounded-xl border border-zinc-800/60 gap-1">
-                      {(['daily', 'weekly', 'monthly', 'custom'] as const).map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => handlePeriodChange(p)}
-                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono capitalize transition-all cursor-pointer ${
-                            period === p ? 'bg-white text-black font-bold shadow-sm' : 'text-zinc-400 hover:text-white'
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Date Pickers */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <CustomDateInput
-                      label="Start Date"
-                      value={startDate}
-                      onChange={setStartDate}
-                      required
-                    />
-                    <CustomDateInput
-                      label="End Date"
-                      value={endDate}
-                      onChange={setEndDate}
-                      required
-                    />
-                  </div>
-
-                  {/* Total Overall Amount */}
-                  <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1">
-                      Total Overall Limit
-                    </label>
-                    <CurrencyInput
-                      currencySymbol={state.settings.currencySymbol}
-                      type="number"
-                      placeholder="e.g. 8000"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-sm text-white font-mono font-bold focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                      required
-                    />
-                  </div>
-
-                  {/* Category Breakdown Allocation Builder */}
-                  <div className="pt-2 border-t border-zinc-900 space-y-2">
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block">
-                      Category Limits (Optional)
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <CustomSelect
-                          value={tempCatId}
-                          onChange={(val) => setTempCatId(val)}
-                          options={expenseCategories.map((c) => ({ value: c.id, label: c.name }))}
-                        />
-                      </div>
-                      <CurrencyInput
-                        currencySymbol={state.settings.currencySymbol}
-                        type="number"
-                        placeholder="Limit"
-                        value={tempCatAmount}
-                        onChange={(e) => setTempCatAmount(e.target.value)}
-                        className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
-                        containerClassName="w-28 shrink-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddCategoryAllocation}
-                        className="px-4 h-11 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition-colors"
-                      >
-                        Add
-                      </button>
-                    </div>
-
-                    {categoryAllocations.length > 0 && (
-                      <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                        {categoryAllocations.map((alloc) => {
-                          const cat = state.categories.find((c) => c.id === alloc.categoryId);
-                          return (
-                            <div
-                              key={alloc.categoryId}
-                              className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-[#16161d] border border-zinc-800/60 text-xs"
-                            >
-                              <span className="text-zinc-200 font-medium truncate">{cat?.name}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-white">
-                                  {formatCurrency(alloc.amount, state.settings.currencySymbol)}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveCategoryAllocation(alloc.categoryId)}
-                                  className="text-zinc-600 hover:text-rose-400 p-0.5 cursor-pointer"
-                                >
-                                  <X size={12} />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Form Actions */}
-                <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex justify-end gap-2.5 shrink-0 safe-bottom">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
-                  >
-                    Save Budget
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>,
-          document.body
-        )}
-    </div>
-  );
-};
-
-// ─── Sub-page 2: Categories (Parent + Subcategory Management) ──────
 
 const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { state, addCategory, deleteCategory } = useFinance();
@@ -719,15 +165,15 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return (
     <div className="space-y-3 animate-fade-in min-h-full flex flex-col flex-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="h-8 flex items-center justify-between pt-1">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors"
+            className="hidden sm:flex w-8 h-8 rounded-xl bg-zinc-900 items-center justify-center text-zinc-300 cursor-pointer hover:text-white transition-colors"
           >
             <ArrowLeft size={16} />
           </button>
-          <h2 className="text-base font-bold text-white font-mono">CATEGORIES</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white font-mono">CATEGORIES</h2>
         </div>
 
         <button
@@ -789,8 +235,24 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {parentCategories.length === 0 && (
-        <div className="text-center text-xs text-zinc-600 py-12 flex-1 flex items-center justify-center">
-          No {tab} categories yet
+        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/60 text-center space-y-2 flex-1 flex flex-col items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
+            <Tag size={18} />
+          </div>
+          <div className="text-xs text-zinc-400 font-medium">No {tab} categories yet</div>
+          <p className="text-[10px] text-zinc-600 max-w-xs mx-auto">
+            Create parent categories and group subcategories under them.
+          </p>
+          <button
+            onClick={() => {
+              setNewCatName('');
+              setNewCatIcon('Tag');
+              setShowAddParentModal(true);
+            }}
+            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-black text-xs font-bold cursor-pointer"
+          >
+            <Plus size={13} /> Add Category
+          </button>
         </div>
       )}
 
@@ -798,11 +260,11 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {selectedParentCat &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
             onClick={() => setSelectedParentCat(null)}
           >
             <div
-              className="w-full sm:max-w-md h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              className="w-full sm:max-w-md max-h-[85dvh] bg-[#0c0c10] border border-zinc-800 rounded-3xl flex flex-col shadow-2xl overflow-hidden cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
@@ -899,11 +361,11 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {showAddSubModal && selectedParentCat &&
         createPortal(
           <div
-            className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
             onClick={() => setShowAddSubModal(false)}
           >
             <div
-              className="w-full sm:max-w-sm h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              className="w-full sm:max-w-sm max-h-[85dvh] bg-[#0c0c10] border border-zinc-800 rounded-3xl flex flex-col shadow-2xl overflow-hidden cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
@@ -958,11 +420,11 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {showAddParentModal &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none"
             onClick={() => setShowAddParentModal(false)}
           >
             <div
-              className="w-full sm:max-w-md md:max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
+              className="w-full sm:max-w-md md:max-w-lg max-h-[85dvh] bg-[#0c0c10] border border-zinc-800 rounded-3xl flex flex-col shadow-2xl overflow-hidden cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
@@ -1049,7 +511,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 // ─── Main Settings View ───────────────────────────────────────────
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ isActive }) => {
   const {
     state,
     updateSettings,
@@ -1064,6 +526,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [subPage, setSubPage] = useState<SettingsSubPage>(null);
   useBackButton(Boolean(subPage), () => setSubPage(null));
+
+  // Re-tapping Settings pops sub-pages; switching to another tab closes them so returning shows the main list.
+  useEffect(() => {
+    const handleTabRetap = (e: Event) => {
+      if ((e as CustomEvent).detail === 'settings') setSubPage(null);
+    };
+    const handleTabChanged = () => setSubPage(null);
+    window.addEventListener('nova:tab-retap', handleTabRetap);
+    window.addEventListener('nova:tab-changed', handleTabChanged);
+    return () => {
+      window.removeEventListener('nova:tab-retap', handleTabRetap);
+      window.removeEventListener('nova:tab-changed', handleTabChanged);
+    };
+  }, []);
   const [showWallets, setShowWallets] = useState(false);
   const [showAddAcc, setShowAddAcc] = useState(false);
   const [newAccName, setNewAccName] = useState('');
@@ -1103,21 +579,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
   // ── Sub-pages ──
   if (subPage === 'goals')
     return (
-      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
-        <GoalsSubPage onBack={() => setSubPage(null)} />
+      <div className="space-y-6 pb-[calc(82px+env(safe-area-inset-bottom))] md:pb-8 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
+        <BudgetsPage onBack={() => setSubPage(null)} />
+        {isActive && <FloatingClose onClick={() => setSubPage(null)} />}
       </div>
     );
 
   if (subPage === 'categories')
     return (
-      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
+      <div className="space-y-6 pb-[calc(82px+env(safe-area-inset-bottom))] md:pb-8 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
         <CategoriesSubPage onBack={() => setSubPage(null)} />
+        {isActive && <FloatingClose onClick={() => setSubPage(null)} />}
+      </div>
+    );
+
+  if (subPage === 'recurring')
+    return (
+      <div className="space-y-6 pb-[calc(82px+env(safe-area-inset-bottom))] md:pb-8 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
+        <RecurringManager onBack={() => setSubPage(null)} />
+        {isActive && <FloatingClose onClick={() => setSubPage(null)} />}
+      </div>
+    );
+
+  if (subPage === 'debts')
+    return (
+      <div className="space-y-6 pb-[calc(82px+env(safe-area-inset-bottom))] md:pb-8 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
+        <DebtManager onBack={() => setSubPage(null)} />
+        {isActive && <FloatingClose onClick={() => setSubPage(null)} />}
       </div>
     );
 
   // ── Main Settings ──
   return (
-    <div className="pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none space-y-3">
+    <div className="pb-[calc(82px+env(safe-area-inset-bottom))] md:pb-8 px-4 md:px-8 w-full animate-fade-in select-none space-y-3">
       <div className="h-8 flex items-center justify-between pt-1">
         <h2 className="text-xl font-bold tracking-tight text-white font-mono">SETTINGS</h2>
       </div>
@@ -1228,13 +722,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
           icon={<RefreshCw size={15} />}
           title={`Recurring (${state.recurring?.length || 0})`}
           subtitle="Manage scheduled bills, salaries and subscriptions"
-          onClick={() => onOpenManager?.('recurring')}
+          onClick={() => setSubPage('recurring')}
         />
         <Row
           icon={<HandCoins size={15} />}
           title={`Debts (${state.debts?.filter((d) => d.status === 'active').length || 0})`}
           subtitle="Track money lent to friends or borrowed amounts"
-          onClick={() => onOpenManager?.('debts')}
+          onClick={() => setSubPage('debts')}
         />
         <Row
           icon={<Wallet size={15} />}

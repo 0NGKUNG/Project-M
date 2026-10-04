@@ -9,15 +9,10 @@ import { AccountsView } from './components/accounts/AccountsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { QuickAddModal } from './components/transactions/QuickAddModal';
 import { AccountDetailModal } from './components/accounts/AccountDetailModal';
-import { ManagerSheet } from './components/common/ManagerSheet';
-import { RecurringManager } from './components/recurring/RecurringManager';
-import { DebtManager } from './components/debts/DebtManager';
 import type { Account } from './types/finance';
 import { AuthGate } from './components/auth/AuthGate';
 
 const TABS: NavTab[] = ['today', 'stats', 'accounts', 'settings'];
-
-export type ManagerSheetKind = 'recurring' | 'debts';
 
 export const AppContent: React.FC = () => {
   const { state } = useFinance();
@@ -25,10 +20,6 @@ export const AppContent: React.FC = () => {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [preselectedAccountId, setPreselectedAccountId] = useState<string | undefined>(undefined);
-
-  // Recurring & Borrow/Lend live in a sheet so they can be viewed from Today, Accounts or Settings.
-  const [managerSheet, setManagerSheet] = useState<ManagerSheetKind | null>(null);
-  const openManagerSheet = (kind: ManagerSheetKind) => setManagerSheet(kind);
 
   // Sidebar collapsed state — persisted across sessions
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -54,6 +45,13 @@ export const AppContent: React.FC = () => {
   // Switch tab and smooth scroll on mobile container
   const handleTabChange = (tab: NavTab) => {
     if (tab !== currentTab && navigator.vibrate) navigator.vibrate(8);
+    // Re-tapping the active tab (navbar/sidebar) lets views pop sub-pages back to their root.
+    if (tab === currentTab) {
+      window.dispatchEvent(new CustomEvent<NavTab>('nova:tab-retap', { detail: tab }));
+    } else {
+      // Switching views: open sub-pages close so returning shows the root view.
+      window.dispatchEvent(new CustomEvent<NavTab>('nova:tab-changed', { detail: tab }));
+    }
     setCurrentTab(tab);
     const tabIndex = TABS.indexOf(tab);
     if (containerRef.current && tabIndex !== -1) {
@@ -77,6 +75,8 @@ export const AppContent: React.FC = () => {
     const newIndex = Math.round(scrollLeft / clientWidth);
     if (newIndex >= 0 && newIndex < TABS.length && TABS[newIndex] !== currentTab) {
       setCurrentTab(TABS[newIndex]);
+      // Swipe-driven tab switch: close any open sub-pages so returning shows the root view.
+      window.dispatchEvent(new CustomEvent<NavTab>('nova:tab-changed', { detail: TABS[newIndex] }));
     }
   };
 
@@ -138,7 +138,7 @@ export const AppContent: React.FC = () => {
               <TodayView
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigateTab={handleTabChange}
-                onOpenManager={openManagerSheet}
+                isActive={currentTab === 'today'}
               />
             )}
             {currentTab === 'stats' && <StatsView />}
@@ -148,7 +148,7 @@ export const AppContent: React.FC = () => {
                 onOpenQuickAddWithAccount={handleOpenQuickAdd}
               />
             )}
-            {currentTab === 'settings' && <SettingsView onOpenManager={openManagerSheet} />}
+            {currentTab === 'settings' && <SettingsView isActive />}
           </main>
 
           {/* Mobile display: Horizontal swipe/drag scroll snap container with 1-page snap lock */}
@@ -162,7 +162,7 @@ export const AppContent: React.FC = () => {
               <TodayView
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigateTab={handleTabChange}
-                onOpenManager={openManagerSheet}
+                isActive={currentTab === 'today'}
               />
             </div>
 
@@ -181,7 +181,7 @@ export const AppContent: React.FC = () => {
 
             {/* View 4: Settings */}
             <div className="w-full h-full shrink-0 page-carousel-item overflow-y-auto overscroll-y-contain pt-3">
-              <SettingsView onOpenManager={openManagerSheet} />
+              <SettingsView isActive={currentTab === 'settings'} />
             </div>
           </div>
 
@@ -199,14 +199,6 @@ export const AppContent: React.FC = () => {
           onClose={() => setSelectedAccount(null)}
           onOpenQuickAddWithAccount={(accId) => handleOpenQuickAdd(accId)}
         />
-
-        {/* Recurring & Borrow/Lend — viewable from anywhere, set up from Settings */}
-        <ManagerSheet isOpen={managerSheet === 'recurring'} onClose={() => setManagerSheet(null)}>
-          <RecurringManager />
-        </ManagerSheet>
-        <ManagerSheet isOpen={managerSheet === 'debts'} onClose={() => setManagerSheet(null)}>
-          <DebtManager />
-        </ManagerSheet>
 
         {/* Quick Fast-Entry Drawer */}
         <QuickAddModal
