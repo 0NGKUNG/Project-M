@@ -592,7 +592,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                       <WalletIcon size={18} />
                     </div>
                     <div className="truncate">
-                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === selectedAccountId)?.name || 'Wallet'}</div>
+                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === selectedAccountId)?.name || 'Account'}</div>
                       <div className="text-[11px] text-zinc-400 mt-0.5">
                         Balance: {formatCurrency(accountBalances[selectedAccountId] ?? 0, state.settings.currencySymbol)}
                       </div>
@@ -630,7 +630,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                     setToAccountId(from);
                   }}
                   className="w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-zinc-300 hover:text-white flex items-center justify-center shadow-md active:scale-90 transition-all cursor-pointer"
-                  title="Swap Wallets"
+                  title="Swap Accounts"
                 >
                   <ArrowUpDown size={15} />
                 </button>
@@ -647,7 +647,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                       <WalletIcon size={18} />
                     </div>
                     <div className="truncate">
-                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === toAccountId)?.name || 'Wallet'}</div>
+                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === toAccountId)?.name || 'Account'}</div>
                       <div className="text-[11px] text-zinc-400 mt-0.5">
                         Balance: {formatCurrency(accountBalances[toAccountId] ?? 0, state.settings.currencySymbol)}
                       </div>
@@ -763,7 +763,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                   </div>
                   <div className="text-center sm:text-left font-mono">
                     <div className={`text-xs font-bold leading-tight truncate max-w-[85px] sm:max-w-none ${activeRightPanel === 'account' ? 'text-black' : 'text-white'}`}>
-                      {selectedAccount?.name || 'Wallet'}
+                      {selectedAccount?.name || 'Account'}
                     </div>
                   </div>
                 </button>
@@ -1052,7 +1052,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 <div className="flex items-center justify-between pb-2 border-b border-zinc-900 shrink-0">
                   <div className="flex items-center gap-2 text-white">
                     <WalletIcon size={14} className="text-zinc-400" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Select Wallet</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Select Account</span>
                   </div>
                   <button
                     type="button"
@@ -1106,7 +1106,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
-                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">Select Wallet</span>
+                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">Select Account</span>
                 <button
                   type="button"
                   onClick={() => setShowAccountPicker(false)}

@@ -60,8 +60,59 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     saveFinanceData(state);
   }, [state]);
 
+  // One-time: if the cloud is missing recurring/debts tables (404), auto-create them via RPC,
+  // so recurring/debts/budgets data persists in Supabase without a manual SQL step.
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    (async () => {
+      try {
+        const probe = await supabase.from('recurring').select('id').limit(1);
+        if (!probe.error) return; // table exists
+        const ddl = [
+          `CREATE TABLE IF NOT EXISTS recurring (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'expense',
+            amount NUMERIC NOT NULL,
+            category_id TEXT NOT NULL,
+            account_id TEXT NOT NULL,
+            frequency TEXT NOT NULL DEFAULT 'monthly',
+            next_due_date DATE NOT NULL,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );`,
+          `CREATE TABLE IF NOT EXISTS debts (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            person_name TEXT NOT NULL,
+            total_amount NUMERIC NOT NULL,
+            remaining_amount NUMERIC NOT NULL,
+            due_date DATE,
+            note TEXT,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at BIGINT NOT NULL
+          );`,
+          `ALTER TABLE recurring ENABLE ROW LEVEL SECURITY;`,
+          `ALTER TABLE debts ENABLE ROW LEVEL SECURITY;`,
+          `DROP POLICY IF EXISTS "Allow full access to recurring" ON recurring;`,
+          `DROP POLICY IF EXISTS "Allow full access to debts" ON debts;`,
+          `CREATE POLICY "Allow full access to recurring" ON recurring FOR ALL USING (true) WITH CHECK (true);`,
+          `CREATE POLICY "Allow full access to debts" ON debts FOR ALL USING (true) WITH CHECK (true);`,
+        ];
+        const { error } = await supabase.rpc('exec_sql', { sql: ddl.join('\n') });
+        if (error) console.info('Auto-create recurring/debts tables skipped (run supabase_schema.sql once):', error.message);
+        else {
+          console.info('Auto-created recurring/debts tables in Supabase.');
+          syncFromSupabase();
+        }
+      } catch (e) {
+        console.info('Table auto-create check failed:', e);
+      }
+    })();
+  }, []);
+
   // Seed default accounts and categories if remote Supabase database is completely empty
-  const seedRemoteDefaultsIfNeeded = async (remoteAccounts: any[], remoteCategories: any[]) => {
+  const seedRemoteDefaultsIfNeeded = async (remoteAccounts: any[], remoteCategories: any[], remoteBudgets: any[] = [], remoteRecurring: any[] = [], remoteDebts: any[] = []) => {
     if (!supabase) return;
     try {
       if (!remoteAccounts || remoteAccounts.length === 0) {
@@ -88,6 +139,56 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }))
         );
       }
+
+      // Push localStorage-only rows the cloud has never seen (matched by id) so
+      // rows deleted from the cloud are not resurrected on every sync.
+      const localOnlyBudgets = state.budgets.filter((b) => !remoteBudgets.some((rb) => rb.id === b.id));
+      if (localOnlyBudgets.length > 0) {
+        const rows = localOnlyBudgets.map((b) => ({
+          id: b.id,
+          name: b.name || null,
+          category_id: b.categoryId || null,
+          amount: b.amount,
+          period: b.period,
+          start_date: b.startDate || null,
+          end_date: b.endDate || null,
+          categories: b.categories || null,
+        }));
+        const { error } = await supabase.from('budgets').upsert(rows);
+        if (error) console.warn('Initial budgets sync to Supabase failed:', error.message);
+      }
+      const localOnlyRecurring = (state.recurring || []).filter((r) => !remoteRecurring.some((rr) => rr.id === r.id));
+      if (localOnlyRecurring.length > 0) {
+        const rows = localOnlyRecurring.map((r) => ({
+          id: r.id,
+          name: r.name,
+          type: r.type,
+          amount: r.amount,
+          category_id: r.categoryId,
+          account_id: r.accountId,
+          frequency: r.frequency,
+          next_due_date: r.nextDueDate,
+          is_active: r.isActive,
+        }));
+        const { error } = await supabase.from('recurring').upsert(rows);
+        if (error) console.warn('Initial recurring sync to Supabase failed:', error.message);
+      }
+      const localOnlyDebts = (state.debts || []).filter((d) => !remoteDebts.some((rd) => rd.id === d.id));
+      if (localOnlyDebts.length > 0) {
+        const rows = localOnlyDebts.map((d) => ({
+          id: d.id,
+          type: d.type,
+          person_name: d.personName,
+          total_amount: d.totalAmount,
+          remaining_amount: d.remainingAmount,
+          due_date: d.dueDate || null,
+          note: d.note || null,
+          status: d.status,
+          created_at: d.createdAt || Date.now(),
+        }));
+        const { error } = await supabase.from('debts').upsert(rows);
+        if (error) console.warn('Initial debts sync to Supabase failed:', error.message);
+      }
     } catch (e) {
       console.warn('Auto-seed remote notice:', e);
     }
@@ -109,7 +210,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       ]);
 
       // If remote accounts or categories are empty, seed them so the database has valid foreign keys!
-      await seedRemoteDefaultsIfNeeded(accRes.data || [], catRes.data || []);
+      await seedRemoteDefaultsIfNeeded(accRes.data || [], catRes.data || [], bgRes.data || [], recRes.data || [], debtRes.data || []);
 
       setState((prev) => ({
         ...prev,
@@ -164,7 +265,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             };
           });
         })() : prev.categories,
-        budgets: bgRes.data ? bgRes.data.map((b) => ({
+        budgets: bgRes.data && bgRes.data.length > 0 ? bgRes.data.map((b) => ({
           id: b.id,
           name: b.name || undefined,
           categoryId: b.category_id || undefined,
@@ -184,6 +285,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           frequency: r.frequency,
           nextDueDate: r.next_due_date || r.nextDueDate,
           isActive: r.is_active ?? r.isActive ?? true,
+          // lastExecutedAt is localStorage-only; preserve it so a past due date
+          // pulled from the cloud does not re-trigger an already-executed post.
+          lastExecutedAt: prev.recurring?.find((pr) => pr.id === r.id)?.lastExecutedAt,
         })) : prev.recurring,
         debts: debtRes.data && debtRes.data.length > 0 ? debtRes.data.map((d) => ({
           id: d.id,
@@ -283,6 +387,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           account_id: newTx.accountId,
           to_account_id: newTx.toAccountId,
           date: newTx.date,
+          time: newTx.time,
           note: newTx.note,
           created_at: newTx.createdAt,
         });
@@ -312,6 +417,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           account_id: updatedTx.accountId,
           to_account_id: updatedTx.toAccountId,
           date: updatedTx.date,
+          time: updatedTx.time,
           note: updatedTx.note,
         }).eq('id', updatedTx.id);
         if (error) console.error('Supabase transaction update error:', error);
@@ -434,12 +540,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
         if (error) {
           // If columns don't exist yet, fallback to minimal insert
-          await supabase.from('budgets').insert({
+          const fallback = await supabase.from('budgets').insert({
             id: newBudget.id,
             category_id: newBudget.categoryId || null,
             amount: newBudget.amount,
             period: newBudget.period,
           });
+          if (fallback.error) console.error('Supabase budget fallback insert error:', fallback.error.message);
         }
       } catch (err) {
         console.error('Supabase budget insert error:', err);
@@ -456,7 +563,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('budgets').update({
+        // Upsert (not update) so the row is created even if it never reached the cloud.
+        const { error } = await supabase.from('budgets').upsert({
+          id: updatedBudget.id,
           name: updatedBudget.name || null,
           category_id: updatedBudget.categoryId || null,
           amount: updatedBudget.amount,
@@ -464,8 +573,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           start_date: updatedBudget.startDate || null,
           end_date: updatedBudget.endDate || null,
           categories: updatedBudget.categories || null,
-        }).eq('id', updatedBudget.id);
-        if (error) console.error('Supabase budget update error:', error);
+        });
+        if (error) console.error('Supabase budget upsert error:', error);
       } catch (err) {
         console.error('Supabase budget update error:', err);
       }
@@ -582,6 +691,38 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  /** Next occurrence for a recurring item, advancing from a given due date (local-time safe — no ISO UTC shift). */
+  const advanceRecurringDueDate = (item: RecurringItem, fromDate: string): string => {
+    const [y, m, d] = fromDate.split('-').map(Number);
+    const base = new Date(y, (m || 1) - 1, d || 1);
+    const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+
+    switch (item.frequency) {
+      case 'daily':
+        base.setDate(base.getDate() + 1);
+        return fmt(base);
+      case 'weekly':
+        base.setDate(base.getDate() + 7);
+        return fmt(base);
+      case 'monthly': {
+        const day = base.getDate();
+        const next = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+        const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+        next.setDate(Math.min(day, lastDay));
+        return fmt(next);
+      }
+      case 'yearly': {
+        const day = base.getDate();
+        const next = new Date(base.getFullYear() + 1, base.getMonth(), 1);
+        const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+        next.setDate(Math.min(day, lastDay));
+        return fmt(next);
+      }
+      default:
+        return fromDate;
+    }
+  };
+
   const addRecurring = async (itemData: Omit<RecurringItem, 'id'>) => {
     triggerHaptic();
     const newItem: RecurringItem = {
@@ -621,7 +762,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('recurring').update({
+        // Upsert (not update) so the row is created even if it never reached the cloud.
+        const { error } = await supabase.from('recurring').upsert({
+          id: updatedItem.id,
           name: updatedItem.name,
           type: updatedItem.type,
           amount: updatedItem.amount,
@@ -630,8 +773,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           frequency: updatedItem.frequency,
           next_due_date: updatedItem.nextDueDate,
           is_active: updatedItem.isActive,
-        }).eq('id', updatedItem.id);
-        if (error) console.warn('Supabase recurring update notice:', error);
+        });
+        if (error) console.warn('Supabase recurring upsert notice:', error);
       } catch (err) {
         console.warn('Supabase recurring update catch:', err);
       }
@@ -694,16 +837,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const { error } = await supabase.from('debts').update({
+        // Upsert (not update) so the row is created even if it never reached the cloud.
+        const { error } = await supabase.from('debts').upsert({
+          id: updatedDebt.id,
           type: updatedDebt.type,
           person_name: updatedDebt.personName,
           total_amount: updatedDebt.totalAmount,
           remaining_amount: updatedDebt.remainingAmount,
-          due_date: updatedDebt.dueDate,
-          note: updatedDebt.note,
+          due_date: updatedDebt.dueDate || null,
+          note: updatedDebt.note || null,
           status: updatedDebt.status,
-        }).eq('id', updatedDebt.id);
-        if (error) console.warn('Supabase debt update notice:', error);
+        });
+        if (error) console.warn('Supabase debt upsert notice:', error);
       } catch (err) {
         console.warn('Supabase debt update catch:', err);
       }
@@ -775,11 +920,60 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     downloadAnchor.remove();
   };
 
+  // Push the full dataset to Supabase (used after a JSON import so imported data
+  // survives the next cloud pull instead of being overwritten by it).
+  const pushAllToSupabase = async (s: FinanceState) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    const steps: Array<[string, PromiseLike<any>]> = [
+      ['accounts', supabase.from('accounts').upsert(s.accounts.map((a) => ({
+        id: a.id, name: a.name, type: a.type, initial_balance: a.initialBalance, icon: a.icon || 'CreditCard',
+      })))],
+      // Parents first so the categories self-FK is satisfied row by row.
+      ['categories', supabase.from('categories').upsert([...s.categories]
+        .sort((a, b) => (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0))
+        .map((c) => ({
+          id: c.id, name: c.name, type: c.type, icon: c.icon, parent_id: c.parentId || null,
+        })))],
+      ['transactions', supabase.from('transactions').upsert(s.transactions.map((t) => ({
+        id: t.id, type: t.type, amount: t.amount, category_id: t.categoryId,
+        subcategory_id: t.subcategoryId, account_id: t.accountId, to_account_id: t.toAccountId,
+        date: t.date, time: t.time, note: t.note, created_at: t.createdAt,
+      })))],
+      ['budgets', supabase.from('budgets').upsert(s.budgets.map((b) => ({
+        id: b.id, name: b.name || null, category_id: b.categoryId || null, amount: b.amount,
+        period: b.period, start_date: b.startDate || null, end_date: b.endDate || null,
+        categories: b.categories || null,
+      })))],
+      ['recurring', supabase.from('recurring').upsert((s.recurring || []).map((r) => ({
+        id: r.id, name: r.name, type: r.type, amount: r.amount, category_id: r.categoryId,
+        account_id: r.accountId, frequency: r.frequency, next_due_date: r.nextDueDate, is_active: r.isActive,
+      })))],
+      ['debts', supabase.from('debts').upsert((s.debts || []).map((d) => ({
+        id: d.id, type: d.type, person_name: d.personName, total_amount: d.totalAmount,
+        remaining_amount: d.remainingAmount, due_date: d.dueDate || null, note: d.note || null,
+        status: d.status, created_at: d.createdAt || Date.now(),
+      })))],
+      ['settings', supabase.from('settings').upsert({
+        id: 'app_settings',
+        currency_symbol: s.settings.currencySymbol,
+        currency_code: s.settings.currencyCode,
+        vibrate_on_tap: s.settings.vibrateOnTap,
+        quick_add_keybind: s.settings.quickAddKeybind,
+        week_start_day: s.settings.weekStartDay,
+        goals: s.settings.goals,
+      })],
+    ];
+    for (const [name, query] of steps) {
+      const { error } = await query;
+      if (error) console.warn(`Import push to Supabase (${name}) failed:`, error.message);
+    }
+  };
+
   const importDataJSON = (jsonString: string): boolean => {
     try {
       const parsed = JSON.parse(jsonString);
       if (Array.isArray(parsed.transactions) && Array.isArray(parsed.categories)) {
-        setState({
+        const imported: FinanceState = {
           transactions: parsed.transactions,
           categories: parsed.categories,
           accounts: parsed.accounts || state.accounts,
@@ -787,7 +981,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           recurring: parsed.recurring || state.recurring || [],
           debts: parsed.debts || state.debts || [],
           settings: { ...state.settings, ...(parsed.settings || {}) },
-        });
+        };
+        setState(imported);
+        // Persist the imported dataset to the cloud so it is not lost on next sync.
+        void pushAllToSupabase(imported);
         return true;
       }
       return false;
@@ -813,6 +1010,84 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     window.location.reload();
   };
+
+  // ── Recurring auto-execution ─────────────────────────────────────────
+  // Posts a real transaction for every active recurring item whose due date has
+  // arrived (or passed, catching up missed days), then rolls the due date forward.
+  // lastExecutedAt powers the "something just executed" red dot in the Today header.
+  const executedThisSessionRef = React.useRef<Record<string, { nextDueDate: string; lastExecutedAt: number }>>({});
+
+  useEffect(() => {
+    const dueItems = (state.recurring || []).filter((r) => {
+      if (!r.isActive) return false;
+      const [y, m, d] = r.nextDueDate.split('-').map(Number);
+      if (!y || !m || !d) return false;
+      // Due when the due day has started (local midnight) — today counts as due.
+      const dueTime = new Date(y, m - 1, d).getTime();
+      const lastRun = r.lastExecutedAt ?? 0;
+      return dueTime <= Date.now() && lastRun < dueTime;
+    });
+    if (dueItems.length === 0) return;
+
+    const now = Date.now();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const timeStr = () => {
+      const n = new Date();
+      return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
+    };
+
+    // 1) Post transactions (addTransaction already writes to local state AND
+    //    Supabase — the old second manual insert here created duplicate cloud rows).
+    dueItems.forEach((item) => {
+      addTransaction({
+        type: item.type,
+        amount: item.amount,
+        categoryId: item.categoryId,
+        accountId: item.accountId,
+        date: todayStr,
+        time: timeStr(),
+        note: `${item.name} (recurring)`,
+      });
+    });
+
+    // 2) Roll due dates forward and stamp execution time
+    const advances: Record<string, { nextDueDate: string; lastExecutedAt: number }> = {};
+    dueItems.forEach((item) => {
+      let next = advanceRecurringDueDate(item, item.nextDueDate);
+      // Catch up: keep advancing until the next due date is in the future
+      let guard = 0;
+      while (guard++ < 400) {
+        const [y, m, d] = next.split('-').map(Number);
+        if (new Date(y, m - 1, d).getTime() > Date.now()) break;
+        next = advanceRecurringDueDate(item, next);
+      }
+      advances[item.id] = { nextDueDate: next, lastExecutedAt: now };
+    });
+    executedThisSessionRef.current = { ...executedThisSessionRef.current, ...advances };
+
+    setState((prev) => ({
+      ...prev,
+      recurring: (prev.recurring || []).map((r) =>
+        advances[r.id] ? { ...r, ...advances[r.id] } : r
+      ),
+    }));
+
+    // 3) Persist to Supabase (lastExecutedAt stays local-only)
+    if (isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      dueItems.forEach((item) => {
+        const adv = advances[item.id];
+        if (!adv) return;
+        sb
+          .from('recurring')
+          .update({
+            next_due_date: adv.nextDueDate,
+          })
+          .eq('id', item.id)
+          .then(null, (err: unknown) => console.warn('Recurring due-date sync notice:', err));
+      });
+    }
+  }, [state.recurring]);
 
   // Computations
   const accountBalances = useMemo(() => {

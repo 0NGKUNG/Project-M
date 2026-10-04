@@ -48,15 +48,22 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
   // Quick subcategory dropdown modal/drawer (for mobile or click)
   const [activeDropdownCatId, setActiveDropdownCatId] = useState<string | null>(null);
 
-  // Selector state for Right Side Panel on PC / Modal on Mobile
+  // Modal stack: each sub-modal has its own independent open state so tapping outside
+  // only closes the topmost sub-modal, never the whole QuickAdd.
   const [activeRightPanel, setActiveRightPanel] = useState<'datetime' | 'account' | null>(null);
+  const [showAccountPickerModal, setShowAccountPickerModal] = useState(false);
+  const [showDateTimePickerModal, setShowDateTimePickerModal] = useState(false);
 
   const openRightPanel = (panel: 'datetime' | 'account' | null) => {
     setActiveRightPanel(panel);
   };
 
-  // Hidden account picker fallback flag for mobile compatibility
-  const [showAccountPicker, setShowAccountPicker] = useState<boolean>(false);
+  const openAccountPicker = () => setShowAccountPickerModal(true);
+  const closeAccountPicker = () => setShowAccountPickerModal(false);
+  const openDateTimePicker = () => setShowDateTimePickerModal(true);
+  const closeDateTimePicker = () => setShowDateTimePickerModal(false);
+
+
 
   // Auto-detect layout: hide numpad on PC/desktop screens (>=768px), show on mobile (<768px)
   const [showNumpad, setShowNumpad] = useState<boolean>(() => {
@@ -69,7 +76,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
     const now = new Date();
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   });
-  const [showDateTimePicker, setShowDateTimePicker] = useState<boolean>(false);
+
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -344,6 +351,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
     hasSubcategories && displayCategory ? displayCategory.id : null
   );
 
+  // Keep the account picker mounted during its close animation.
+  const renderedAccountPicker = useDelayedUnmount(showAccountPickerModal);
+  const renderedDateTimePicker = useDelayedUnmount(showDateTimePickerModal);
+
   // Quick Date format for badge
   const isToday = date === new Date().toISOString().split('T')[0];
 
@@ -352,7 +363,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
     if (window.innerWidth >= 768) {
       openRightPanel(activeRightPanel === 'datetime' ? null : 'datetime');
     } else {
-      setShowDateTimePicker(true);
+      openDateTimePicker();
     }
   };
 
@@ -361,7 +372,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
     if (window.innerWidth >= 768) {
       openRightPanel(activeRightPanel === 'account' ? null : 'account');
     } else {
-      setShowAccountPicker(true);
+      openAccountPicker();
     }
   };
 
@@ -369,7 +380,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-xs animate-fade-in p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer select-none p-0 sm:p-4"
       onClick={onClose}
     >
       <input
@@ -456,7 +467,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         </div>
 
         {/* 2. MAIN CARD: Category Grid (3 cols on PC), Amount Display, Note Input, Save Button (Elevated z-20 so side panels emerge behind it) */}
-        <div className="relative z-20 w-full h-[100dvh] sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] sm:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-900 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0">
+        <div className="relative z-20 w-full h-[100dvh] sm:h-[600px] lg:h-[620px] sm:max-h-[92vh] sm:w-[580px] lg:w-[620px] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl safe-top safe-bottom select-none shrink-0">
           
           {/* Top App Bar: Back icon + Type Switcher Pills */}
           <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-2 shrink-0 border-b border-zinc-900/50">
@@ -575,7 +586,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                       <WalletIcon size={18} />
                     </div>
                     <div className="truncate">
-                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === selectedAccountId)?.name || 'Wallet'}</div>
+                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === selectedAccountId)?.name || 'Account'}</div>
                       <div className="text-[11px] text-zinc-400 mt-0.5">
                         Balance: {formatCurrency(accountBalances[selectedAccountId] ?? 0, state.settings.currencySymbol)}
                       </div>
@@ -601,8 +612,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                 </div>
               </div>
 
-              {/* Clean Swap Button Row - No negative margins, no overlapping borders */}
-              <div className="flex items-center justify-center py-2.5 z-10">
+              {/* Swap + Account Picker Row */}
+              <div className="flex items-center justify-center gap-2 py-2.5 z-10">
                 <button
                   type="button"
                   onClick={() => {
@@ -612,10 +623,24 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                     setSelectedAccountId(to);
                     setToAccountId(from);
                   }}
-                  className="w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-zinc-300 hover:text-white flex items-center justify-center shadow-md active:scale-90 transition-all cursor-pointer"
-                  title="Swap Wallets"
+                  className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/80 text-zinc-300 hover:text-white flex items-center justify-center shadow-md active:scale-90 transition-all cursor-pointer"
+                  title="Swap Accounts"
                 >
-                  <ArrowUpDown size={15} />
+                  <ArrowUpDown size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    if (window.innerWidth >= 768) {
+                      openRightPanel(activeRightPanel === 'account' ? null : 'account');
+                    } else {
+                      openAccountPicker();
+                    }
+                  }}
+                  className="text-[10px] font-mono font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer uppercase tracking-wider"
+                >
+                  Change Account
                 </button>
               </div>
 
@@ -630,7 +655,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                       <WalletIcon size={18} />
                     </div>
                     <div className="truncate">
-                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === toAccountId)?.name || 'Wallet'}</div>
+                      <div className="text-sm font-bold text-white truncate">{state.accounts.find(a => a.id === toAccountId)?.name || 'Account'}</div>
                       <div className="text-[11px] text-zinc-400 mt-0.5">
                         Balance: {formatCurrency(accountBalances[toAccountId] ?? 0, state.settings.currencySymbol)}
                       </div>
@@ -753,7 +778,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                   </div>
                   <div className="text-center sm:text-left font-mono">
                     <div className={`text-xs font-bold leading-tight truncate max-w-[85px] sm:max-w-none ${activeRightPanel === 'account' ? 'text-black' : 'text-white'}`}>
-                      {selectedAccount?.name || 'Wallet'}
+                      {selectedAccount?.name || 'Account'}
                     </div>
                   </div>
                 </button>
@@ -1069,7 +1094,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
         {/* 1. Subcategory Picker Modal (For mobile click) */}
         {activeDropdownCatId && (
           <div 
-            className="fixed inset-0 z-60 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+            className="fixed inset-0 z-60 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-pointer select-none"
             onClick={() => setActiveDropdownCatId(null)}
           >
             <div 
@@ -1146,28 +1171,34 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
           </div>
         )}
 
-        {/* 2. Quick Wallet Selector Modal (Mobile) */}
-        {showAccountPicker && (
+        {/* 2. Shared Account Picker Sub-Modal (mobile) — same design as Expenses page account selector.
+            Backdrop click closes ONLY this sub-modal, never the parent QuickAdd. */}
+        {renderedAccountPicker && (
           <div 
-            className="fixed inset-0 z-60 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
-            onClick={() => setShowAccountPicker(false)}
+            className="fixed inset-0 z-60 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in cursor-pointer select-none"
+            onClick={closeAccountPicker}
           >
             <div 
-              className="w-full max-w-xs bg-[#101014] border border-zinc-800 rounded-2xl p-4 shadow-2xl space-y-3"
+              className="w-full sm:max-w-xs bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl sm:max-h-[85vh] flex flex-col shadow-2xl safe-bottom cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
-                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">Select Wallet</span>
+              {/* Handle bar */}
+              <div className="flex justify-center py-2 sm:hidden">
+                <div className="w-10 h-1 rounded-full bg-zinc-700" />
+              </div>
+
+              <div className="flex items-center justify-between px-4 sm:px-5 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-zinc-800/80 shrink-0">
+                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">Select Account</span>
                 <button
                   type="button"
-                  onClick={() => setShowAccountPicker(false)}
-                  className="w-6 h-6 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white"
+                  onClick={closeAccountPicker}
+                  className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
-                  <X size={12} />
+                  <X size={14} />
                 </button>
               </div>
 
-              <div className="space-y-1.5 max-h-60 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 p-2 sm:p-3">
                 {state.accounts.map((acc) => {
                   const isSelected = selectedAccountId === acc.id;
                   return (
@@ -1177,163 +1208,189 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                       onClick={() => {
                         triggerHaptic();
                         setSelectedAccountId(acc.id);
-                        setShowAccountPicker(false);
+                        closeAccountPicker();
                       }}
-                      className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between text-xs font-mono transition-all cursor-pointer ${
+                      className={`w-full py-3 px-4 rounded-xl flex items-center justify-between text-xs font-mono transition-all cursor-pointer min-h-[48px] ${
                         isSelected
-                          ? 'bg-white text-black font-bold'
+                          ? 'bg-white text-black font-bold shadow-xs'
                           : 'bg-[#14141a] text-zinc-300 hover:bg-zinc-800'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <WalletIcon size={14} className={isSelected ? 'text-black' : 'text-zinc-400'} />
-                        <span className="font-bold">{acc.name}</span>
+                        <span className="font-bold truncate">{acc.name}</span>
+                        <span className="text-[10px] text-zinc-500 font-mono uppercase">({acc.type})</span>
                       </div>
-                      {isSelected && <Check size={14} strokeWidth={3} />}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                          {formatCurrency(accountBalances[acc.id] ?? 0, state.settings.currencySymbol)}
+                        </span>
+                        {isSelected && <Check size={14} strokeWidth={3} className="text-black" />}
+                      </div>
                     </button>
                   );
                 })}
               </div>
+
+              {!showNumpad && (
+                <div className="p-3 sm:p-4 border-t border-zinc-800/80 bg-[#0c0c10] shrink-0 safe-bottom">
+                  <button
+                    type="button"
+                    onClick={closeAccountPicker}
+                    className="w-full py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold rounded-xl cursor-pointer shadow-md transition-all active:scale-95"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* 3. Custom Date & Time Selector Modal (Mobile) */}
-        {showDateTimePicker && (
+        {/* 3. Shared DateTime Picker Sub-Modal (mobile) — backdrop closes only this sub-modal. */}
+        {renderedDateTimePicker && (
           <div 
-            className="fixed inset-0 z-60 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
-            onClick={() => setShowDateTimePicker(false)}
+            className="fixed inset-0 z-60 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in cursor-pointer select-none"
+            onClick={closeDateTimePicker}
           >
             <div 
-              className="w-full max-w-sm bg-[#101014] border border-zinc-800 rounded-2xl md:rounded-3xl p-5 shadow-2xl space-y-4 font-mono max-h-[90vh] overflow-y-auto no-scrollbar"
+              className="w-full sm:max-w-sm bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl sm:max-h-[85vh] flex flex-col shadow-2xl safe-bottom cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+              {/* Handle bar */}
+              <div className="flex justify-center py-2 sm:hidden">
+                <div className="w-10 h-1 rounded-full bg-zinc-700" />
+              </div>
+
+              <div className="flex items-center justify-between px-4 sm:px-5 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-zinc-800/80 shrink-0">
                 <div className="flex items-center gap-2.5 text-white">
                   <div className="w-8 h-8 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-300">
                     <CalendarIcon size={16} />
                   </div>
-                  <span className="text-sm font-bold uppercase tracking-wider">Date & Time</span>
+                  <span className="text-sm font-bold text-white uppercase tracking-wider">Date & Time</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowDateTimePicker(false)}
+                  onClick={closeDateTimePicker}
                   className="w-7 h-7 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
                   <X size={14} />
                 </button>
               </div>
 
-              {/* 1. TOP CARD: Calendar Widget */}
-              <div className="bg-[#14141a] border border-zinc-800/80 rounded-2xl p-3.5 space-y-3">
-                <div className="flex items-center justify-between px-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic();
-                      const current = new Date(calendarYear, calendarMonth - 1, 1);
-                      setCalendarYear(current.getFullYear());
-                      setCalendarMonth(current.getMonth());
-                    }}
-                    className="w-7 h-7 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
-                  >
-                    <ChevronLeft size={14} />
-                  </button>
-                  <span className="text-xs font-bold text-white tracking-wide">
-                    {new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'short', year: 'numeric' })}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic();
-                      const next = new Date(calendarYear, calendarMonth + 1, 1);
-                      setCalendarYear(next.getFullYear());
-                      setCalendarMonth(next.getMonth());
-                    }}
-                    className="w-7 h-7 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
-                  >
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 text-center">
-                  {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => (
-                    <span key={day} className="text-[9px] font-bold text-zinc-500 py-1">
-                      {day}
+              <div className="flex-1 overflow-y-auto no-scrollbar p-3 sm:p-4 space-y-3">
+                {/* Calendar Widget */}
+                <div className="bg-[#14141a] border border-zinc-800/80 rounded-2xl p-3.5 space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        const current = new Date(calendarYear, calendarMonth - 1, 1);
+                        setCalendarYear(current.getFullYear());
+                        setCalendarMonth(current.getMonth());
+                      }}
+                      className="w-7 h-7 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-xs font-bold text-white tracking-wide">
+                      {new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'short', year: 'numeric' })}
                     </span>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        const next = new Date(calendarYear, calendarMonth + 1, 1);
+                        setCalendarYear(next.getFullYear());
+                        setCalendarMonth(next.getMonth());
+                      }}
+                      className="w-7 h-7 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1 text-center">
+                    {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => (
+                      <span key={day} className="text-[9px] font-bold text-zinc-500 py-1">
+                        {day}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1">
+                    {calendarDays.map((item, idx) => {
+                      const isSelected = item.isCurrentMonth && item.dateStr === date;
+                      const isTodayDate = item.dateStr === new Date().toISOString().split('T')[0];
+
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            if (item.dateStr) {
+                              triggerHaptic();
+                              setDate(item.dateStr);
+                            }
+                          }}
+                          disabled={!item.isCurrentMonth}
+                          className={`h-7 rounded-full text-xs font-medium flex items-center justify-center transition-all cursor-pointer ${
+                            !item.isCurrentMonth
+                              ? 'text-zinc-700 pointer-events-none'
+                              : isSelected
+                              ? 'bg-white text-black font-bold shadow-md scale-105'
+                              : isTodayDate
+                              ? 'bg-zinc-800 text-white font-bold border border-zinc-700'
+                              : 'text-zinc-300 hover:bg-zinc-800/80'
+                          }`}
+                        >
+                          {item.day}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1">
-                  {calendarDays.map((item, idx) => {
-                    const isSelected = item.isCurrentMonth && item.dateStr === date;
-                    const isTodayDate = item.dateStr === new Date().toISOString().split('T')[0];
+                {/* Time Wheel */}
+                <div className="bg-[#14141a] border border-zinc-800/80 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400">Select Time</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        const now = new Date();
+                        const hh = String(now.getHours()).padStart(2, '0');
+                        const mm = String(now.getMinutes()).padStart(2, '0');
+                        setTime(`${hh}:${mm}`);
+                      }}
+                      className="text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Set to Now
+                    </button>
+                  </div>
 
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          if (item.dateStr) {
-                            triggerHaptic();
-                            setDate(item.dateStr);
-                          }
-                        }}
-                        disabled={!item.isCurrentMonth}
-                        className={`h-7 rounded-full text-xs font-medium flex items-center justify-center transition-all cursor-pointer ${
-                          !item.isCurrentMonth
-                            ? 'text-zinc-700 pointer-events-none'
-                            : isSelected
-                            ? 'bg-white text-black font-bold shadow-md scale-105'
-                            : isTodayDate
-                            ? 'bg-zinc-800 text-white font-bold border border-zinc-700'
-                            : 'text-zinc-300 hover:bg-zinc-800/80'
-                        }`}
-                      >
-                        {item.day}
-                      </button>
-                    );
-                  })}
+                  <TimeWheelPicker
+                    time={time}
+                    setTime={setTime}
+                    active={renderedDateTimePicker}
+                    heightClass="h-48"
+                    paddingClass="py-[80px]"
+                    gradientBg="from-[#14141a]"
+                  />
                 </div>
               </div>
 
-              {/* 2. BOTTOM CARD: Scrollable Time Wheel Picker */}
-              <div className="bg-[#14141a] border border-zinc-800/80 rounded-2xl p-3.5 space-y-2">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-[10px] uppercase font-bold text-zinc-400">Select Time</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic();
-                      const now = new Date();
-                      const hh = String(now.getHours()).padStart(2, '0');
-                      const mm = String(now.getMinutes()).padStart(2, '0');
-                      setTime(`${hh}:${mm}`);
-                    }}
-                    className="text-[10px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                  >
-                    Set to Now
-                  </button>
-                </div>
-
-                {/* Time Wheel directly on outer card matching Desktop height & handlers */}
-                <TimeWheelPicker
-                  time={time}
-                  setTime={setTime}
-                  active={showDateTimePicker}
-                  heightClass="h-56"
-                  paddingClass="py-[96px]"
-                  gradientBg="from-[#14141a]"
-                />
+              <div className="p-3 sm:p-4 border-t border-zinc-800/80 bg-[#0c0c10] shrink-0 safe-bottom">
+                <button
+                  type="button"
+                  onClick={closeDateTimePicker}
+                  className="w-full py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold rounded-xl cursor-pointer shadow-md transition-all active:scale-95"
+                >
+                  Done
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setShowDateTimePicker(false)}
-                className="w-full py-3 bg-white hover:bg-zinc-200 text-black font-bold text-xs rounded-xl cursor-pointer shadow-md transition-all active:scale-95"
-              >
-                Done
-              </button>
             </div>
           </div>
         )}

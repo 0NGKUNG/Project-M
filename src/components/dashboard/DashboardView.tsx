@@ -148,9 +148,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-mono uppercase font-bold tracking-wider text-zinc-400">
-            Vault Wallets & Accounts ({state.accounts.length})
+            Accounts ({state.accounts.length})
           </span>
-          <span className="text-[11px] text-zinc-500">Tap account to view details & stats</span>
+          <span className="text-[11px] text-zinc-500">Tap account to view details</span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">

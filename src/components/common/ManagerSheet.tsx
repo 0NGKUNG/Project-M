@@ -6,6 +6,8 @@ import { useBackButton } from '../../hooks/useBackButton';
 interface ManagerSheetProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Optional title shown top-left (e.g. RECURRING, BORROW & LEND TRACKER). */
+  title?: string;
   children: React.ReactNode;
 }
 
@@ -15,8 +17,10 @@ interface ManagerSheetProps {
  * They used to be sub-tabs of Accounts (and, for recurring, a hidden Settings sub-page), which meant
  * you could only view them from one place. Hosting them in a sheet lets any screen open them for
  * reading while Settings keeps the "set things up" entry points.
+ *
+ * Close control lives bottom-center (thumb-friendly) and the sheet fills the whole screen on mobile.
  */
-export const ManagerSheet: React.FC<ManagerSheetProps> = ({ isOpen, onClose, children }) => {
+export const ManagerSheet: React.FC<ManagerSheetProps> = ({ isOpen, onClose, title, children }) => {
   useBackButton(isOpen, onClose);
 
   if (!isOpen) return null;
@@ -30,19 +34,26 @@ export const ManagerSheet: React.FC<ManagerSheetProps> = ({ isOpen, onClose, chi
         className="w-full sm:max-w-3xl lg:max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[88vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-end px-3 sm:px-5 pt-3 shrink-0">
+        {/* Header — title only, close moved to bottom-center */}
+        {title && (
+          <div className="flex items-center px-5 sm:px-6 pt-4 pb-3 shrink-0 border-b border-zinc-800/80">
+            <span className="text-base font-bold tracking-tight text-white font-mono uppercase">{title}</span>
+          </div>
+        )}
+
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-2 pt-4">{children}</div>
+
+        {/* Bottom-center close — thumb reach, no divider line */}
+        <div className="shrink-0 bg-[#0c0c10] px-5 pb-3 pt-1 safe-bottom flex justify-center">
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
+            className="flex items-center gap-2 px-10 py-2.5 rounded-full bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 hover:text-white text-xs font-mono font-bold transition-all cursor-pointer"
           >
             <X size={16} />
+            <span>Close</span>
           </button>
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pb-6 pt-1">
-          {children}
         </div>
       </div>
     </div>,

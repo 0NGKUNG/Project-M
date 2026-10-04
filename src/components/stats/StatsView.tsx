@@ -12,40 +12,68 @@ import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CashflowChart } from './CashflowChart';
 import { EditTransactionModal } from '../transactions/EditTransactionModal';
-import type { Transaction } from '../../types/finance';
-
-type TimeRange = 'day' | 'week' | 'month' | 'year' | 'all';
+import type { Transaction } from '../../types/finance';type TimeRange = 'day' | 'week' | 'month' | 'year' | 'all';
 type TypeFilter = 'all' | 'expense' | 'income' | 'transfer';
-
 export const StatsView: React.FC = () => {
   const { state } = useFinance();
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
+  const [viewMode, setViewMode] = useState<'pass' | 'current'>('pass');
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
-  // Filter transactions based on selected range
+  // Filter transactions based on selected range + view mode
   const filteredTransactions = useMemo(() => {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     return state.transactions.filter((tx) => {
       const txDate = new Date(tx.date);
-      if (timeRange === 'day') {
-        return tx.date === todayStr;
+      const txYear = txDate.getFullYear();
+      const txMonth = txDate.getMonth();
+
+      if (viewMode === 'current') {
+        // Current period: only up to today, future dates excluded
+        if (tx.date > todayStr) return false;
+        if (timeRange === 'day') {
+          return tx.date === todayStr;
+        }
+        if (timeRange === 'week') {
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+          weekStart.setHours(0, 0, 0, 0);
+          return txDate >= weekStart && txDate <= now;
+        }
+        if (timeRange === 'month') {
+          return txMonth === currentMonth && txYear === currentYear;
+        }
+        if (timeRange === 'year') {
+          return txYear === currentYear;
+        }
+        return true;
+      } else {
+        // Pass period: rolling window ending today
+        if (tx.date > todayStr) return false;
+        if (timeRange === 'day') {
+          return tx.date === todayStr;
+        }
+        if (timeRange === 'week') {
+          const weekAgo = new Date(now.getTime() - 7 * 86400000);
+          return txDate >= weekAgo && txDate <= now;
+        }
+        if (timeRange === 'month') {
+          const monthAgo = new Date(now.getTime() - 30 * 86400000);
+          return txDate >= monthAgo && txDate <= now;
+        }
+        if (timeRange === 'year') {
+          const yearAgo = new Date(now.getTime() - 365 * 86400000);
+          return txDate >= yearAgo && txDate <= now;
+        }
+        return true;
       }
-      if (timeRange === 'week') {
-        const weekAgo = new Date(now.getTime() - 7 * 86400000);
-        return txDate >= weekAgo && txDate <= now;
-      }
-      if (timeRange === 'month') {
-        return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
-      }
-      if (timeRange === 'year') {
-        return txDate.getFullYear() === now.getFullYear();
-      }
-      return true;
     });
-  }, [state.transactions, timeRange]);
+  }, [state.transactions, timeRange, viewMode]);
 
   // Aggregate stats
   const { totalIncome, totalExpense, categoryOutflows, categoryInflows } = useMemo(() => {
@@ -118,6 +146,9 @@ export const StatsView: React.FC = () => {
   // - 'week' and 'month': Group by day
   // - 'year' and 'all': Group by month
   const groupedTransactions = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
     const sorted = [...searchedTransactions].sort((a, b) => {
       if (timeRange === 'day') {
         const getHourVal = (tx: Transaction) => {
@@ -142,9 +173,20 @@ export const StatsView: React.FC = () => {
       transactions: typeof searchedTransactions;
       totalIncome: number;
       totalExpense: number;
+      isMarker?: boolean;
     }[] = [];
 
     const groupMap = new Map<string, (typeof groups)[number]>();
+
+    const addGroup = (key: string, label: string, isMarker = false) => {
+      let g = groupMap.get(key);
+      if (!g) {
+        g = { key, label, transactions: [], totalIncome: 0, totalExpense: 0, isMarker };
+        groupMap.set(key, g);
+        groups.push(g);
+      }
+      return g;
+    };
 
     sorted.forEach((tx) => {
       let groupKey: string;
@@ -164,8 +206,6 @@ export const StatsView: React.FC = () => {
       } else if (timeRange === 'week' || timeRange === 'month') {
         groupKey = tx.date;
         const d = new Date(tx.date + 'T00:00:00');
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
         const yesterday = new Date(now.getTime() - 86400000).toISOString().split('T')[0];
 
         if (tx.date === todayStr) {
@@ -190,58 +230,125 @@ export const StatsView: React.FC = () => {
         });
       }
 
-      let g = groupMap.get(groupKey);
-      if (!g) {
-        g = {
-          key: groupKey,
-          label: groupLabel,
-          transactions: [],
-          totalIncome: 0,
-          totalExpense: 0,
-        };
-        groupMap.set(groupKey, g);
-        groups.push(g);
-      }
-
+      const g = addGroup(groupKey, groupLabel);
       g.transactions.push(tx);
       if (tx.type === 'income') g.totalIncome += tx.amount;
       if (tx.type === 'expense') g.totalExpense += tx.amount;
     });
 
+    // In 'current' mode with year/month range, insert marker groups for future months/days with no data yet.
+    if (viewMode === 'current' && (timeRange === 'year' || timeRange === 'month')) {
+      const currentYear = now.getFullYear();
+      if (timeRange === 'year') {
+        // Ensure all 12 months of the current year appear in order.
+        for (let m = 0; m < 12; m++) {
+          const key = `${currentYear}-${String(m + 1).padStart(2, '0')}`;
+          if (!groupMap.has(key)) {
+            const d = new Date(currentYear, m, 1);
+            const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            addGroup(key, label, true);
+          }
+        }
+      } else if (timeRange === 'month') {
+        // Show all days of the current month; future days become empty markers.
+        const daysInMonth = new Date(currentYear, now.getMonth() + 1, 0).getDate();
+        for (let d = 1; d <= daysInMonth; d++) {
+          const key = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          if (!groupMap.has(key)) {
+            const dateObj = new Date(currentYear, now.getMonth(), d);
+            const label = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            addGroup(key, label, true);
+          }
+        }
+      }
+      // Re-sort: date keys in ascending order.
+      groups.sort((a, b) => a.key.localeCompare(b.key));
+    }
+
     return groups;
-  }, [searchedTransactions, timeRange]);
+  }, [searchedTransactions, timeRange, viewMode]);
 
   return (
-    <div className="space-y-3 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+    <div className="space-y-3 pb-[calc(82px+env(safe-area-inset-bottom))] md:pb-8 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
       {/* Timeframe Pill Selector - Always on the same row as STATS */}
       <div className="h-8 flex items-center justify-between pt-1 gap-2">
         <div className="shrink-0">
-          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white font-mono">STATS</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white font-mono">STATS</h2>
+        </div>
+        {/* Mobile-only Pass/Current toggle */}
+        <div className="flex sm:hidden bg-[#0d0d10] p-0.5 rounded-xl border border-zinc-800/80 shadow-sm">
+          <button
+            onClick={() => setViewMode('pass')}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
+              viewMode === 'pass' 
+                ? 'bg-[#1b1b20] text-white font-bold shadow-sm' 
+                : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
+            }`}
+          >
+            Past
+          </button>
+          <button
+            onClick={() => setViewMode('current')}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
+              viewMode === 'current' 
+                ? 'bg-[#1b1b20] text-white font-bold shadow-sm' 
+                : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
+            }`}
+          >
+            Current
+          </button>
         </div>
 
-        <div className="flex bg-[#0d0d10] p-0.5 sm:p-1 rounded-xl border border-zinc-800/80 shadow-sm shrink-0">
-          {(
-            [
-              { id: 'day', short: 'D', full: 'Day' },
-              { id: 'week', short: 'W', full: 'Week' },
-              { id: 'month', short: 'M', full: 'Month' },
-              { id: 'year', short: 'Y', full: 'Year' },
-              { id: 'all', short: 'All', full: 'All' },
-            ] as const
-          ).map((item) => (
+        <div className="flex items-center gap-1 bg-[#0d0d10] p-0.5 sm:p-1 rounded-xl border border-zinc-800/80 shadow-sm">
+          {/* Time range pills */}
+          <div className="flex bg-[#0d0d10] p-0.5 sm:p-1 rounded-xl border border-zinc-800/80 shadow-sm">
+            {(
+              [
+                { id: 'day', short: 'D', full: 'Day' },
+                { id: 'week', short: 'W', full: 'Week' },
+                { id: 'month', short: 'M', full: 'Month' },
+                { id: 'year', short: 'Y', full: 'Year' },
+                { id: 'all', short: 'All', full: 'All' },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setTimeRange(item.id as TimeRange)}
+                className={`px-2 sm:px-3 py-1 rounded-lg text-xs font-mono font-medium capitalize transition-all cursor-pointer whitespace-nowrap ${
+                  timeRange === item.id 
+                    ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' 
+                    : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
+                }`}
+              >
+                <span className="sm:hidden">{item.short}</span>
+                <span className="hidden sm:inline">{item.full}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Pass / Current toggle */}
+          <div className="hidden sm:flex bg-[#0d0d10] p-0.5 rounded-xl border border-zinc-800/80 shadow-sm">
             <button
-              key={item.id}
-              onClick={() => setTimeRange(item.id as TimeRange)}
-              className={`px-2 sm:px-3 py-1 rounded-lg text-xs font-mono font-medium capitalize transition-all cursor-pointer whitespace-nowrap ${
-                timeRange === item.id 
+              onClick={() => setViewMode('pass')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
+                viewMode === 'pass' 
                   ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' 
                   : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
               }`}
             >
-              <span className="sm:hidden">{item.short}</span>
-              <span className="hidden sm:inline">{item.full}</span>
+              Past
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode('current')}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
+                viewMode === 'current' 
+                  ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' 
+                  : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
+              }`}
+            >
+              Current
+            </button>
+          </div>
         </div>
       </div>
 
@@ -249,22 +356,22 @@ export const StatsView: React.FC = () => {
       <div className="space-y-3">
         {/* Summary Metrics - Income and Expenses */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          <div className="bg-[#101014] rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[60px] sm:h-[80px]">
-            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-3.5 sm:h-4">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[72px] sm:h-[80px]">
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <ArrowDownLeft size={13} className="text-emerald-400 shrink-0" />
               <span className="truncate">Income</span>
             </div>
-            <div className="text-xs sm:text-lg font-bold font-mono text-emerald-400 truncate leading-none">
+            <div className="text-sm sm:text-lg font-bold font-mono text-emerald-400 truncate leading-none">
               +{formatCurrency(totalIncome, state.settings.currencySymbol)}
             </div>
           </div>
 
-          <div className="bg-[#101014] rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[60px] sm:h-[80px]">
-            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-3.5 sm:h-4">
+          <div className="bg-[#101014] rounded-2xl p-3 sm:p-3.5 border border-zinc-900/60 shadow-sm flex flex-col justify-between h-[72px] sm:h-[80px]">
+            <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-mono uppercase font-bold tracking-wider h-4">
               <ArrowUpRight size={13} className="text-rose-400 shrink-0" />
               <span className="truncate">Expenses</span>
             </div>
-            <div className="text-xs sm:text-lg font-bold font-mono text-rose-400 truncate leading-none">
+            <div className="text-sm sm:text-lg font-bold font-mono text-rose-400 truncate leading-none">
               -{formatCurrency(totalExpense, state.settings.currencySymbol)}
             </div>
           </div>
@@ -575,7 +682,7 @@ export const StatsView: React.FC = () => {
       </div>
 
       {/* Grouped Transactions List */}
-      <div className="bg-[#101014] rounded-xl sm:rounded-2xl p-3.5 sm:p-6 border border-zinc-900/60 shadow-sm space-y-3 sm:space-y-4">
+      <div className="bg-[#101014] rounded-xl sm:rounded-2xl p-3.5 sm:p-6 border border-zinc-900/60 shadow-sm space-y-3 sm:space-y-4 lg:flex-1 lg:flex lg:flex-col">
         {/* Card Header & Controls */}
         <div className="space-y-2.5 sm:space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
@@ -635,7 +742,7 @@ export const StatsView: React.FC = () => {
         </div>
 
         {groupedTransactions.length === 0 ? (
-          <div className="p-6 sm:p-8 text-center space-y-1.5 sm:space-y-2">
+          <div className="p-6 sm:p-8 text-center space-y-1.5 sm:space-y-2 lg:flex-1 lg:flex lg:flex-col lg:items-center lg:justify-center">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
               <CalendarIcon size={16} />
             </div>
@@ -651,18 +758,26 @@ export const StatsView: React.FC = () => {
             {groupedTransactions.map((group) => (
               <div key={group.key} className="space-y-1.5 sm:space-y-2">
                 {/* Group Header */}
-                <div className="flex items-center justify-between px-1 text-[10px] sm:text-[11px] font-mono border-b border-zinc-900/80 pb-1 sm:pb-1.5">
-                  <span className="font-semibold text-zinc-300">{group.label}</span>
+                <div className={`flex items-center justify-between px-1 text-[10px] sm:text-[11px] font-mono border-b border-zinc-900/80 pb-1 sm:pb-1.5 ${
+                  group.isMarker ? 'text-zinc-600 border-zinc-900/40' : 'text-zinc-300'
+                }`}>
+                  <span className={group.isMarker ? 'italic text-zinc-600' : 'font-semibold text-zinc-300'}>{group.label}</span>
                   <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px]">
-                    {group.totalIncome > 0 && (
-                      <span className="text-emerald-400">
-                        +{formatCurrency(group.totalIncome, state.settings.currencySymbol)}
-                      </span>
-                    )}
-                    {group.totalExpense > 0 && (
-                      <span className="text-rose-400">
-                        -{formatCurrency(group.totalExpense, state.settings.currencySymbol)}
-                      </span>
+                    {group.isMarker ? (
+                      <span className="text-zinc-700 italic text-[9px]">no data yet</span>
+                    ) : (
+                      <>
+                        {group.totalIncome > 0 && (
+                          <span className="text-emerald-400">
+                            +{formatCurrency(group.totalIncome, state.settings.currencySymbol)}
+                          </span>
+                        )}
+                        {group.totalExpense > 0 && (
+                          <span className="text-rose-400">
+                            -{formatCurrency(group.totalExpense, state.settings.currencySymbol)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -708,7 +823,7 @@ export const StatsView: React.FC = () => {
                                   <span>•</span>
                                 </>
                               )}
-                              <span className="truncate">{account?.name || 'Wallet'}</span>
+                              <span className="truncate">{account?.name || 'Account'}</span>
                               {tx.note && (
                                 <>
                                   <span>•</span>

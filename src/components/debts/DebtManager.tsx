@@ -5,8 +5,7 @@ import {
   Plus, 
   ArrowUpRight, 
   ArrowDownLeft, 
-  Trash2,
-  X
+  Trash2
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../common/Icons';
@@ -73,12 +72,12 @@ export const DebtManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-full flex flex-col">
       {/* Top Banner & Summary */}
       <div className="flex items-center justify-between">
         <div>
           <span className="text-xs font-mono font-bold tracking-wider text-zinc-400 uppercase block">
-            Borrow & Lend Tracker ({debtList.length})
+            Debts ({debtList.length})
           </span>
         </div>
 
@@ -92,7 +91,7 @@ export const DebtManager: React.FC = () => {
       </div>
 
       {debtList.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/40 text-center space-y-2">
+        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/40 text-center space-y-2 flex-1 flex flex-col items-center justify-center">
           <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
             <Users size={18} />
           </div>
@@ -100,7 +99,7 @@ export const DebtManager: React.FC = () => {
           <p className="text-[10px] text-zinc-600">Track money lent to friends or borrowed amounts with due dates.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:flex-1 lg:content-start">
           {debtList.map((debt) => {
             const isLend = debt.type === 'lend';
             const isSettled = debt.status === 'settled';
@@ -229,20 +228,13 @@ export const DebtManager: React.FC = () => {
               className="w-full sm:max-w-xl md:max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
+              <div className="flex items-center px-4 sm:px-6 pt-4 pb-3 border-b border-zinc-800/80 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
                     <Users size={16} />
                   </div>
                   <h3 className="text-sm sm:text-base font-bold text-white font-mono">Track Borrow or Loan</h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
-                >
-                  <X size={16} />
-                </button>
               </div>
 
               <form onSubmit={handleCreate} className="flex-1 flex flex-col min-h-0">
@@ -291,7 +283,7 @@ export const DebtManager: React.FC = () => {
                       <CurrencyInput
                         currencySymbol={state.settings.currencySymbol}
                         type="number"
-                        placeholder="0.00"
+                        placeholder="e.g. 500"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         className="w-full h-11 bg-[#16161d] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
@@ -323,17 +315,10 @@ export const DebtManager: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] flex justify-end gap-2.5 shrink-0 safe-bottom">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
-                  >
-                    Cancel
-                  </button>
+                <div className="p-4 sm:p-6 border-t border-zinc-800/80 bg-[#0c0c10] shrink-0 safe-bottom">
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
+                    className="w-full py-3 bg-white text-black text-xs font-bold font-mono rounded-full cursor-pointer active:scale-[0.98] hover:bg-zinc-200 transition-all shadow-md"
                   >
                     Save Entry
                   </button>

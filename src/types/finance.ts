@@ -50,6 +50,8 @@ export interface RecurringItem {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   nextDueDate: string; // ISO date YYYY-MM-DD
   isActive: boolean;
+  /** ms timestamp of the last auto-posted transaction — powers the "just executed" notification dot. localStorage-only. */
+  lastExecutedAt?: number;
 }
 
 export interface DebtItem {
@@ -72,12 +74,14 @@ export interface BudgetCategoryAllocation {
 export interface Budget {
   id: string;
   name?: string;
-  categoryId?: string; // For single category legacy compatibility
+  categoryId?: string; // For single-category (legacy) budgets
   amount: number; // Overall limit
-  period: 'daily' | 'weekly' | 'monthly' | 'custom';
+  period: 'daily' | 'weekly' | 'monthly'; // auto-reset each period; no custom range
   startDate?: string; // YYYY-MM-DD
   endDate?: string;   // YYYY-MM-DD
   categories?: BudgetCategoryAllocation[];
+  // Auto-reset is intrinsic to the period: daily resets daily, weekly resets each week start day, monthly resets on the 1st.
+  // The old isRecurring flag is ignored; all budgets of a given period auto-roll.
 }
 
 export interface FinanceSettings {

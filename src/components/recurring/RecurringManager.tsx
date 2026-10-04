@@ -5,8 +5,7 @@ import {
   Plus, 
   Trash2, 
   CheckCircle2,
-  ArrowLeft,
-  X
+  ArrowLeft
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -134,7 +133,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
   }, [frequency, repeatEvery]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -160,7 +159,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
       </div>
 
       {recurringList.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/40 text-center space-y-2">
+        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/40 text-center space-y-2 flex-1 flex flex-col items-center justify-center">
           <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
             <RefreshCw size={18} />
           </div>
@@ -168,7 +167,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
           <p className="text-[10px] text-zinc-600">Track rent, Spotify, Netflix, gym memberships, or routine income.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:flex-1 lg:content-start">
           {recurringList.map((item) => {
             const cat = getCategory(item.categoryId);
             const acc = getAccount(item.accountId);
@@ -195,7 +194,7 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                           </span>
                         </div>
                         <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                          {acc?.name || 'Wallet'} • Due: {item.nextDueDate}
+                          {acc?.name || 'Account'} • Due: {item.nextDueDate}
                         </div>
                       </div>
                     </div>
@@ -240,20 +239,13 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
               className="w-full sm:max-w-xl md:max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-[#0c0c10] sm:border border-zinc-800 rounded-none sm:rounded-3xl flex flex-col shadow-2xl safe-top safe-bottom overflow-hidden cursor-default"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-3 border-b border-zinc-800/80 shrink-0">
+              <div className="flex items-center px-4 sm:px-6 pt-4 pb-3 border-b border-zinc-800/80 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
                     <RefreshCw size={16} />
                   </div>
                   <h3 className="text-sm sm:text-base font-bold text-white font-mono">New Recurring Item</h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="p-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white cursor-pointer transition-colors"
-                >
-                  <X size={16} />
-                </button>
               </div>
 
               <form onSubmit={handleCreate} className="flex-1 min-h-0 flex flex-col">
@@ -301,9 +293,9 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                     />
                   </div>
 
-                  {/* Wallet */}
+                  {/* Account */}
                   <div>
-                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">Wallet</label>
+                    <label className="text-[10px] text-zinc-400 font-mono uppercase font-bold block mb-1.5">Account</label>
                     <CustomSelect
                       value={accountId || state.accounts[0]?.id || ''}
                       onChange={(val) => setAccountId(val)}
@@ -439,17 +431,10 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
                 </div>
 
                 {/* Actions (Sticky bottom bar) */}
-                <div className="p-4 sm:px-6 border-t border-zinc-800/80 bg-[#0c0c10] flex justify-end gap-2.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => { resetForm(); setShowAddModal(false); }}
-                    className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-colors"
-                  >
-                    Cancel
-                  </button>
+                <div className="p-4 sm:px-6 border-t border-zinc-800/80 bg-[#0c0c10] shrink-0 safe-bottom">
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-white text-black text-xs font-bold font-mono rounded-xl cursor-pointer active:scale-95 hover:bg-zinc-200 transition-all shadow-md"
+                    className="w-full py-3 bg-white text-black text-xs font-bold font-mono rounded-full cursor-pointer active:scale-[0.98] hover:bg-zinc-200 transition-all shadow-md"
                   >
                     Save Item
                   </button>

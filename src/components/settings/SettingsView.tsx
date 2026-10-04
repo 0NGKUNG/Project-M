@@ -28,6 +28,7 @@ import { CategoryIcon, formatCurrency } from '../common/Icons';
 import { CustomDateInput } from '../common/CustomDatePicker';
 import type { Account, Budget, BudgetCategoryAllocation, Category } from '../../types/finance';
 import { useBackButton } from '../../hooks/useBackButton';
+import { getBudgetSpending, getBudgetPercent, getBudgetDaysLeft, getCategoryAllocPercent } from '../../utils/budgetMath';
 
 type SettingsSubPage = null | 'goals' | 'categories';
 
@@ -211,32 +212,11 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setEditingBudgetId(null);
   };
 
-  // Helper to compute spendings in range for a budget
-  const getBudgetSpending = (budget: Budget) => {
-    const start = budget.startDate ? new Date(budget.startDate) : null;
-    const end = budget.endDate ? new Date(budget.endDate) : null;
-    if (end) end.setHours(23, 59, 59, 999);
-
-    const relevantTxs = state.transactions.filter((tx) => {
-      if (tx.type !== 'expense') return false;
-      const txDate = new Date(tx.date);
-      if (start && txDate < start) return false;
-      if (end && txDate > end) return false;
-      return true;
-    });
-
-    const totalSpent = relevantTxs.reduce((sum, tx) => sum + tx.amount, 0);
-
-    const categorySpent: Record<string, number> = {};
-    relevantTxs.forEach((tx) => {
-      categorySpent[tx.categoryId] = (categorySpent[tx.categoryId] || 0) + tx.amount;
-    });
-
-    return { totalSpent, categorySpent };
-  };
+  // Budget math comes from the shared utils/budgetMath helper (same numbers as Today's budget sheet)
+  const getBudgetSpendingFor = (budget: Budget) => getBudgetSpending(budget, state.transactions);
 
   return (
-    <div className="space-y-3 animate-fade-in">
+    <div className="space-y-3 animate-fade-in min-h-full flex flex-col flex-1">
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -260,7 +240,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {/* List of Budgets matching reference 1 & 2 */}
       {state.budgets.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/60 text-center space-y-2">
+        <div className="p-8 rounded-2xl bg-[#101014] border border-zinc-900/60 text-center space-y-2 flex-1 flex flex-col items-center justify-center">
           <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mx-auto">
             <Target size={18} />
           </div>
@@ -278,8 +258,8 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       ) : (
         <div className="space-y-4">
           {state.budgets.map((b) => {
-            const { totalSpent, categorySpent } = getBudgetSpending(b);
-            const percent = Math.min(100, Math.round((totalSpent / b.amount) * 100));
+            const { totalSpent, categorySpent } = getBudgetSpendingFor(b);
+            const percent = getBudgetPercent(b, totalSpent);
 
             return (
               <div
@@ -315,11 +295,9 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                 {/* Subcategory mini chips row (Reference styling) */}
                 {b.categories && b.categories.length > 0 && (
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-0.5">
-                    {b.categories.map((catAlloc) => {
-                      const cat = state.categories.find((c) => c.id === catAlloc.categoryId);
-                      const catUsed = categorySpent[catAlloc.categoryId] || 0;
-                      const catPercent = Math.min(100, Math.round((catUsed / catAlloc.amount) * 100));
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-0.5">                      {b.categories.map((catAlloc) => {
+                        const cat = state.categories.find((c) => c.id === catAlloc.categoryId);
+                        const catPercent = getCategoryAllocPercent(catAlloc, categorySpent);
 
                       return (
                         <div
@@ -348,16 +326,12 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {/* Goal Detail & Action Sheet Modal (Matching 1st reference screenshot) */}
       {selectedGoal && (() => {
-        const { totalSpent, categorySpent } = getBudgetSpending(selectedGoal);
-        const percent = Math.min(100, Math.round((totalSpent / selectedGoal.amount) * 100));
+        const { totalSpent, categorySpent } = getBudgetSpendingFor(selectedGoal);
+        const percent = getBudgetPercent(selectedGoal, totalSpent);
         const remaining = Math.max(0, selectedGoal.amount - totalSpent);
 
         // Days left calculation
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const end = selectedGoal.endDate ? new Date(selectedGoal.endDate) : today;
-        end.setHours(0, 0, 0, 0);
-        const daysLeft = Math.max(1, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        const daysLeft = getBudgetDaysLeft(selectedGoal);
         const dailyAllowance = (remaining / daysLeft).toFixed(2);
 
         return createPortal(
@@ -410,8 +384,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {selectedGoal.categories.map((c) => {
                       const cat = state.categories.find((item) => item.id === c.categoryId);
-                      const spent = categorySpent[c.categoryId] || 0;
-                      const catPct = Math.min(100, Math.round((spent / c.amount) * 100));
+                      const catPct = getCategoryAllocPercent(c, categorySpent);
 
                       return (
                         <div
@@ -672,6 +645,7 @@ const GoalsSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { state, addCategory, deleteCategory } = useFinance();
   const [tab, setTab] = useState<'expense' | 'income'>('expense');
+  // Root is a stretching flex column so the empty state can fill leftover height on desktop.
 
   // Modals
   const [selectedParentCat, setSelectedParentCat] = useState<Category | null>(null);
@@ -743,7 +717,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   ];
 
   return (
-    <div className="space-y-3 animate-fade-in">
+    <div className="space-y-3 animate-fade-in min-h-full flex flex-col flex-1">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -815,7 +789,9 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {parentCategories.length === 0 && (
-        <div className="text-center text-xs text-zinc-600 py-12">No {tab} categories yet</div>
+        <div className="text-center text-xs text-zinc-600 py-12 flex-1 flex items-center justify-center">
+          No {tab} categories yet
+        </div>
       )}
 
       {/* Parent Category Action Modal (Matching 3rd reference screenshot) */}
@@ -1127,14 +1103,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
   // ── Sub-pages ──
   if (subPage === 'goals')
     return (
-      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
         <GoalsSubPage onBack={() => setSubPage(null)} />
       </div>
     );
 
   if (subPage === 'categories')
     return (
-      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+      <div className="space-y-6 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
         <CategoriesSubPage onBack={() => setSubPage(null)} />
       </div>
     );
@@ -1194,7 +1170,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-medium text-white">Start Day of Week</div>
             <div className="text-[10px] text-zinc-500 font-mono">
-              Calendar &amp; weekly calculations
+              Calendar — weekly calculations
             </div>
           </div>
           <div className="w-40 shrink-0">
@@ -1240,31 +1216,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
         <Row
           icon={<Tag size={15} />}
           title="Categories"
-          subtitle="Manage parent & subcategories"
+          subtitle="Manage parent and subcategories"
           onClick={() => setSubPage('categories')}
         />
         <Row
           icon={<Target size={15} />}
-          title="Budgets"
-          subtitle="Set range budgets & category allocations"
+          title="Budgets"            subtitle="Set range budgets and category allocations"
           onClick={() => setSubPage('goals')}
         />
         <Row
           icon={<RefreshCw size={15} />}
-          title={`Recurring & Subscriptions (${state.recurring?.length || 0})`}
-          subtitle="Manage scheduled bills, salaries & subscriptions"
+          title={`Recurring (${state.recurring?.length || 0})`}
+          subtitle="Manage scheduled bills, salaries and subscriptions"
           onClick={() => onOpenManager?.('recurring')}
         />
         <Row
           icon={<HandCoins size={15} />}
-          title={`Borrow & Lend (${state.debts?.filter((d) => d.status === 'active').length || 0})`}
+          title={`Debts (${state.debts?.filter((d) => d.status === 'active').length || 0})`}
           subtitle="Track money lent to friends or borrowed amounts"
           onClick={() => onOpenManager?.('debts')}
         />
         <Row
           icon={<Wallet size={15} />}
-          title={`Wallets & Accounts (${state.accounts.length})`}
-          subtitle="Add or remove linked wallets"
+          title={`Accounts (${state.accounts.length})`}
+          subtitle="Add or remove linked accounts"
           onClick={() => setShowWallets(!showWallets)}
           right={
             <ChevronRight
@@ -1283,7 +1258,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
               >
                 <input
                   type="text"
-                  placeholder="Wallet name (e.g. PayPal)"
+                  placeholder="Account name (e.g. PayPal)"
                   value={newAccName}
                   onChange={(e) => setNewAccName(e.target.value)}
                   className="w-full h-11 bg-[#101014] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-600 transition-colors"
@@ -1350,14 +1325,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
               onClick={() => setShowAddAcc(true)}
               className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer transition-colors mt-1"
             >
-              <Plus size={13} /> Add wallet
+              <Plus size={13} /> Add account
             </button>
           </div>
         )}
       </Card>
 
       {/* ── Data ── */}
-      <SectionLabel>Data &amp; Backup</SectionLabel>
+      <SectionLabel>Data</SectionLabel>
       <Card>
         <Row
           icon={<Download size={15} />}
@@ -1397,7 +1372,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenManager }) => 
         </div>
         <Row
           icon={<LogOut size={15} />}
-          title="Lock &amp; Sign Out"
+          title="Sign Out"
           subtitle="Log out and lock the vault"
           onClick={() => {
             if (window.confirm('Lock vault and sign out?')) supabase?.auth.signOut();

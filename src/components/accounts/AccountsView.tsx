@@ -62,7 +62,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   };
 
   return (
-    <div className="space-y-3 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none">
+    <div className="space-y-3 pb-28 md:pb-12 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
       {/* Header */}
       <div className="h-8 flex items-center justify-between pt-1">
         <div>
@@ -78,7 +78,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         </button>
       </div>
 
-      {/* Wallets & Asset Distribution */}
+      {/* Accounts & Asset Distribution */}
       <div className="space-y-3 animate-fade-in">
           {/* Net Worth Hero Card */}
           <div className="bg-gradient-to-br from-[#15151b] via-[#101014] to-[#0c0c0e] rounded-2xl p-5 sm:p-7 border border-zinc-800/80 shadow-xl relative overflow-hidden">
@@ -232,7 +232,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. Kasikorn Bank, Main Wallet"
+                        placeholder="e.g. Kasikorn Bank, SCB"
                         value={newAccName}
                         onChange={(e) => setNewAccName(e.target.value)}
                         className="w-full h-11 bg-[#14141c] rounded-xl px-3.5 text-xs text-white focus:outline-none border border-zinc-800/80 focus:border-zinc-500 transition-colors"
