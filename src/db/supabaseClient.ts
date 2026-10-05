@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Retrieve credentials from Vite env or fallback to empty strings
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '')
+  .trim()
+  .replace(/\/rest\/v1\/?$/, '')
+  .replace(/\/+$/, '');
+export const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 export const isSupabaseConfigured = Boolean(
   SUPABASE_URL && 
