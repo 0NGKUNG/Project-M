@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Target, 
-  AlertCircle,
   ArrowDownLeft,
   ArrowUpRight,
   Calendar as CalendarIcon,
@@ -9,6 +7,7 @@ import {
   X
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
+import { formatLocalDate } from '../../utils/budgetMath';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
 import { CashflowChart } from './CashflowChart';
 import { EditTransactionModal } from '../transactions/EditTransactionModal';
@@ -22,10 +21,25 @@ export const StatsView: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
+  // "All" spans the full history, so Past/Current has no meaning there.
+  const allRangeActive = timeRange === 'all';
+
+  // The calendar day the Day range is showing: today for Current, yesterday for Past.
+  const dayWindowLabel = useMemo(() => {
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (viewMode !== 'current') d.setDate(d.getDate() - 1);
+    return d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  }, [viewMode]);
+
   // Filter transactions based on selected range + view mode
   const filteredTransactions = useMemo(() => {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = formatLocalDate(now);
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     return state.transactions.filter((tx) => {
@@ -40,10 +54,11 @@ export const StatsView: React.FC = () => {
           return tx.date === todayStr;
         }
         if (timeRange === 'week') {
-          const weekStart = new Date(now);
-          weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-          weekStart.setHours(0, 0, 0, 0);
-          return txDate >= weekStart && txDate <= now;
+          // Current week starts on the configured Week Start day (0=Sun, 1=Mon, 6=Sat).
+          const weekStartDay = state.settings.weekStartDay ?? 1;
+          const diff = (now.getDay() < weekStartDay ? 7 : 0) + now.getDay() - weekStartDay;
+          const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+          return tx.date >= formatLocalDate(weekStart) && tx.date <= todayStr;
         }
         if (timeRange === 'month') {
           return txMonth === currentMonth && txYear === currentYear;
@@ -56,7 +71,10 @@ export const StatsView: React.FC = () => {
         // Pass period: rolling window ending today
         if (tx.date > todayStr) return false;
         if (timeRange === 'day') {
-          return tx.date === todayStr;
+          // Past + Day = the previous completed calendar day.
+          const pastDay = new Date(now);
+          pastDay.setDate(now.getDate() - 1);
+          return tx.date === formatLocalDate(pastDay);
         }
         if (timeRange === 'week') {
           const weekAgo = new Date(now.getTime() - 7 * 86400000);
@@ -67,13 +85,14 @@ export const StatsView: React.FC = () => {
           return txDate >= monthAgo && txDate <= now;
         }
         if (timeRange === 'year') {
-          const yearAgo = new Date(now.getTime() - 365 * 86400000);
-          return txDate >= yearAgo && txDate <= now;
+          // Same 12-month window as the chart's Past/Year spine.
+          const yearStart = new Date(currentYear, currentMonth - 11, 1);
+          return tx.date >= formatLocalDate(yearStart) && tx.date <= todayStr;
         }
         return true;
       }
     });
-  }, [state.transactions, timeRange, viewMode]);
+  }, [state.transactions, timeRange, viewMode, state.settings.weekStartDay]);
 
   // Aggregate stats
   const { totalIncome, totalExpense, categoryOutflows, categoryInflows } = useMemo(() => {
@@ -147,7 +166,7 @@ export const StatsView: React.FC = () => {
   // - 'year' and 'all': Group by month
   const groupedTransactions = useMemo(() => {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = formatLocalDate(now);
 
     const sorted = [...searchedTransactions].sort((a, b) => {
       if (timeRange === 'day') {
@@ -173,15 +192,14 @@ export const StatsView: React.FC = () => {
       transactions: typeof searchedTransactions;
       totalIncome: number;
       totalExpense: number;
-      isMarker?: boolean;
     }[] = [];
 
     const groupMap = new Map<string, (typeof groups)[number]>();
 
-    const addGroup = (key: string, label: string, isMarker = false) => {
+    const addGroup = (key: string, label: string) => {
       let g = groupMap.get(key);
       if (!g) {
-        g = { key, label, transactions: [], totalIncome: 0, totalExpense: 0, isMarker };
+        g = { key, label, transactions: [], totalIncome: 0, totalExpense: 0 };
         groupMap.set(key, g);
         groups.push(g);
       }
@@ -203,10 +221,12 @@ export const StatsView: React.FC = () => {
         const hourPadded = hour.toString().padStart(2, '0');
         groupKey = `hour-${hourPadded}`;
         groupLabel = `${hourPadded}:00 - ${hourPadded}:59`;
-      } else if (timeRange === 'week' || timeRange === 'month') {
+      } else if (timeRange === 'week' || timeRange === 'month' || timeRange === 'all') {
         groupKey = tx.date;
         const d = new Date(tx.date + 'T00:00:00');
-        const yesterday = new Date(now.getTime() - 86400000).toISOString().split('T')[0];
+        const yesterdayDate = new Date(now);
+        yesterdayDate.setDate(now.getDate() - 1);
+        const yesterday = formatLocalDate(yesterdayDate);
 
         if (tx.date === todayStr) {
           groupLabel = 'Today';
@@ -236,72 +256,56 @@ export const StatsView: React.FC = () => {
       if (tx.type === 'expense') g.totalExpense += tx.amount;
     });
 
-    // In 'current' mode with year/month range, insert marker groups for future months/days with no data yet.
-    if (viewMode === 'current' && (timeRange === 'year' || timeRange === 'month')) {
-      const currentYear = now.getFullYear();
-      if (timeRange === 'year') {
-        // Ensure all 12 months of the current year appear in order.
-        for (let m = 0; m < 12; m++) {
-          const key = `${currentYear}-${String(m + 1).padStart(2, '0')}`;
-          if (!groupMap.has(key)) {
-            const d = new Date(currentYear, m, 1);
-            const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            addGroup(key, label, true);
-          }
-        }
-      } else if (timeRange === 'month') {
-        // Show all days of the current month; future days become empty markers.
-        const daysInMonth = new Date(currentYear, now.getMonth() + 1, 0).getDate();
-        for (let d = 1; d <= daysInMonth; d++) {
-          const key = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          if (!groupMap.has(key)) {
-            const dateObj = new Date(currentYear, now.getMonth(), d);
-            const label = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-            addGroup(key, label, true);
-          }
-        }
-      }
-      // Re-sort: date keys in ascending order.
-      groups.sort((a, b) => a.key.localeCompare(b.key));
-    }
-
+    // Only groups that actually contain transactions are listed — no empty
+    // "no data yet" placeholder days/months.
     return groups;
-  }, [searchedTransactions, timeRange, viewMode]);
+  }, [searchedTransactions, timeRange]);
 
   return (
     <div className="space-y-3 pb-[calc(82px+env(safe-area-inset-bottom))] md:pb-8 px-4 md:px-8 w-full animate-fade-in select-none min-h-full flex flex-col">
-      {/* Timeframe Pill Selector - Always on the same row as STATS */}
-      <div className="h-8 flex items-center justify-between pt-1 gap-2">
-        <div className="shrink-0">
-          <h2 className="text-xl font-bold tracking-tight text-white font-mono">STATS</h2>
-        </div>
-        {/* Mobile-only Pass/Current toggle */}
-        <div className="flex sm:hidden bg-[#0d0d10] p-0.5 rounded-xl border border-zinc-800/80 shadow-sm">
-          <button
-            onClick={() => setViewMode('pass')}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
-              viewMode === 'pass' 
-                ? 'bg-[#1b1b20] text-white font-bold shadow-sm' 
-                : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
+      {/* Header — page title + filters */}
+      <div className="h-8 flex items-center justify-between pt-1">
+        <h2 className="text-xl font-bold tracking-tight text-white font-mono">STATS</h2>        <div className="flex items-center gap-1.5">
+          {/* Past / Current — inert while "All" is selected (full history has no current/past split) */}
+          <div
+            className={`inline-flex bg-[#101014] p-0.5 rounded-2xl border border-zinc-900/60 shadow-sm transition-opacity ${
+              allRangeActive ? 'opacity-40' : ''
             }`}
+            title={allRangeActive ? 'All covers your full history - Past/Current does not apply' : undefined}
           >
-            Past
-          </button>
-          <button
-            onClick={() => setViewMode('current')}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
-              viewMode === 'current' 
-                ? 'bg-[#1b1b20] text-white font-bold shadow-sm' 
-                : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
+            <button
+              onClick={() => setViewMode('pass')}
+              disabled={allRangeActive}
+              className={`relative px-2.5 py-1.5 rounded-xl text-[11px] font-mono font-medium transition-all duration-200 whitespace-nowrap ${
+                allRangeActive
+                  ? 'text-zinc-600 cursor-not-allowed'
+                  : viewMode === 'pass'
+                    ? 'bg-white text-black font-bold shadow-[0_2px_10px_-2px_rgba(0,0,0,0.45)] cursor-pointer'
+                    : 'text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-200 cursor-pointer'
             }`}
-          >
-            Current
-          </button>
-        </div>
+            >
+              Past
+            </button>
+            <button
+              onClick={() => setViewMode('current')}
+              disabled={allRangeActive}
+              className={`relative px-2.5 py-1.5 rounded-xl text-[11px] font-mono font-medium transition-all duration-200 whitespace-nowrap ${
+                allRangeActive
+                  ? 'text-zinc-600 cursor-not-allowed'
+                  : viewMode === 'current'
+                    ? 'bg-white text-black font-bold shadow-[0_2px_10px_-2px_rgba(0,0,0,0.45)] cursor-pointer'
+                    : 'text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-200 cursor-pointer'
+            }`}
+            >
+              Current
+            </button>
+          </div>
 
-        <div className="flex items-center gap-1 bg-[#0d0d10] p-0.5 sm:p-1 rounded-xl border border-zinc-800/80 shadow-sm">
+          {/* Separator */}
+          <div className="w-px h-4 bg-zinc-800" />
+
           {/* Time range pills */}
-          <div className="flex bg-[#0d0d10] p-0.5 sm:p-1 rounded-xl border border-zinc-800/80 shadow-sm">
+          <div className="inline-flex bg-[#101014] p-0.5 rounded-2xl border border-zinc-900/60 shadow-sm">
             {(
               [
                 { id: 'day', short: 'D', full: 'Day' },
@@ -314,40 +318,16 @@ export const StatsView: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => setTimeRange(item.id as TimeRange)}
-                className={`px-2 sm:px-3 py-1 rounded-lg text-xs font-mono font-medium capitalize transition-all cursor-pointer whitespace-nowrap ${
+                className={`px-2.5 py-1.5 rounded-xl text-[11px] font-mono font-medium capitalize transition-all duration-200 cursor-pointer whitespace-nowrap ${
                   timeRange === item.id 
-                    ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' 
-                    : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
+                    ? 'bg-white text-black font-bold shadow-[0_2px_10px_-2px_rgba(0,0,0,0.45)]' 
+                    : 'text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-200'
                 }`}
               >
                 <span className="sm:hidden">{item.short}</span>
                 <span className="hidden sm:inline">{item.full}</span>
               </button>
             ))}
-          </div>
-
-          {/* Pass / Current toggle */}
-          <div className="hidden sm:flex bg-[#0d0d10] p-0.5 rounded-xl border border-zinc-800/80 shadow-sm">
-            <button
-              onClick={() => setViewMode('pass')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
-                viewMode === 'pass' 
-                  ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' 
-                  : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
-              }`}
-            >
-              Past
-            </button>
-            <button
-              onClick={() => setViewMode('current')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
-                viewMode === 'current' 
-                  ? 'bg-[#1b1b20] text-white font-bold shadow-sm ring-1 ring-white/10' 
-                  : 'text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-200'
-              }`}
-            >
-              Current
-            </button>
           </div>
         </div>
       </div>
@@ -377,58 +357,10 @@ export const StatsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Target Spending Goal Progress for Selected Period */}
-        {(() => {
-          const goalLimit = timeRange === 'day' 
-            ? state.settings.goals?.daily 
-            : timeRange === 'week' 
-            ? state.settings.goals?.weekly 
-            : timeRange === 'month' 
-            ? state.settings.goals?.monthly 
-            : undefined;
-          if (!goalLimit || goalLimit <= 0) return null;
-          const progress = Math.min(100, Math.round((totalExpense / goalLimit) * 100));
-          const isOver = totalExpense > goalLimit;
-
-          return (
-            <div className="bg-[#101014] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-zinc-900/60 space-y-1.5 sm:space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-white">
-                  <Target size={14} className="text-zinc-400 shrink-0" />
-                  <span className="capitalize">{timeRange} Budget</span>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  {progress}% used
-                </span>
-              </div>
-
-              <div className="w-full h-1.5 sm:h-2 rounded-full bg-zinc-800 overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    isOver ? 'bg-rose-500' : progress > 85 ? 'bg-amber-400' : 'bg-white'
-                  }`}
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-
-              <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-mono text-zinc-400">
-                <span>{formatCurrency(totalExpense, state.settings.currencySymbol)} spent</span>
-                <span>Budget: {formatCurrency(goalLimit, state.settings.currencySymbol)}</span>
-              </div>
-
-              {isOver && (
-                <div className="flex items-center gap-1 text-[10px] font-mono text-rose-400 pt-0.5">
-                  <AlertCircle size={11} className="shrink-0" />
-                  <span>Over budget by {formatCurrency(totalExpense - goalLimit, state.settings.currencySymbol)}</span>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
         {/* Cashflow Graph (Dynamic Bars based on TimeRange) */}
         <CashflowChart 
           timeRange={timeRange} 
+          viewMode={viewMode}
           netSavings={netSavings}
           savingsRate={savingsRate}
         />
@@ -691,7 +623,8 @@ export const StatsView: React.FC = () => {
                 Transactions ({searchedTransactions.length})
               </span>
               <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">
-                • Grouped by {timeRange === 'day' ? 'Hour' : timeRange === 'week' || timeRange === 'month' ? 'Day' : 'Month'}
+                • Grouped by {timeRange === 'day' ? 'Hour' : timeRange === 'year' ? 'Month' : 'Day'}
+                {timeRange === 'day' && ` · ${dayWindowLabel}`}
               </span>
             </div>
 
@@ -758,26 +691,18 @@ export const StatsView: React.FC = () => {
             {groupedTransactions.map((group) => (
               <div key={group.key} className="space-y-1.5 sm:space-y-2">
                 {/* Group Header */}
-                <div className={`flex items-center justify-between px-1 text-[10px] sm:text-[11px] font-mono border-b border-zinc-900/80 pb-1 sm:pb-1.5 ${
-                  group.isMarker ? 'text-zinc-600 border-zinc-900/40' : 'text-zinc-300'
-                }`}>
-                  <span className={group.isMarker ? 'italic text-zinc-600' : 'font-semibold text-zinc-300'}>{group.label}</span>
+                <div className="flex items-center justify-between px-1 text-[10px] sm:text-[11px] font-mono border-b border-zinc-900/80 pb-1 sm:pb-1.5 text-zinc-300">
+                  <span className="font-semibold text-zinc-300">{group.label}</span>
                   <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px]">
-                    {group.isMarker ? (
-                      <span className="text-zinc-700 italic text-[9px]">no data yet</span>
-                    ) : (
-                      <>
-                        {group.totalIncome > 0 && (
-                          <span className="text-emerald-400">
-                            +{formatCurrency(group.totalIncome, state.settings.currencySymbol)}
-                          </span>
-                        )}
-                        {group.totalExpense > 0 && (
-                          <span className="text-rose-400">
-                            -{formatCurrency(group.totalExpense, state.settings.currencySymbol)}
-                          </span>
-                        )}
-                      </>
+                    {group.totalIncome > 0 && (
+                      <span className="text-emerald-400">
+                        +{formatCurrency(group.totalIncome, state.settings.currencySymbol)}
+                      </span>
+                    )}
+                    {group.totalExpense > 0 && (
+                      <span className="text-rose-400">
+                        -{formatCurrency(group.totalExpense, state.settings.currencySymbol)}
+                      </span>
                     )}
                   </div>
                 </div>
