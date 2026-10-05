@@ -196,14 +196,14 @@ export const BudgetsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // Pin one budget to show in Today page and top of list
   const pinnedId = state.settings.pinnedBudgetId !== undefined
     ? state.settings.pinnedBudgetId
-    : (() => { try { return localStorage.getItem('nova-pinned-budget'); } catch { return null; } })();
+    : (() => { try { return localStorage.getItem('xero-pinned-budget'); } catch { return null; } })();
 
   const togglePin = (id: string) => {
     const next = pinnedId === id ? null : id;
     updateSettings({ pinnedBudgetId: next });
     try {
-      if (next) localStorage.setItem('nova-pinned-budget', next);
-      else localStorage.removeItem('nova-pinned-budget');
+      if (next) localStorage.setItem('xero-pinned-budget', next);
+      else localStorage.removeItem('xero-pinned-budget');
     } catch {}
   };
   const sortedBudgets = useMemo(() => {

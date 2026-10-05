@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════
--- NØVA — Full Supabase schema (paste into Supabase SQL Editor)
+-- XERØ — Full Supabase schema (paste into Supabase SQL Editor)
 -- Single source of truth for ALL tables: accounts, categories,
 -- transactions, budgets, recurring, debts, settings.
 -- Safe to re-run: IF NOT EXISTS / DROP POLICY guards everywhere.

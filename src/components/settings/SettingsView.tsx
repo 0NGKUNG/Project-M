@@ -539,11 +539,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive, onSubPageC
       if ((e as CustomEvent).detail === 'settings') setSubPage(null);
     };
     const handleTabChanged = () => setSubPage(null);
-    window.addEventListener('nova:tab-retap', handleTabRetap);
-    window.addEventListener('nova:tab-changed', handleTabChanged);
+    window.addEventListener('xero:tab-retap', handleTabRetap);
+    window.addEventListener('xero:tab-changed', handleTabChanged);
     return () => {
-      window.removeEventListener('nova:tab-retap', handleTabRetap);
-      window.removeEventListener('nova:tab-changed', handleTabChanged);
+      window.removeEventListener('xero:tab-retap', handleTabRetap);
+      window.removeEventListener('xero:tab-changed', handleTabChanged);
     };
   }, []);
   const [showWallets, setShowWallets] = useState(false);

@@ -50,10 +50,10 @@ export const AppContent: React.FC = () => {
     if (tab !== currentTab && navigator.vibrate) navigator.vibrate(8);
     // Re-tapping the active tab (navbar/sidebar) lets views pop sub-pages back to their root.
     if (tab === currentTab) {
-      window.dispatchEvent(new CustomEvent<NavTab>('nova:tab-retap', { detail: tab }));
+      window.dispatchEvent(new CustomEvent<NavTab>('xero:tab-retap', { detail: tab }));
     } else {
       // Switching views: open sub-pages close so returning shows the root view.
-      window.dispatchEvent(new CustomEvent<NavTab>('nova:tab-changed', { detail: tab }));
+      window.dispatchEvent(new CustomEvent<NavTab>('xero:tab-changed', { detail: tab }));
     }
     setCurrentTab(tab);
     const tabIndex = TABS.indexOf(tab);
@@ -79,7 +79,7 @@ export const AppContent: React.FC = () => {
     if (newIndex >= 0 && newIndex < TABS.length && TABS[newIndex] !== currentTab) {
       setCurrentTab(TABS[newIndex]);
       // Swipe-driven tab switch: close any open sub-pages so returning shows the root view.
-      window.dispatchEvent(new CustomEvent<NavTab>('nova:tab-changed', { detail: TABS[newIndex] }));
+      window.dispatchEvent(new CustomEvent<NavTab>('xero:tab-changed', { detail: TABS[newIndex] }));
     }
   };
 

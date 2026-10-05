@@ -1,6 +1,6 @@
-# NOVA — Personal Finance App
+# XERØ — Personal Finance App
 
-NOVA is a personal finance app for tracking your income, expenses, and accounts. Works on mobile and desktop. Built with React, TypeScript, Tailwind CSS, and Supabase.
+XERØ is a personal finance app for tracking your income, expenses, and accounts. Works on mobile and desktop. Built with React, TypeScript, Tailwind CSS, and Supabase.
 
 ## Features
 - Track daily income and expenses

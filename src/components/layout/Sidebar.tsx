@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="group flex items-center text-left translate-x-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg cursor-pointer py-1 -my-1"
           >
             <h1 className="text-2xl font-extrabold text-white group-hover:text-zinc-300 transition-colors leading-tight font-display tracking-wider">
-              N<span className={`inline-block overflow-hidden align-bottom transition-[max-width,opacity] duration-300 ease-in-out ${collapsed ? 'max-w-0 opacity-0' : 'max-w-20 opacity-100'}`}>ØVA</span>
+              X<span className={`inline-block overflow-hidden align-bottom transition-[max-width,opacity] duration-300 ease-in-out ${collapsed ? 'max-w-0 opacity-0' : 'max-w-20 opacity-100'}`}>ERØ</span>
             </h1>
           </button>
         </div>

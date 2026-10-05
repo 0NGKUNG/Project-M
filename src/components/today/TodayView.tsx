@@ -58,11 +58,11 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, isActive, 
       if ((e as CustomEvent).detail === 'today') setSubPage(null);
     };
     const handleTabChanged = () => setSubPage(null);
-    window.addEventListener('nova:tab-retap', handleTabRetap);
-    window.addEventListener('nova:tab-changed', handleTabChanged);
+    window.addEventListener('xero:tab-retap', handleTabRetap);
+    window.addEventListener('xero:tab-changed', handleTabChanged);
     return () => {
-      window.removeEventListener('nova:tab-retap', handleTabRetap);
-      window.removeEventListener('nova:tab-changed', handleTabChanged);
+      window.removeEventListener('xero:tab-retap', handleTabRetap);
+      window.removeEventListener('xero:tab-changed', handleTabChanged);
     };
   }, []);
 
@@ -141,15 +141,15 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, isActive, 
 
   const pinnedId = state.settings.pinnedBudgetId !== undefined
     ? state.settings.pinnedBudgetId
-    : (() => { try { return localStorage.getItem('nova-pinned-budget'); } catch { return null; } })();
+    : (() => { try { return localStorage.getItem('xero-pinned-budget'); } catch { return null; } })();
 
   const handleTogglePin = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     const next = pinnedId === id ? null : id;
     updateSettings({ pinnedBudgetId: next });
     try {
-      if (next) localStorage.setItem('nova-pinned-budget', next);
-      else localStorage.removeItem('nova-pinned-budget');
+      if (next) localStorage.setItem('xero-pinned-budget', next);
+      else localStorage.removeItem('xero-pinned-budget');
     } catch {}
   };
 
