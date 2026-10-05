@@ -20,6 +20,9 @@ export const AppContent: React.FC = () => {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [preselectedAccountId, setPreselectedAccountId] = useState<string | undefined>(undefined);
+  const [isTodaySubPageOpen, setIsTodaySubPageOpen] = useState(false);
+  const [isSettingsSubPageOpen, setIsSettingsSubPageOpen] = useState(false);
+  const isAnySubPageOrModalOpen = isTodaySubPageOpen || isSettingsSubPageOpen || isQuickAddOpen || Boolean(selectedAccount);
 
   // Sidebar collapsed state — persisted across sessions
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -67,9 +70,9 @@ export const AppContent: React.FC = () => {
     }
   };
 
-  // Sync scroll position from touch swiping back to currentTab
+  // Sync scroll position from touch swiping back to currentTab (ignored when subpage/modal is open)
   const handleScroll = () => {
-    if (isScrollingFromCode.current || !containerRef.current) return;
+    if (isScrollingFromCode.current || !containerRef.current || isAnySubPageOrModalOpen) return;
     const { scrollLeft, clientWidth } = containerRef.current;
     if (clientWidth === 0) return;
     const newIndex = Math.round(scrollLeft / clientWidth);
@@ -80,7 +83,7 @@ export const AppContent: React.FC = () => {
     }
   };
 
-  // Handle window resize adjustment
+  // Handle window resize adjustment and maintain alignment when swipe is locked/unlocked
   useEffect(() => {
     const handleResize = () => {
       const tabIndex = TABS.indexOf(currentTab);
@@ -89,8 +92,9 @@ export const AppContent: React.FC = () => {
       }
     };
     window.addEventListener('resize', handleResize);
+    handleResize();
     return () => window.removeEventListener('resize', handleResize);
-  }, [currentTab]);
+  }, [currentTab, isAnySubPageOrModalOpen]);
 
   // Global keybind listener to open Quick Add
   useEffect(() => {
@@ -139,6 +143,7 @@ export const AppContent: React.FC = () => {
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigateTab={handleTabChange}
                 isActive={currentTab === 'today'}
+                onSubPageChange={setIsTodaySubPageOpen}
               />
             )}
             {currentTab === 'stats' && <StatsView />}
@@ -148,14 +153,23 @@ export const AppContent: React.FC = () => {
                 onOpenQuickAddWithAccount={handleOpenQuickAdd}
               />
             )}
-            {currentTab === 'settings' && <SettingsView isActive />}
+            {currentTab === 'settings' && (
+              <SettingsView
+                isActive
+                onSubPageChange={setIsSettingsSubPageOpen}
+              />
+            )}
           </main>
 
-          {/* Mobile display: Horizontal swipe/drag scroll snap container with 1-page snap lock */}
+          {/* Mobile display: Horizontal swipe/drag scroll snap container (locked when subpage/modal is open) */}
           <div
             ref={containerRef}
             onScroll={handleScroll}
-            className="lg:hidden flex-1 w-full flex overflow-x-auto page-carousel-container no-scrollbar overscroll-x-none"
+            className={`lg:hidden flex-1 w-full flex ${
+              isAnySubPageOrModalOpen
+                ? 'overflow-x-hidden touch-pan-y'
+                : 'overflow-x-auto page-carousel-container overscroll-x-none'
+            } no-scrollbar`}
           >
             {/* View 1: Today */}
             <div className="w-full h-full shrink-0 page-carousel-item overflow-y-auto overscroll-y-contain pt-3">
@@ -163,6 +177,7 @@ export const AppContent: React.FC = () => {
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigateTab={handleTabChange}
                 isActive={currentTab === 'today'}
+                onSubPageChange={setIsTodaySubPageOpen}
               />
             </div>
 
@@ -181,7 +196,10 @@ export const AppContent: React.FC = () => {
 
             {/* View 4: Settings */}
             <div className="w-full h-full shrink-0 page-carousel-item overflow-y-auto overscroll-y-contain pt-3">
-              <SettingsView isActive={currentTab === 'settings'} />
+              <SettingsView
+                isActive={currentTab === 'settings'}
+                onSubPageChange={setIsSettingsSubPageOpen}
+              />
             </div>
           </div>
 

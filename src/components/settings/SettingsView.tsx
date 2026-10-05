@@ -37,6 +37,8 @@ type SettingsSubPage = null | 'goals' | 'categories' | 'recurring' | 'debts';
 interface SettingsViewProps {
   /** Whether Settings is the visible tab — the mobile carousel keeps all views mounted, so fixed overlays must be gated on this. */
   isActive?: boolean;
+  /** Notifies parent when subpage opens/closes (used to lock mobile swipe navigation). */
+  onSubPageChange?: (hasSubPage: boolean) => void;
 }
 
 // ─── Row components ───────────────────────────────────────────────
@@ -240,9 +242,6 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <Tag size={18} />
           </div>
           <div className="text-xs text-zinc-400 font-medium">No {tab} categories yet</div>
-          <p className="text-[10px] text-zinc-600 max-w-xs mx-auto">
-            Create parent categories and group subcategories under them.
-          </p>
           <button
             onClick={() => {
               setNewCatName('');
@@ -511,7 +510,7 @@ const CategoriesSubPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 // ─── Main Settings View ───────────────────────────────────────────
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ isActive }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ isActive, onSubPageChange }) => {
   const {
     state,
     updateSettings,
@@ -526,6 +525,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive }) => {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [subPage, setSubPage] = useState<SettingsSubPage>(null);
   useBackButton(Boolean(subPage), () => setSubPage(null));
+
+  useEffect(() => {
+    onSubPageChange?.(subPage !== null);
+    return () => {
+      onSubPageChange?.(false);
+    };
+  }, [subPage, onSubPageChange]);
 
   // Re-tapping Settings pops sub-pages; switching to another tab closes them so returning shows the main list.
   useEffect(() => {
@@ -689,7 +695,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive }) => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-medium text-white">Quick Add Shortcut</div>
-            <div className="text-[10px] text-zinc-500">Press key anywhere to add transaction</div>
           </div>
           <input
             type="text"

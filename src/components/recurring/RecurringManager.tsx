@@ -164,7 +164,6 @@ export const RecurringManager: React.FC<RecurringManagerProps> = ({ onBack }) =>
             <RefreshCw size={18} />
           </div>
           <div className="text-xs text-zinc-400 font-medium">No recurring items yet</div>
-          <p className="text-[10px] text-zinc-600 max-w-xs mx-auto">Track rent, Spotify, Netflix, gym memberships, or routine income.</p>
           <button
             onClick={() => setShowAddModal(true)}
             className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-black text-xs font-bold cursor-pointer"

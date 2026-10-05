@@ -92,6 +92,7 @@ export interface FinanceSettings {
   quickAddKeybind: string; // e.g. 'n', 't', '+', 'Space'
   weekStartDay?: 0 | 1 | 6; // 0 = Sunday, 1 = Monday, 6 = Saturday
   goals?: SpendingGoal;
+  pinnedBudgetId?: string | null; // ID of the budget pinned to display on the Today page
 }
 
 export interface FinanceState {

@@ -107,7 +107,6 @@ export const TransactionListView: React.FC = () => {
             <Search size={18} />
           </div>
           <div className="text-xs text-zinc-400 font-medium">No matching transactions</div>
-          <p className="text-[10px] text-zinc-600">Try a different search or filter.</p>
         </div>
       ) : (
         <div className="space-y-5">

@@ -111,8 +111,121 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     })();
   }, []);
 
-  // Seed default accounts and categories if remote Supabase database is completely empty
-  const seedRemoteDefaultsIfNeeded = async (remoteAccounts: any[], remoteCategories: any[], remoteBudgets: any[] = [], remoteRecurring: any[] = [], remoteDebts: any[] = []) => {
+  // Helper to parse a remote transaction, extracting time if it was embedded in note
+  const parseRemoteTransaction = (t: any): Transaction => {
+    let time = t.time || undefined;
+    let note = t.note || undefined;
+
+    // If time column is missing/null, check if note has trailing [HH:MM]
+    if (!time && note) {
+      const timeMatch = note.match(/(?:^|\s)\[([0-2]\d:[0-5]\d)\]\s*$/);
+      if (timeMatch) {
+        time = timeMatch[1];
+        note = note.replace(/\s*\[[0-2]\d:[0-5]\d\]\s*$/, '').trim() || undefined;
+      }
+    }
+
+    return {
+      id: t.id,
+      type: t.type,
+      amount: Number(t.amount),
+      categoryId: t.category_id,
+      subcategoryId: t.subcategory_id || undefined,
+      accountId: t.account_id,
+      toAccountId: t.to_account_id,
+      date: t.date,
+      time,
+      note,
+      createdAt: Number(t.created_at),
+    };
+  };
+
+  // Resiliently insert/update a transaction in Supabase without failing on missing optional columns
+  const syncTransactionToSupabase = async (tx: Transaction, isUpdate = false) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      // 1. Ensure target account and category exist in Supabase before foreign key insert
+      const targetAcc = state.accounts.find((a) => a.id === tx.accountId);
+      if (targetAcc) {
+        await supabase.from('accounts').upsert({
+          id: targetAcc.id,
+          name: targetAcc.name,
+          type: targetAcc.type,
+          initial_balance: targetAcc.initialBalance,
+          icon: targetAcc.icon || 'CreditCard',
+        });
+      }
+      const targetCat = state.categories.find((c) => c.id === tx.categoryId);
+      if (targetCat) {
+        await supabase.from('categories').upsert({
+          id: targetCat.id,
+          name: targetCat.name,
+          type: targetCat.type,
+          icon: targetCat.icon,
+          parent_id: targetCat.parentId || null,
+        });
+      }
+
+      // 2. Try full insert/update with all fields
+      const fullPayload: any = {
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount,
+        category_id: tx.categoryId,
+        account_id: tx.accountId,
+        to_account_id: tx.toAccountId || null,
+        date: tx.date,
+        time: tx.time || null,
+        note: tx.note || null,
+        created_at: tx.createdAt,
+      };
+      if (tx.subcategoryId) fullPayload.subcategory_id = tx.subcategoryId;
+
+      let res = isUpdate
+        ? await supabase.from('transactions').update(fullPayload).eq('id', tx.id)
+        : await supabase.from('transactions').insert(fullPayload);
+
+      // 3. If schema cache / column missing error (PGRST204), fallback to core columns
+      if (res.error && res.error.code === 'PGRST204') {
+        let formattedNote = tx.note || null;
+        if (tx.time && (!formattedNote || !formattedNote.includes(`[${tx.time}]`))) {
+          formattedNote = formattedNote ? `${formattedNote} [${tx.time}]` : `[${tx.time}]`;
+        }
+
+        const fallbackPayload: any = {
+          id: tx.id,
+          type: tx.type,
+          amount: tx.amount,
+          category_id: tx.categoryId,
+          account_id: tx.accountId,
+          to_account_id: tx.toAccountId || null,
+          date: tx.date,
+          note: formattedNote,
+          created_at: tx.createdAt,
+        };
+
+        res = isUpdate
+          ? await supabase.from('transactions').update(fallbackPayload).eq('id', tx.id)
+          : await supabase.from('transactions').insert(fallbackPayload);
+      }
+
+      if (res.error) {
+        console.error('Supabase transaction sync error:', res.error);
+      }
+    } catch (err) {
+      console.error('Supabase transaction sync catch:', err);
+    }
+  };
+
+  // Seed default accounts, categories, and push unsynced local rows to Supabase
+  const seedRemoteDefaultsIfNeeded = async (
+    remoteAccounts: any[],
+    remoteCategories: any[],
+    remoteBudgets: any[] = [],
+    remoteRecurring: any[] = [],
+    remoteDebts: any[] = [],
+    remoteTransactions: any[] = []
+  ) => {
     if (!supabase) return;
     try {
       if (!remoteAccounts || remoteAccounts.length === 0) {
@@ -189,6 +302,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const { error } = await supabase.from('debts').upsert(rows);
         if (error) console.warn('Initial debts sync to Supabase failed:', error.message);
       }
+
+      // Push localStorage-only transactions the cloud has never seen so they persist in Supabase
+      const localOnlyTx = state.transactions.filter(
+        (tx) => !remoteTransactions.some((rt: any) => rt.id === tx.id)
+      );
+      if (localOnlyTx.length > 0) {
+        for (const tx of localOnlyTx) {
+          await syncTransactionToSupabase(tx, false);
+        }
+      }
     } catch (e) {
       console.warn('Auto-seed remote notice:', e);
     }
@@ -209,24 +332,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         supabase.from('settings').select('*').maybeSingle(),
       ]);
 
-      // If remote accounts or categories are empty, seed them so the database has valid foreign keys!
-      await seedRemoteDefaultsIfNeeded(accRes.data || [], catRes.data || [], bgRes.data || [], recRes.data || [], debtRes.data || []);
+      // Seed defaults and push any unsynced local rows
+      await seedRemoteDefaultsIfNeeded(
+        accRes.data || [],
+        catRes.data || [],
+        bgRes.data || [],
+        recRes.data || [],
+        debtRes.data || [],
+        txRes.data || []
+      );
+
+      const remoteTxList = (txRes.data || []).map(parseRemoteTransaction);
+      const remoteTxIdSet = new Set(remoteTxList.map((t) => t.id));
+      const localUnsyncedTx = (state.transactions || []).filter((t) => !remoteTxIdSet.has(t.id));
+      const mergedTransactions = [...remoteTxList, ...localUnsyncedTx].sort((a, b) => b.createdAt - a.createdAt);
 
       setState((prev) => ({
         ...prev,
-        transactions: txRes.data && txRes.data.length > 0 ? txRes.data.map((t) => ({
-          id: t.id,
-          type: t.type,
-          amount: Number(t.amount),
-          categoryId: t.category_id,
-          subcategoryId: t.subcategory_id || undefined,
-          accountId: t.account_id,
-          toAccountId: t.to_account_id,
-          date: t.date,
-          time: t.time,
-          note: t.note,
-          createdAt: Number(t.created_at),
-        })) : prev.transactions,
+        transactions: mergedTransactions.length > 0 ? mergedTransactions : prev.transactions,
         accounts: accRes.data && accRes.data.length > 0 ? accRes.data.map((a) => ({
           id: a.id,
           name: a.name,
@@ -308,6 +431,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           quickAddKeybind: stRes.data.quick_add_keybind || prev.settings.quickAddKeybind || 'n',
           weekStartDay: stRes.data.week_start_day ?? prev.settings.weekStartDay ?? 1,
           goals: stRes.data.goals || prev.settings.goals,
+          pinnedBudgetId: stRes.data.goals?.pinnedBudgetId ?? stRes.data.pinned_budget_id ?? prev.settings.pinnedBudgetId ?? null,
         } : prev.settings,
       }));
 
@@ -366,38 +490,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      try {
-        // Ensure account exists in Supabase before foreign key insert
-        const targetAcc = state.accounts.find((a) => a.id === newTx.accountId);
-        if (targetAcc) {
-          await supabase.from('accounts').upsert({
-            id: targetAcc.id,
-            name: targetAcc.name,
-            type: targetAcc.type,
-            initial_balance: targetAcc.initialBalance,
-            icon: targetAcc.icon || 'CreditCard',
-          });
-        }
-
-        const { error } = await supabase.from('transactions').insert({
-          id: newTx.id,
-          type: newTx.type,
-          amount: newTx.amount,
-          category_id: newTx.categoryId,
-          account_id: newTx.accountId,
-          to_account_id: newTx.toAccountId,
-          date: newTx.date,
-          time: newTx.time,
-          note: newTx.note,
-          created_at: newTx.createdAt,
-        });
-
-        if (error) {
-          console.error('Supabase transaction insert error:', error);
-        }
-      } catch (err) {
-        console.error('Supabase transaction sync error:', err);
-      }
+      await syncTransactionToSupabase(newTx, false);
     }
   };
 
@@ -409,21 +502,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     if (isSupabaseConfigured && supabase) {
-      try {
-        const { error } = await supabase.from('transactions').update({
-          type: updatedTx.type,
-          amount: updatedTx.amount,
-          category_id: updatedTx.categoryId,
-          account_id: updatedTx.accountId,
-          to_account_id: updatedTx.toAccountId,
-          date: updatedTx.date,
-          time: updatedTx.time,
-          note: updatedTx.note,
-        }).eq('id', updatedTx.id);
-        if (error) console.error('Supabase transaction update error:', error);
-      } catch (err) {
-        console.error('Supabase transaction update catch:', err);
-      }
+      await syncTransactionToSupabase(updatedTx, true);
     }
   };
 
@@ -880,6 +959,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (isSupabaseConfigured && supabase) {
       try {
+        const goalsPayload = {
+          ...(updated.goals || {}),
+          pinnedBudgetId: updated.pinnedBudgetId ?? null,
+        };
         const payload: any = {
           id: 'app_settings',
           currency_symbol: updated.currencySymbol,
@@ -887,7 +970,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           vibrate_on_tap: updated.vibrateOnTap,
           quick_add_keybind: updated.quickAddKeybind,
           week_start_day: updated.weekStartDay,
-          goals: updated.goals,
+          goals: goalsPayload,
         };
 
         const { error } = await supabase.from('settings').upsert(payload);
@@ -934,11 +1017,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .map((c) => ({
           id: c.id, name: c.name, type: c.type, icon: c.icon, parent_id: c.parentId || null,
         })))],
-      ['transactions', supabase.from('transactions').upsert(s.transactions.map((t) => ({
-        id: t.id, type: t.type, amount: t.amount, category_id: t.categoryId,
-        subcategory_id: t.subcategoryId, account_id: t.accountId, to_account_id: t.toAccountId,
-        date: t.date, time: t.time, note: t.note, created_at: t.createdAt,
-      })))],
       ['budgets', supabase.from('budgets').upsert(s.budgets.map((b) => ({
         id: b.id, name: b.name || null, category_id: b.categoryId || null, amount: b.amount,
         period: b.period, start_date: b.startDate || null, end_date: b.endDate || null,
@@ -960,12 +1038,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         vibrate_on_tap: s.settings.vibrateOnTap,
         quick_add_keybind: s.settings.quickAddKeybind,
         week_start_day: s.settings.weekStartDay,
-        goals: s.settings.goals,
+        goals: {
+          ...(s.settings.goals || {}),
+          pinnedBudgetId: s.settings.pinnedBudgetId ?? null,
+        },
       })],
     ];
     for (const [name, query] of steps) {
       const { error } = await query;
       if (error) console.warn(`Import push to Supabase (${name}) failed:`, error.message);
+    }
+
+    // Push all transactions using resilient sync
+    for (const t of s.transactions) {
+      await syncTransactionToSupabase(t, false);
     }
   };
 

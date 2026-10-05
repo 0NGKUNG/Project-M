@@ -689,16 +689,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, d
                     <input
                       type="text"
                       value={amountStr}
-                      onFocus={(e) => {
-                        if (amountStr === '0') {
-                          e.target.select();
-                        }
-                      }}
-                      onClick={(e) => {
-                        if (amountStr === '0') {
-                          (e.target as HTMLInputElement).select();
-                        }
-                      }}
                       onBlur={() => {
                         if (!amountStr || !amountStr.trim()) {
                           setAmountStr('0');

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Plus,
   ChevronLeft,
@@ -9,6 +9,8 @@ import {
   Target,
   RefreshCw,
   HandCoins,
+  ChevronDown,
+  Pin,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, CategoryIcon } from '../common/Icons';
@@ -19,6 +21,7 @@ import { BudgetsPage } from '../budgets/BudgetsPage';
 import { FloatingClose } from '../common/FloatingClose';
 import type { Transaction } from '../../types/finance';
 import { useBackButton } from '../../hooks/useBackButton';
+import { getBudgetSpending } from '../../utils/budgetMath';
 
 type TodaySubPage = null | 'recurring' | 'debts' | 'budgets';
 
@@ -27,18 +30,27 @@ interface TodayViewProps {
   onNavigateTab: (tab: 'stats' | 'accounts') => void;
   /** Whether Today is the visible tab — fixed overlays must be gated on this (mobile carousel keeps all views mounted). */
   isActive?: boolean;
+  /** Notifies parent when subpage opens/closes (used to lock mobile swipe navigation). */
+  onSubPageChange?: (hasSubPage: boolean) => void;
 }
 
 const RECENT_EXEC_MS = 60000; // "just executed" dot stays lit for 60s
 const DOT_CLEAR_MS = 20000; // dot clears ~20s after the sheet opens
 
-export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, isActive }) => {
-  const { state } = useFinance();
+export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, isActive, onSubPageChange }) => {
+  const { state, updateSettings } = useFinance();
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [debtSheetSeenAt, setDebtSheetSeenAt] = useState<number | null>(null);
   const [subPage, setSubPage] = useState<TodaySubPage>(null);
   useBackButton(Boolean(subPage), () => setSubPage(null));
+
+  useEffect(() => {
+    onSubPageChange?.(subPage !== null);
+    return () => {
+      onSubPageChange?.(false);
+    };
+  }, [subPage, onSubPageChange]);
 
   // Re-tapping Today pops sub-pages; switching to another tab closes them so returning shows the root view.
   useEffect(() => {
@@ -87,7 +99,31 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, isActive }
     setSelectedDate(d.toISOString().split('T')[0]);
   };
 
-  // ── Daily budget (today only — the pill is the daily number) ──
+  // ── Synced Budget & Daily Goal Calculations ──
+  const weekStartDay = state.settings.weekStartDay ?? 1;
+  const currencySymbol = state.settings.currencySymbol;
+
+  const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
+  const budgetDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showBudgetDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (budgetDropdownRef.current && !budgetDropdownRef.current.contains(e.target as Node)) {
+        setShowBudgetDropdown(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowBudgetDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showBudgetDropdown]);
+
   const dailyGoal = state.settings.goals?.daily || 0;
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const todayTotals = useMemo(() => {
@@ -102,6 +138,53 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, isActive }
   }, [state.transactions, todayStr]);
   const todayGoalProgress = dailyGoal > 0 ? Math.min(100, Math.round((todayTotals.exp / dailyGoal) * 100)) : 0;
   const todayIsOverGoal = dailyGoal > 0 && todayTotals.exp > dailyGoal;
+
+  const pinnedId = state.settings.pinnedBudgetId !== undefined
+    ? state.settings.pinnedBudgetId
+    : (() => { try { return localStorage.getItem('nova-pinned-budget'); } catch { return null; } })();
+
+  const handleTogglePin = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const next = pinnedId === id ? null : id;
+    updateSettings({ pinnedBudgetId: next });
+    try {
+      if (next) localStorage.setItem('nova-pinned-budget', next);
+      else localStorage.removeItem('nova-pinned-budget');
+    } catch {}
+  };
+
+  // Determine active budget to display in the main Today widget
+  const activeBudget = useMemo(() => {
+    if (pinnedId === 'daily') return null;
+    if (pinnedId) {
+      const found = state.budgets.find((b) => b.id === pinnedId);
+      if (found) return found;
+    }
+    if (state.budgets.length > 0) return state.budgets[0];
+    return null;
+  }, [state.budgets, pinnedId]);
+
+  const isDailyActive = pinnedId === 'daily' || (!activeBudget && dailyGoal > 0);
+
+  const activeBudgetSpending = useMemo(() => {
+    if (!activeBudget) return 0;
+    return getBudgetSpending(activeBudget, state.transactions, weekStartDay).totalSpent;
+  }, [activeBudget, state.transactions, weekStartDay]);
+
+  const activeBudgetLimit = activeBudget ? activeBudget.amount : 0;
+  const activeBudgetPercent = activeBudget
+    ? (activeBudgetLimit > 0 ? Math.round((activeBudgetSpending / activeBudgetLimit) * 100) : 0)
+    : 0;
+  const activeBudgetIsOver = activeBudget ? activeBudgetSpending > activeBudgetLimit : false;
+
+  const activeLabel = isDailyActive
+    ? 'Daily'
+    : (activeBudget?.name || (activeBudget?.period ? activeBudget.period.toUpperCase() : 'Budget'));
+
+  const displayPercent = isDailyActive ? todayGoalProgress : activeBudgetPercent;
+  const displaySpent = isDailyActive ? todayTotals.exp : activeBudgetSpending;
+  const displayIsOver = isDailyActive ? todayIsOverGoal : activeBudgetIsOver;
+  const hasAnyBudget = Boolean(activeBudget || dailyGoal > 0);
 
   // ── Debts badge: net balance today (owed-to-you positive, you-owe negative) ──
   const activeDebts = (state.debts || []).filter((d) => d.status === 'active');
@@ -157,39 +240,230 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, isActive }
         <h2 className="text-xl font-bold tracking-tight text-white font-mono">TODAY</h2>
 
         <div className="flex items-center gap-2">
-          {/* Daily budget pill: mini % bar + today's number + label */}
-          <button
-            onClick={() => setSubPage('budgets')}
-            className="flex items-center gap-1.5 h-8 pl-2.5 pr-2.5 rounded-xl bg-[#101014] border border-zinc-900 hover:border-zinc-700 active:scale-95 transition-all cursor-pointer"
-            aria-label="Daily budget"
-            title="Daily budget"
-          >
-            {dailyGoal > 0 ? (
-              <>
-                <Target size={13} className="text-zinc-400 shrink-0" />
-                <div className="w-16 h-1.5 rounded-full bg-zinc-800 overflow-hidden shrink-0">
-                  <div
-                    className={`h-full rounded-full ${
-                      todayIsOverGoal ? 'bg-rose-500' : todayGoalProgress > 80 ? 'bg-amber-400' : 'bg-white'
-                    }`}
-                    style={{ width: `${Math.min(100, todayGoalProgress)}%` }}
-                  />
+          {/* Synced budget pill with progress bar + dropdown trigger */}
+          <div className="relative" ref={budgetDropdownRef}>
+            <div className="flex items-center h-8 rounded-xl bg-[#101014] border border-zinc-900 hover:border-zinc-700 transition-all">
+              <button
+                onClick={() => setSubPage('budgets')}
+                className="flex items-center gap-1.5 h-full pl-2.5 pr-2 hover:text-white transition-all cursor-pointer select-none"
+                aria-label="Budget status"
+                title="Open budgets"
+              >
+                {hasAnyBudget ? (
+                  <>
+                    <Target size={13} className="text-zinc-400 shrink-0" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-300 max-w-[65px] sm:max-w-[100px] truncate">
+                      {activeLabel}
+                    </span>
+                    <div className="w-12 sm:w-16 h-1.5 rounded-full bg-zinc-800 overflow-hidden shrink-0">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          displayIsOver ? 'bg-rose-500' : displayPercent > 80 ? 'bg-amber-400' : 'bg-white'
+                        }`}
+                        style={{ width: `${Math.min(100, displayPercent)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-semibold whitespace-nowrap tabular-nums">
+                      <span className={displayIsOver ? 'text-rose-400' : 'text-zinc-300'}>{displayPercent}%</span>
+                    </span>
+                    <span className={`text-[10px] font-medium whitespace-nowrap tabular-nums ${displayIsOver ? 'text-rose-400' : 'text-zinc-400'}`}>
+                      {formatCurrency(displaySpent, currencySymbol)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Target size={13} className="text-zinc-400 shrink-0" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Budget</span>
+                    <span className="text-[10px] font-medium text-zinc-600">— Set</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowBudgetDropdown((prev) => !prev)}
+                className="flex items-center justify-center w-7 h-full pr-1 text-zinc-400 hover:text-white transition-colors border-l border-zinc-900 cursor-pointer"
+                aria-label="More budgets"
+                title="Select or pin budget"
+              >
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform duration-200 ${showBudgetDropdown ? 'rotate-180 text-white' : ''}`}
+                />
+              </button>
+            </div>
+
+            {/* Dropdown to show more budgets, progress bars, and pin to Today */}
+            {showBudgetDropdown && (
+              <div className="absolute right-0 top-full mt-2 w-80 sm:w-88 max-w-[calc(100vw-2rem)] bg-[#101014] border border-zinc-800 rounded-2xl shadow-2xl z-50 p-2.5 space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between px-1 pt-0.5 pb-2 border-b border-zinc-900">
+                  <div className="flex items-center gap-1.5">
+                    <Target size={13} className="text-zinc-400" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-white">Budgets</span>
+                    <span className="text-[10px] text-zinc-400 font-semibold tabular-nums">
+                      ({state.budgets.length + (dailyGoal > 0 ? 1 : 0)})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowBudgetDropdown(false);
+                      setSubPage('budgets');
+                    }}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Manage →
+                  </button>
                 </div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider whitespace-nowrap">
-                  <span className={todayIsOverGoal ? 'text-rose-400' : 'text-zinc-300'}>{todayGoalProgress}%</span>
-                </span>
-                <span className={`text-[10px] font-mono font-bold ${todayIsOverGoal ? 'text-rose-400' : 'text-zinc-400'}`}>
-                  {formatCurrency(todayTotals.exp, state.settings.currencySymbol)}
-                </span>
-              </>
-            ) : (
-              <>
-                <Target size={13} className="text-zinc-400" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500">Daily Budget</span>
-                <span className="text-[10px] font-mono font-bold text-zinc-600">— Set</span>
-              </>
+
+                <div className="max-h-72 overflow-y-auto space-y-1.5 pr-0.5 custom-scrollbar">
+                  {state.budgets.map((b) => {
+                    const spending = getBudgetSpending(b, state.transactions, weekStartDay);
+                    const pct = b.amount > 0 ? Math.round((spending.totalSpent / b.amount) * 100) : 0;
+                    const isOver = spending.totalSpent > b.amount;
+                    const isPinned = pinnedId === b.id || (!pinnedId && activeBudget?.id === b.id && !isDailyActive);
+                    const periodBadge = b.period === 'daily' ? 'Daily' : b.period === 'weekly' ? 'Weekly' : 'Monthly';
+
+                    return (
+                      <div
+                        key={b.id}
+                        onClick={() => {
+                          handleTogglePin(b.id);
+                          setShowBudgetDropdown(false);
+                        }}
+                        className={`group p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 ${
+                          isPinned
+                            ? 'bg-zinc-900/90 border-zinc-700 shadow-sm'
+                            : 'bg-zinc-900/40 border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/80'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border bg-zinc-800 text-zinc-300 border-zinc-700/60 shrink-0">
+                              {periodBadge}
+                            </span>
+                            <span className="text-xs font-semibold text-white truncate">
+                              {b.name || `${periodBadge} Budget`}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(e) => handleTogglePin(b.id, e)}
+                            className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                              isPinned
+                                ? 'bg-amber-400/10 text-amber-400 hover:bg-amber-400/20'
+                                : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
+                            }`}
+                            title={isPinned ? 'Pinned on Today' : 'Pin to Today'}
+                          >
+                            <Pin size={12} className={isPinned ? 'fill-amber-400 text-amber-400' : ''} />
+                          </button>
+                        </div>
+
+                        <div className="flex items-baseline justify-between gap-2">
+                          <div className="flex items-baseline gap-1 text-xs">
+                            <span className={`font-semibold tabular-nums ${isOver ? 'text-rose-400' : 'text-white'}`}>
+                              {formatCurrency(spending.totalSpent, currencySymbol)}
+                            </span>
+                            <span className="text-[10px] text-zinc-400 font-normal tabular-nums">
+                              / {formatCurrency(b.amount, currencySymbol)}
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-semibold tabular-nums ${isOver ? 'text-rose-400' : pct > 80 ? 'text-amber-400' : 'text-zinc-300'}`}>
+                            {pct}%
+                          </span>
+                        </div>
+
+                        <div className="w-full h-1.5 bg-zinc-800/80 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              isOver ? 'bg-rose-500' : pct > 80 ? 'bg-amber-400' : 'bg-white'
+                            }`}
+                            style={{ width: `${Math.min(100, pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {dailyGoal > 0 && (
+                    <div
+                      onClick={() => {
+                        handleTogglePin('daily');
+                        setShowBudgetDropdown(false);
+                      }}
+                      className={`group p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 ${
+                        pinnedId === 'daily' || (!pinnedId && isDailyActive)
+                          ? 'bg-zinc-900/90 border-zinc-700 shadow-sm'
+                          : 'bg-zinc-900/40 border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/80'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border bg-amber-500/10 text-amber-300 border-amber-500/20 shrink-0">
+                            Daily
+                          </span>
+                          <span className="text-xs font-semibold text-white truncate">
+                            Daily Spending Goal
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => handleTogglePin('daily', e)}
+                          className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                            pinnedId === 'daily' || (!pinnedId && isDailyActive)
+                              ? 'bg-amber-400/10 text-amber-400 hover:bg-amber-400/20'
+                              : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
+                          }`}
+                          title={pinnedId === 'daily' || (!pinnedId && isDailyActive) ? 'Pinned on Today' : 'Pin to Today'}
+                        >
+                          <Pin size={12} className={pinnedId === 'daily' || (!pinnedId && isDailyActive) ? 'fill-amber-400 text-amber-400' : ''} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-baseline justify-between gap-2">
+                        <div className="flex items-baseline gap-1 text-xs">
+                          <span className={`font-semibold tabular-nums ${todayIsOverGoal ? 'text-rose-400' : 'text-white'}`}>
+                            {formatCurrency(todayTotals.exp, currencySymbol)}
+                          </span>
+                          <span className="text-[10px] text-zinc-400 font-normal tabular-nums">
+                            / {formatCurrency(dailyGoal, currencySymbol)}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] font-semibold tabular-nums ${todayIsOverGoal ? 'text-rose-400' : todayGoalProgress > 80 ? 'text-amber-400' : 'text-zinc-300'}`}>
+                          {todayGoalProgress}%
+                        </span>
+                      </div>
+
+                      <div className="w-full h-1.5 bg-zinc-800/80 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            todayIsOverGoal ? 'bg-rose-500' : todayGoalProgress > 80 ? 'bg-amber-400' : 'bg-white'
+                          }`}
+                          style={{ width: `${Math.min(100, todayGoalProgress)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {state.budgets.length === 0 && dailyGoal <= 0 && (
+                    <div className="text-center py-4 px-2">
+                      <Target size={20} className="mx-auto text-zinc-600 mb-1" />
+                      <span className="text-xs font-mono text-zinc-400 block mb-2 font-semibold">No budgets yet</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-1 border-t border-zinc-900">
+                  <button
+                    onClick={() => {
+                      setShowBudgetDropdown(false);
+                      setSubPage('budgets');
+                    }}
+                    className="w-full py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-mono text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus size={12} /> All Budgets & Goals
+                  </button>
+                </div>
+              </div>
             )}
-          </button>
+          </div>
 
           <button
             onClick={() => setSubPage('recurring')}
@@ -330,9 +604,6 @@ export const TodayView: React.FC<TodayViewProps> = ({ onOpenQuickAdd, isActive }
               <CalendarIcon size={20} />
             </div>
             <div className="text-sm text-zinc-400 font-medium">No transactions on this date</div>
-            <p className="text-[10px] text-zinc-600 max-w-[200px] text-center leading-relaxed">
-              Tap + Add or press [N] to log your expenses and see them here.
-            </p>
           </div>
         ) : (
           <div className="space-y-2">

@@ -27,3 +27,4 @@ supabase_secure_owner_rls.sql
 *.sln
 *.sw?
 node_modules
+.freebuff/

@@ -14,30 +14,81 @@ export interface BudgetWindow {
 
 /**
  * The budget's active window — for recurring budgets this is the CURRENT
- * period (this week starting Monday / this month starting the 1st), so
- * "spent" resets automatically when a new period begins.
+ * period:
+ * - daily: today (clears every day at midnight)
+ * - weekly: this week starting Monday / Sunday / Saturday based on settings
+ * - monthly: 1st of month till end of month (clears on 1st of next month)
+ * Spent resets automatically when a new period begins.
  */
-export function getBudgetWindow(budget: Budget): BudgetWindow {
+export function getBudgetWindow(budget: Budget, weekStartDay: number = 1): BudgetWindow {
   const now = new Date();
-  // Every period auto-resets: weekly → this week, monthly → this month, daily → today.
+
+  if (budget.period === 'daily') {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    return { start, end };
+  }
+
   if (budget.period === 'weekly') {
-    // Week starts Monday (matches the app's weekStartDay default)
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    // Week starts Monday (1), Sunday (0), or Saturday (6) based on weekStartDay setting
+    const startDay = weekStartDay ?? 1;
+    const currentDay = now.getDay();
+    const diff = (currentDay < startDay ? 7 : 0) + currentDay - startDay;
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff, 0, 0, 0, 0);
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
     end.setHours(23, 59, 59, 999);
     return { start, end };
   }
+
   if (budget.period === 'monthly') {
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    // 1st of month to last day of month
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
     return { start, end };
   }
+
   // daily or fixed-range: use stored dates if present, else today
-  const start = parseLocalDate(budget.startDate || '') || new Date(0);
-  const end = parseLocalDate(budget.endDate || '');
-  if (end) end.setHours(23, 59, 59, 999);
-  return { start, end: end || new Date(8640000000000000) };
+  const start = parseLocalDate(budget.startDate || '') || new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const end = parseLocalDate(budget.endDate || '') || new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+/** Formats a Date object to YYYY-MM-DD in local time (no UTC shift). */
+export function formatLocalDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Returns the current period's start and end date strings (YYYY-MM-DD) based on settings. */
+export function getCurrentPeriodBounds(
+  period: Budget['period'],
+  weekStartDay: number = 1
+): { startDate: string; endDate: string } {
+  const now = new Date();
+
+  if (period === 'daily') {
+    const todayStr = formatLocalDate(now);
+    return { startDate: todayStr, endDate: todayStr };
+  }
+
+  if (period === 'weekly') {
+    const startDay = weekStartDay ?? 1;
+    const currentDay = now.getDay();
+    const diff = (currentDay < startDay ? 7 : 0) + currentDay - startDay;
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { startDate: formatLocalDate(start), endDate: formatLocalDate(end) };
+  }
+
+  // monthly: 1st till last day of the month
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return { startDate: formatLocalDate(start), endDate: formatLocalDate(end) };
 }
 
 /**
@@ -48,9 +99,10 @@ export function getBudgetWindow(budget: Budget): BudgetWindow {
  */
 export function getBudgetSpending(
   budget: Budget,
-  transactions: Transaction[]
+  transactions: Transaction[],
+  weekStartDay: number = 1
 ): { totalSpent: number; categorySpent: Record<string, number> } {
-  const { start, end } = getBudgetWindow(budget);
+  const { start, end } = getBudgetWindow(budget, weekStartDay);
 
   const relevantTxs = transactions.filter((tx) => {
     if (tx.type !== 'expense') return false;
@@ -75,8 +127,8 @@ export function getBudgetPercent(budget: Budget, totalSpent: number): number {
 }
 
 /** Days remaining until a budget's window closes (minimum 1, inclusive of today). */
-export function getBudgetDaysLeft(budget: Budget): number {
-  const { end } = getBudgetWindow(budget);
+export function getBudgetDaysLeft(budget: Budget, weekStartDay: number = 1): number {
+  const { end } = getBudgetWindow(budget, weekStartDay);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const endDay = new Date(end);
@@ -90,12 +142,21 @@ export function getCategoryAllocPercent(alloc: BudgetCategoryAllocation, categor
   return alloc.amount > 0 ? Math.min(100, Math.round((used / alloc.amount) * 100)) : 0;
 }
 
-/** Display label for a budget's current window, e.g. "This week" / "Sep 30 – Oct 30". */
-export function getBudgetWindowLabel(budget: Budget): string {
-  if (budget.period === 'weekly') return 'This week';
-  if (budget.period === 'monthly') return 'This month';
-  if (budget.period === 'daily') return 'Today';
+/** Display label for a budget's current window, e.g. "Today (Oct 5)" / "Oct 5 – Oct 11" / "Oct 1 – Oct 31". */
+export function getBudgetWindowLabel(budget: Budget, weekStartDay: number = 1): string {
+  const formatShort = (d: Date) => `${d.toLocaleDateString('default', { month: 'short' })} ${d.getDate()}`;
+  const win = getBudgetWindow(budget, weekStartDay);
+
+  if (budget.period === 'daily') {
+    return `Today (${formatShort(win.start)})`;
+  }
+  if (budget.period === 'weekly') {
+    return `${formatShort(win.start)} – ${formatShort(win.end)}`;
+  }
+  if (budget.period === 'monthly') {
+    return `${formatShort(win.start)} – ${formatShort(win.end)}`;
+  }
   const s = budget.startDate || '';
   const e = budget.endDate || '';
-  return s && e ? `${s} ━ ${e}` : s || e || 'No dates';
+  return s && e ? `${s} – ${e}` : s || e || 'No dates';
 }
