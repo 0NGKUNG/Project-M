@@ -70,8 +70,11 @@ export const AppContent: React.FC = () => {
     }
   };
 
-  // Sync scroll position from touch swiping back to currentTab (ignored when subpage/modal is open)
-  const handleScroll = () => {
+  // Sync scroll position from touch swiping back to currentTab without freezing or dropping frames
+  const isUserTouchingRef = useRef(false);
+  const scrollTimeoutRef = useRef<number | null>(null);
+
+  const syncActiveTab = () => {
     if (isScrollingFromCode.current || !containerRef.current || isAnySubPageOrModalOpen) return;
     const { scrollLeft, clientWidth } = containerRef.current;
     if (clientWidth === 0) return;
@@ -82,6 +85,59 @@ export const AppContent: React.FC = () => {
       window.dispatchEvent(new CustomEvent<NavTab>('xero:tab-changed', { detail: TABS[newIndex] }));
     }
   };
+
+  const handleScroll = () => {
+    if (isScrollingFromCode.current || !containerRef.current || isAnySubPageOrModalOpen) return;
+
+    if (scrollTimeoutRef.current) {
+      window.clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // Do not trigger React state updates while the user's finger is actively touching & dragging.
+    // This allows the mobile browser's compositor thread to slide pages with zero JS overhead.
+    if (isUserTouchingRef.current) {
+      return;
+    }
+
+    // Debounce to ensure tab sync triggers cleanly when scroll momentum settles
+    scrollTimeoutRef.current = window.setTimeout(() => {
+      syncActiveTab();
+    }, 60);
+  };
+
+  const handleTouchStart = () => {
+    isUserTouchingRef.current = true;
+    if (scrollTimeoutRef.current) {
+      window.clearTimeout(scrollTimeoutRef.current);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isUserTouchingRef.current = false;
+    if (scrollTimeoutRef.current) {
+      window.clearTimeout(scrollTimeoutRef.current);
+    }
+    // Give scroll-snap a brief moment to finish its snap deceleration, then sync tab
+    scrollTimeoutRef.current = window.setTimeout(() => {
+      syncActiveTab();
+    }, 70);
+  };
+
+  // Modern browsers support 'scrollend' event for exact completion of scroll snap
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScrollEnd = () => {
+      if (scrollTimeoutRef.current) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+      syncActiveTab();
+    };
+
+    container.addEventListener('scrollend', handleScrollEnd);
+    return () => container.removeEventListener('scrollend', handleScrollEnd);
+  }, [currentTab, isAnySubPageOrModalOpen]);
 
   // Handle window resize adjustment and maintain alignment when swipe is locked/unlocked
   useEffect(() => {
@@ -165,6 +221,9 @@ export const AppContent: React.FC = () => {
           <div
             ref={containerRef}
             onScroll={handleScroll}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
             className={`lg:hidden flex-1 w-full flex ${
               isAnySubPageOrModalOpen
                 ? 'overflow-x-hidden touch-pan-y'

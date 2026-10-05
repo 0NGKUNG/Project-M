@@ -126,16 +126,19 @@ select {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Page Carousel Snap and Transitions - limit to max 1 page per swipe */
+/* Page Carousel Snap and Transitions - hardware-accelerated for ultra-responsive mobile swipe */
 .page-carousel-container {
   scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: none;
 }
 
 .page-carousel-item {
   scroll-snap-align: start;
   scroll-snap-stop: always;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Hide scrollbars utility */
